@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/oniio/onip2p/crypto/ed25519"
-	"github.com/oniio/onip2p/examples/request_benchmark/messages"
-	"github.com/oniio/onip2p/network"
-	"github.com/oniio/onip2p/network/discovery"
-	"github.com/oniio/onip2p/types/opcode"
+	"github.com/oniio/oniP2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/examples/request_benchmark/messages"
+	"github.com/oniio/oniP2p/network"
+	"github.com/oniio/oniP2p/network/discovery"
+	"github.com/oniio/oniP2p/types/opcode"
 	"github.com/pkg/errors"
 )
 

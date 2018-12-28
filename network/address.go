@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/oniio/onip2p/types/lru"
+	"github.com/oniio/oniP2p/types/lru"
 	"github.com/pkg/errors"
 )
 

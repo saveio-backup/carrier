@@ -13,10 +13,10 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/oniio/onip2p/crypto/ed25519"
-	"github.com/oniio/onip2p/examples/local_benchmark/messages"
-	"github.com/oniio/onip2p/network"
-	"github.com/oniio/onip2p/types/opcode"
+	"github.com/oniio/oniP2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/examples/local_benchmark/messages"
+	"github.com/oniio/oniP2p/network"
+	"github.com/oniio/oniP2p/types/opcode"
 )
 
 type BenchmarkComponent struct {

@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oniio/onip2p/crypto/ed25519"
-	"github.com/oniio/onip2p/examples/topologies/messages"
-	"github.com/oniio/onip2p/network"
-	"github.com/oniio/onip2p/types/opcode"
+	"github.com/oniio/oniP2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/examples/topologies/messages"
+	"github.com/oniio/oniP2p/network"
+	"github.com/oniio/oniP2p/types/opcode"
 )
 
 const host = "127.0.0.1"

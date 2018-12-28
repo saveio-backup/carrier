@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oniio/onip2p/crypto"
-	"github.com/oniio/onip2p/crypto/blake2b"
-	"github.com/oniio/onip2p/crypto/ed25519"
-	"github.com/oniio/onip2p/network/transport"
-	"github.com/oniio/onip2p/peer"
+	"github.com/oniio/oniP2p/crypto"
+	"github.com/oniio/oniP2p/crypto/blake2b"
+	"github.com/oniio/oniP2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/network/transport"
+	"github.com/oniio/oniP2p/peer"
 	"github.com/pkg/errors"
 )
 

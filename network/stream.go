@@ -9,8 +9,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
-	"github.com/oniio/onip2p/crypto"
-	"github.com/oniio/onip2p/internal/protobuf"
+	"github.com/oniio/oniP2p/crypto"
+	"github.com/oniio/oniP2p/internal/protobuf"
 	"github.com/pkg/errors"
 )
 

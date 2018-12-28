@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/oniio/onip2p/internal/protobuf"
+	"github.com/oniio/oniP2p/internal/protobuf"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"

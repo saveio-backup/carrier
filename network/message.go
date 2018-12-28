@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/oniio/onip2p/peer"
+	"github.com/oniio/oniP2p/peer"
 )
 
 // ComponentContext provides parameters and helper functions to a Component

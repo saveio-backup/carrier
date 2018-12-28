@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/oniio/onip2p/internal/protobuf"
-	"github.com/oniio/onip2p/peer"
+	"github.com/oniio/oniP2p/internal/protobuf"
+	"github.com/oniio/oniP2p/peer"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"

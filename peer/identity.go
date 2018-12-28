@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"math/bits"
 
-	"github.com/oniio/onip2p/crypto/blake2b"
-	"github.com/oniio/onip2p/internal/protobuf"
+	"github.com/oniio/oniP2p/crypto/blake2b"
+	"github.com/oniio/oniP2p/internal/protobuf"
 )
 
 // ID is an identity of nodes, using its public key hash and network address.

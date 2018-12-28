@@ -3,7 +3,7 @@ package topologies
 import (
 	"testing"
 
-	"github.com/oniio/onip2p/network"
+	"github.com/oniio/oniP2p/network"
 )
 
 const basePort = 19700

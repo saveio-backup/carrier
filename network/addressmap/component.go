@@ -2,8 +2,8 @@ package addressmap
 
 import (
 	"github.com/golang/glog"
-	"github.com/oniio/onip2p/network"
-	"github.com/oniio/onip2p/peer"
+	"github.com/oniio/oniP2p/network"
+	"github.com/oniio/oniP2p/peer"
 )
 
 type Component struct {

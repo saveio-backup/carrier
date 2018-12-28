@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/oniio/onip2p/crypto"
-	"github.com/oniio/onip2p/internal/protobuf"
-	"github.com/oniio/onip2p/network/transport"
-	"github.com/oniio/onip2p/peer"
-	"github.com/oniio/onip2p/types/opcode"
+	"github.com/oniio/oniP2p/crypto"
+	"github.com/oniio/oniP2p/internal/protobuf"
+	"github.com/oniio/oniP2p/network/transport"
+	"github.com/oniio/oniP2p/peer"
+	"github.com/oniio/oniP2p/types/opcode"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
