@@ -1,4 +1,4 @@
-package: github.com/oniio/onip2p
+package: github.com/oniio/oniP2p
 import:
 - package: github.com/davecgh/go-spew
   version: v1.1.0

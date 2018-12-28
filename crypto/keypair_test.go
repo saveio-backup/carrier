@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/oniio/onip2p/crypto"
-	"github.com/oniio/onip2p/crypto/mocks"
+	"github.com/oniio/oniP2p/crypto"
+	"github.com/oniio/oniP2p/crypto/mocks"
 
 	gomock "github.com/golang/mock/gomock"
 )

@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"net"
 
-	"github.com/oniio/onip2p/internal/protobuf"
+	"github.com/oniio/oniP2p/internal/protobuf"
 )
 
 // SerializeMessage compactly packs all bytes of a message together for cryptographic signing purposes.

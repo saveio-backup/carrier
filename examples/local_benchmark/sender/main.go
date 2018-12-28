@@ -15,10 +15,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/oniio/onip2p/crypto/ed25519"
-	"github.com/oniio/onip2p/examples/local_benchmark/messages"
-	"github.com/oniio/onip2p/network"
-	"github.com/oniio/onip2p/types/opcode"
+	"github.com/oniio/oniP2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/examples/local_benchmark/messages"
+	"github.com/oniio/oniP2p/network"
+	"github.com/oniio/oniP2p/types/opcode"
 )
 
 var profile = flag.String("profile", "", "write cpu profile to file")

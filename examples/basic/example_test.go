@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oniio/onip2p/crypto/ed25519"
-	"github.com/oniio/onip2p/examples/basic/messages"
-	"github.com/oniio/onip2p/network"
-	"github.com/oniio/onip2p/network/discovery"
-	"github.com/oniio/onip2p/types/opcode"
+	"github.com/oniio/oniP2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/examples/basic/messages"
+	"github.com/oniio/oniP2p/network"
+	"github.com/oniio/oniP2p/network/discovery"
+	"github.com/oniio/oniP2p/types/opcode"
 )
 
 // BasicComponent buffers all messages into a mailbox for this test.

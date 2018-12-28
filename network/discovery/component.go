@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/oniio/onip2p/dht"
-	"github.com/oniio/onip2p/internal/protobuf"
-	"github.com/oniio/onip2p/network"
-	"github.com/oniio/onip2p/peer"
+	"github.com/oniio/oniP2p/dht"
+	"github.com/oniio/oniP2p/internal/protobuf"
+	"github.com/oniio/oniP2p/network"
+	"github.com/oniio/oniP2p/peer"
 )
 
 type Component struct {

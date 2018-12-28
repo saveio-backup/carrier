@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/oniio/onip2p/crypto/ed25519"
+	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/uber-go/atomic"

@@ -21,7 +21,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/oniio/onip2p/crypto/ed25519/internal/edwards25519"
+	"github.com/oniio/oniP2p/crypto/ed25519/internal/edwards25519"
 )
 
 const (
