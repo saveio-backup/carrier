@@ -22,17 +22,17 @@ func NewTCP() *TCP {
 }
 
 // Listen listens for incoming TCP connections on a specified port.
-func (t *TCP) Listen(port int) (net.Listener, error) {
+func (t *TCP) Listen(port int) (interface{}, error) {
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
 	}
 
-	return listener, nil
+	return interface{}(listener), nil
 }
 
 // Dial dials an address via. the TCP protocol.
-func (t *TCP) Dial(address string) (net.Conn, error) {
+func (t *TCP) Dial(address string) (interface{}, error) {
 	resolved, err := net.ResolveTCPAddr("tcp", address)
 	if err != nil {
 		return nil, err
@@ -47,5 +47,5 @@ func (t *TCP) Dial(address string) (net.Conn, error) {
 	conn.SetReadBuffer(t.ReadBufferSize)
 	conn.SetNoDelay(t.NoDelay)
 
-	return conn, nil
+	return interface{}(conn), nil
 }

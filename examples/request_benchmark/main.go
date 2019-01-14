@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/examples/request_benchmark/messages"
 	"github.com/oniio/oniP2p/network"
@@ -172,7 +172,7 @@ func sendMsg(net *network.Network, idx int) uint32 {
 	close(errs)
 
 	for err := range errs {
-		glog.Error(err)
+		log.Error(err)
 	}
 
 	return atomic.LoadUint32(&positiveResponses)

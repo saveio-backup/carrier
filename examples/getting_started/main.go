@@ -4,7 +4,7 @@ import (
 	"flag"
 	"strings"
 
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/network"
 	"github.com/oniio/oniP2p/network/backoff"
@@ -34,8 +34,8 @@ func main() {
 
 	keys := ed25519.RandomKeyPair()
 
-	glog.Infof("Private Key: %s", keys.PrivateKeyHex())
-	glog.Infof("Public Key: %s", keys.PublicKeyHex())
+	log.Infof("Private Key: %s", keys.PrivateKeyHex())
+	log.Infof("Public Key: %s", keys.PublicKeyHex())
 
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
@@ -56,7 +56,7 @@ func main() {
 
 	net, err := builder.Build()
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 		return
 	}
 

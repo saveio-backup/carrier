@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/fd/go-nat"
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/network"
 	"github.com/oniio/oniP2p/peer"
 )
@@ -29,7 +29,7 @@ var (
 )
 
 func (p *Component) Startup(n *network.Network) {
-	glog.Infof("Setting up NAT traversal for address: %s", n.Address)
+	log.Infof("Setting up NAT traversal for address: %s", n.Address)
 
 	info, err := network.ParseAddress(n.Address)
 	if err != nil {
@@ -40,35 +40,35 @@ func (p *Component) Startup(n *network.Network) {
 
 	gateway, err := nat.DiscoverGateway()
 	if err != nil {
-		glog.Warning("Unable to discover gateway: ", err)
+		log.Warnf("Unable to discover gateway: ", err)
 		return
 	}
 
 	p.internalIP, err = gateway.GetInternalAddress()
 	if err != nil {
-		glog.Warning("Unable to fetch internal IP: ", err)
+		log.Warnf("Unable to fetch internal IP: ", err)
 		return
 	}
 
 	p.externalIP, err = gateway.GetExternalAddress()
 	if err != nil {
-		glog.Warning("Unable to fetch external IP: ", err)
+		log.Warnf("Unable to fetch external IP: ", err)
 		return
 	}
 
-	glog.Infof("Discovered gateway following the protocol %s.", gateway.Type())
+	log.Infof("Discovered gateway following the protocol %s.", gateway.Type())
 
-	glog.Info("Internal IP: ", p.internalIP.String())
-	glog.Info("External IP: ", p.externalIP.String())
+	log.Info("Internal IP: ", p.internalIP.String())
+	log.Info("External IP: ", p.externalIP.String())
 
 	p.externalPort, err = gateway.AddPortMapping("tcp", p.internalPort, "noise", 1*time.Second)
 
 	if err != nil {
-		glog.Warning("Cannot setup port mapping: ", err)
+		log.Warnf("Cannot setup port mapping: ", err)
 		return
 	}
 
-	glog.Infof("External port %d now forwards to your local port %d.", p.externalPort, p.internalPort)
+	log.Infof("External port %d now forwards to your local port %d.", p.externalPort, p.internalPort)
 
 	p.gateway = gateway
 
@@ -79,16 +79,16 @@ func (p *Component) Startup(n *network.Network) {
 	n.Address = info.String()
 	n.ID = peer.CreateID(n.Address, n.GetKeys().PublicKey)
 
-	glog.Infof("Other peers may connect to you through the address %s.", n.Address)
+	log.Infof("Other peers may connect to you through the address %s.", n.Address)
 }
 
 func (p *Component) Cleanup(n *network.Network) {
 	if p.gateway != nil {
-		glog.Info("Removing port binding...")
+		log.Info("Removing port binding...")
 
 		err := p.gateway.DeletePortMapping("tcp", p.internalPort)
 		if err != nil {
-			glog.Error(err)
+			log.Error(err)
 		}
 	}
 }

@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"net"
 	"strconv"
 
 	"github.com/xtaci/kcp-go"
@@ -26,18 +25,18 @@ func NewKCP() *KCP {
 }
 
 // Listen listens for incoming KCP connections on a specified port.
-func (t *KCP) Listen(port int) (net.Listener, error) {
+func (t *KCP) Listen(port int) (interface{}, error) {
 	listener, err := kcp.ListenWithOptions(":"+strconv.Itoa(port), nil, t.DataShards, t.ParityShards)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return listener, nil
+	return interface{}(listener), nil
 }
 
 // Dial dials an address via. the KCP protocol, with optional Reed-Solomon message sharding.
-func (t *KCP) Dial(address string) (net.Conn, error) {
+func (t *KCP) Dial(address string) (interface{}, error) {
 	conn, err := kcp.DialWithOptions(address, nil, t.DataShards, t.ParityShards)
 
 	if err != nil {
@@ -46,5 +45,5 @@ func (t *KCP) Dial(address string) (net.Conn, error) {
 
 	conn.SetWindowSize(t.SendWindowSize, t.RecvWindowSize)
 
-	return conn, nil
+	return interface{}(conn), nil
 }

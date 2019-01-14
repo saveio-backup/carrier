@@ -127,7 +127,13 @@ func (c *PeerClient) Close() error {
 	if c.ID != nil {
 		// close out connections
 		if state, ok := c.Network.ConnectionState(c.ID.Address); ok {
-			state.conn.Close()
+			addrInfo, err := ParseAddress(c.Network.Address)
+			if err != nil {
+				return err
+			}
+			if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+				state.conn.(net.Conn).Close()
+			}
 		}
 
 		c.Network.peers.Delete(c.ID.Address)

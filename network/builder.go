@@ -143,6 +143,7 @@ func NewBuilder() *Builder {
 	// Register default transport layers.
 	builder.RegisterTransportLayer("tcp", transport.NewTCP())
 	builder.RegisterTransportLayer("kcp", transport.NewKCP())
+	builder.RegisterTransportLayer("udp", transport.NewUDP())
 
 	return builder
 }

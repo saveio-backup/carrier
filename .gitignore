@@ -25,3 +25,5 @@ _testmain.go
 *.prof
 
 .idea
+docs
+examples/demos

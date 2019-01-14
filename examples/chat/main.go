@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/examples/chat/messages"
 	"github.com/oniio/oniP2p/network"
@@ -20,7 +20,7 @@ type ChatComponent struct{ *network.Component }
 func (state *ChatComponent) Receive(ctx *network.ComponentContext) error {
 	switch msg := ctx.Message().(type) {
 	case *messages.ChatMessage:
-		glog.Infof("<%s> %s", ctx.Client().ID.Address, msg.Message)
+		log.Infof("<%s> %s", ctx.Client().ID.Address, msg.Message)
 	}
 
 	return nil
@@ -44,8 +44,8 @@ func main() {
 
 	keys := ed25519.RandomKeyPair()
 
-	glog.Infof("Private Key: %s", keys.PrivateKeyHex())
-	glog.Infof("Public Key: %s", keys.PublicKeyHex())
+	log.Infof("Private Key: %s", keys.PrivateKeyHex())
+	log.Infof("Public Key: %s", keys.PublicKeyHex())
 
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.ChatMessage{})
 	builder := network.NewBuilder()
@@ -60,7 +60,7 @@ func main() {
 
 	net, err := builder.Build()
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 		return
 	}
 
@@ -79,7 +79,7 @@ func main() {
 			continue
 		}
 
-		glog.Infof("<%s> %s", net.Address, input)
+		log.Infof("<%s> %s", net.Address, input)
 
 		ctx := network.WithSignMessage(context.Background(), true)
 		net.Broadcast(ctx, &messages.ChatMessage{Message: input})

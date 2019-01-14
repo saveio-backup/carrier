@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/examples/cluster_benchmark/messages"
 	"github.com/oniio/oniP2p/network"
@@ -73,7 +73,7 @@ func setupPPROF(port int) {
 	r.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/pprof/block", pprof.Handler("block"))
 
-	glog.Infof("Pprof listening on port %d.\n", port+500)
+	log.Infof("Pprof listening on port %d.\n", port+500)
 	http.ListenAndServe(fmt.Sprintf(":%d", port+500), r)
 }
 
@@ -97,8 +97,8 @@ func main() {
 
 	go setupPPROF(*portFlag)
 
-	glog.Infof("Private Key: %s", keys.PrivateKeyHex())
-	glog.Infof("Public Key: %s", keys.PublicKeyHex())
+	log.Infof("Private Key: %s", keys.PrivateKeyHex())
+	log.Infof("Public Key: %s", keys.PublicKeyHex())
 
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.Empty{})
 	builder := network.NewBuilder()
@@ -116,7 +116,7 @@ func main() {
 
 	net, err := builder.Build()
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 		return
 	}
 
@@ -131,7 +131,7 @@ func main() {
 	go func() {
 		for range time.Tick(1 * time.Second) {
 			currentNumMessages := atomic.SwapUint64(&numMessages, 0)
-			glog.Infof("Got %d messages, %d peers", currentNumMessages, atomic.LoadInt64(&numPeers))
+			log.Infof("Got %d messages, %d peers", currentNumMessages, atomic.LoadInt64(&numPeers))
 		}
 	}()
 

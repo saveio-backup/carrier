@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/internal/protobuf"
 	"github.com/oniio/oniP2p/network"
 )
@@ -176,6 +176,6 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 	if p.peerStateChan != nil {
 		p.peerStateChan <- &PeerStateEvent{Address: client.Address, State: state}
 
-		glog.Infof("[keepalive] peerStateEvent: address %s state %s", client.Address, stateString[state])
+		log.Infof("[keepalive] peerStateEvent: address %s state %s", client.Address, stateString[state])
 	}
 }

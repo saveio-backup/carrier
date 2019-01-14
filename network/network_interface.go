@@ -2,7 +2,6 @@ package network
 
 import (
 	"context"
-	"net"
 
 	"github.com/oniio/oniP2p/crypto"
 	"github.com/oniio/oniP2p/internal/protobuf"
@@ -33,10 +32,10 @@ type NetworkInterface interface {
 	Bootstrap(addresses ...string)
 
 	// Dial establishes a bidirectional connection to an address, and additionally handshakes with said address.
-	Dial(address string) (net.Conn, error)
+	Dial(address string) (interface{}, error)
 
 	// Accept handles peer registration and processes incoming message streams.
-	Accept(conn net.Conn)
+	Accept(conn interface{})
 
 	// Component returns a Components proxy interface should it be registered with the
 	// network. The second returning parameter is false otherwise.

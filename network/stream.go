@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
-	"net"
 	"sync"
 
+	"net"
+
+	"fmt"
+
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto"
 	"github.com/oniio/oniP2p/internal/protobuf"
 	"github.com/pkg/errors"
@@ -17,7 +20,7 @@ import (
 var errEmptyMsg = errors.New("received an empty message from a peer")
 
 // sendMessage marshals, signs and sends a message over a stream.
-func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex) error {
+func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState) error {
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
@@ -34,7 +37,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	bytesWritten, totalBytesWritten := 0, 0
 
 	writerMutex.Lock()
-
+	fmt.Println("Send Message Value(byte): ", buffer)
 	bw, isBuffered := w.(*bufio.Writer)
 	if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
 		if err := bw.Flush(); err != nil {
@@ -43,13 +46,33 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	}
 
 	for totalBytesWritten < len(buffer) && err == nil {
-		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
+		//bytesWritten, err = w.Write(buffer[totalBytesWritten:])
+
+		if _, ok := state.conn.(*net.TCPConn); ok {
+			bytesWritten, err = w.Write(buffer[totalBytesWritten:])
+		}
+
+		if udpConn, ok := state.conn.(*net.UDPConn); ok {
+			/*			resolved, err := net.ResolveUDPAddr("udp", udpConn.RemoteAddr().String())
+						if err != nil {
+							return err
+						}*/
+			fmt.Println("UDPConn begin to wirte:", buffer[totalBytesWritten:])
+			//bytesWritten, err = udpConn.WriteToUDP(buffer[totalBytesWritten:], resolved)
+			bytesWritten, err = udpConn.Write(buffer[totalBytesWritten:])
+			fmt.Println("byteWritten:", bytesWritten)
+			fmt.Println("byteWritten conn addr:", udpConn.LocalAddr())
+			if err != nil {
+				fmt.Println("err byteWritten msg:", err.Error())
+			}
+		}
+
 		if err != nil {
-			glog.Errorf("stream: failed to write entire buffer, err: %+v\n", err)
+			log.Errorf("stream: failed to write entire buffer, err: %+v\n", err)
 		}
 		totalBytesWritten += bytesWritten
 	}
-
+	fmt.Println("*******************writerMutex.Unlock")
 	writerMutex.Unlock()
 
 	if err != nil {
@@ -60,7 +83,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 }
 
 // receiveMessage reads, unmarshals and verifies a message from a net.Conn.
-func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
+func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 	var err error
 
 	// Read until all header bytes have been read.
@@ -69,7 +92,22 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 	bytesRead, totalBytesRead := 0, 0
 
 	for totalBytesRead < 4 && err == nil {
-		bytesRead, err = conn.Read(buffer[totalBytesRead:])
+		switch conn.(type) {
+		case *net.TCPConn:
+			bytesRead, err = conn.(*net.TCPConn).Read(buffer[totalBytesRead:])
+		case *net.UDPConn:
+			udpConn, _ := conn.(*net.UDPConn)
+			_buffer := make([]byte, 4096)
+			fmt.Printf("receiveMessage.conn.ptr:%v", conn)
+			//bytesRead, _, err = udpConn.ReadFromUDP(_buffer[:])
+			bytesRead, err = udpConn.Read(_buffer[:])
+			fmt.Println("Read bytes from udpConn with ReadFrom method, bytesRead:", bytesRead, "buffer:", _buffer[:bytesRead])
+			if err != nil {
+				fmt.Println("err-msg:", err.Error())
+			}
+		default:
+			return nil, errors.New("net connection type is ambiguous. default case is not allow.")
+		}
 		totalBytesRead += bytesRead
 	}
 
@@ -90,13 +128,23 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 	bytesRead, totalBytesRead = 0, 0
 
 	for totalBytesRead < int(size) && err == nil {
-		bytesRead, err = conn.Read(buffer[totalBytesRead:])
+		switch conn.(type) {
+		case *net.TCPConn:
+			bytesRead, err = conn.(*net.TCPConn).Read(buffer[totalBytesRead:])
+		case *net.UDPConn:
+			udpConn, _ := conn.(*net.UDPConn)
+			//bytesRead, _, err = udpConn.ReadFromUDP(buffer[totalBytesRead:])
+			bytesRead, err = udpConn.Read(buffer[totalBytesRead:])
+		default:
+			return nil, errors.New("net connection type is ambiguous. default case is not allow.")
+		}
+		//bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 	}
 
 	// Deserialize message.
 	msg := new(protobuf.Message)
-
+	fmt.Println("Receive buffer Message(byte):", buffer)
 	err = proto.Unmarshal(buffer, msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal message")

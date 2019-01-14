@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/network"
 	"github.com/oniio/oniP2p/network/discovery"
@@ -46,7 +46,7 @@ type ExampleServerComponent struct {
 }
 
 func (state *ExampleServerComponent) PeerConnect(client *network.PeerClient) {
-	glog.Infof("New connection from %s.", client.Address)
+	log.Infof("New connection from %s.", client.Address)
 
 	go state.handleClient(client)
 }
@@ -54,23 +54,23 @@ func (state *ExampleServerComponent) PeerConnect(client *network.PeerClient) {
 func (state *ExampleServerComponent) handleClient(client *network.PeerClient) {
 	session, err := smux.Server(client, muxStreamConfig())
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 	}
 	for {
 		stream, err := session.AcceptStream()
 		if err != nil {
-			glog.Error(err)
+			log.Error(err)
 			break
 		}
 
-		glog.Infof("New incoming stream from %s.", client.Address)
+		log.Infof("New incoming stream from %s.", client.Address)
 
 		go func() {
 			defer stream.Close()
 
 			remote, err := net.Dial("tcp", state.remoteAddress)
 			if err != nil {
-				glog.Error(err)
+				log.Error(err)
 				return
 			}
 			defer remote.Close()
@@ -81,7 +81,7 @@ func (state *ExampleServerComponent) handleClient(client *network.PeerClient) {
 }
 
 func (state *ExampleServerComponent) PeerDisconnect(client *network.PeerClient) {
-	glog.Infof("Lost connection with %s.", client.Address)
+	log.Infof("Lost connection with %s.", client.Address)
 }
 
 type ProxyServerComponent struct {
@@ -90,7 +90,7 @@ type ProxyServerComponent struct {
 }
 
 func (state *ProxyServerComponent) PeerConnect(client *network.PeerClient) {
-	glog.Infof("Connected to proxy destination %s.", client.Address)
+	log.Infof("Connected to proxy destination %s.", client.Address)
 
 	go state.startProxying(client)
 }
@@ -98,30 +98,30 @@ func (state *ProxyServerComponent) PeerConnect(client *network.PeerClient) {
 func (state *ProxyServerComponent) startProxying(client *network.PeerClient) {
 	session, err := smux.Client(client, muxStreamConfig())
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 	}
 
 	// Open proxy server.
 	listener, err := net.Listen("tcp", state.listenAddress)
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 	}
 	defer listener.Close()
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			glog.Fatal(err)
+			log.Fatal(err)
 		}
 
-		glog.Infof("Proxying data from %s to %s.", conn.RemoteAddr().String(), client.Address)
+		log.Infof("Proxying data from %s to %s.", conn.RemoteAddr().String(), client.Address)
 
 		go func() {
 			defer conn.Close()
 
 			remote, err := session.OpenStream()
 			if err != nil {
-				glog.Error(err)
+				log.Error(err)
 				return
 			}
 			defer remote.Close()
@@ -132,7 +132,7 @@ func (state *ProxyServerComponent) startProxying(client *network.PeerClient) {
 }
 
 func (state *ProxyServerComponent) PeerDisconnect(client *network.PeerClient) {
-	glog.Infof("Lost connection with proxy destination %s.", client.Address)
+	log.Infof("Lost connection with proxy destination %s.", client.Address)
 }
 
 // An example showcasing how to use streams in Noise by creating a sample proxying server.
@@ -156,8 +156,8 @@ func main() {
 
 	keys := ed25519.RandomKeyPair()
 
-	glog.Infof("Private Key: %s", keys.PrivateKeyHex())
-	glog.Infof("Public Key: %s", keys.PublicKeyHex())
+	log.Infof("Private Key: %s", keys.PrivateKeyHex())
+	log.Infof("Public Key: %s", keys.PublicKeyHex())
 
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
@@ -175,7 +175,7 @@ func main() {
 
 	net, err := builder.Build()
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 		return
 	}
 

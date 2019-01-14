@@ -17,7 +17,7 @@ import (
 	"github.com/oniio/oniP2p/types/opcode"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/pkg/errors"
 )
 
@@ -101,7 +101,7 @@ type options struct {
 
 // ConnState represents a connection.
 type ConnState struct {
-	conn         net.Conn
+	conn         interface{}
 	writer       *bufio.Writer
 	messageNonce uint64
 	writerMutex  *sync.Mutex
@@ -125,7 +125,7 @@ func (n *Network) flushLoop() {
 				if state, ok := value.(*ConnState); ok {
 					state.writerMutex.Lock()
 					if err := state.writer.Flush(); err != nil {
-						glog.Warning(err)
+						log.Warnf(err.Error())
 					}
 					state.writerMutex.Unlock()
 				}
@@ -160,19 +160,19 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 	case opcode.LookupNodeResponseCode:
 		ptr = &protobuf.LookupNodeResponse{}
 	case opcode.UnregisteredCode:
-		glog.Error("network: message received had no opcode")
+		log.Error("network: message received had no opcode")
 		return
 	default:
 		var err error
 		ptr, err = opcode.GetMessageType(code)
 		if err != nil {
-			glog.Error("network: received message opcode is not registered")
+			log.Error("network: received message opcode is not registered")
 			return
 		}
 	}
 	if len(msg.Message) > 0 {
 		if err := proto.Unmarshal(msg.Message, ptr); err != nil {
-			glog.Error(err)
+			log.Error(err)
 			return
 		}
 	}
@@ -203,7 +203,7 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 			// Execute 'on receive message' callback for all Components.
 			n.Components.Each(func(Component ComponentInterface) {
 				if err := Component.Receive(ctx); err != nil {
-					glog.Errorf("%+v", err)
+					log.Errorf("%+v", err)
 				}
 			})
 
@@ -229,54 +229,67 @@ func (n *Network) Listen() {
 
 	addrInfo, err := ParseAddress(n.Address)
 	if err != nil {
-		glog.Fatal(err)
+		log.Fatal(err)
 	}
 
-	var listener net.Listener
-
+	var listener interface{}
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
 		listener, err = t.(transport.Layer).Listen(int(addrInfo.Port))
 		if err != nil {
-			glog.Fatal(err)
+			log.Fatal(err)
 		}
 	} else {
-		glog.Fatal("invalid protocol: " + addrInfo.Protocol)
+		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
 
 	n.startListening()
 
-	glog.Infof("Listening for peers on %s.\n", n.Address)
+	log.Infof("Listening for peers on %s.\n", n.Address)
 
 	// handle server shutdowns
 	go func() {
 		select {
 		case <-n.kill:
 			// cause listener.Accept() to stop blocking so it can continue the loop
-			listener.Close()
+			if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+				listener.(net.Listener).Close()
+			}
+			if addrInfo.Protocol == "udp" {
+				udpConn, _ := listener.(*net.UDPConn)
+				udpConn.Close()
+			}
 		}
 	}()
 
 	// Handle new clients.
-	for {
-		if conn, err := listener.Accept(); err == nil {
-			go n.Accept(conn)
+	switch addrInfo.Protocol {
+	case "tcp", "kcp":
+		for {
+			if conn, err := listener.(net.Listener).Accept(); err == nil {
+				go n.Accept(conn)
 
-		} else {
-			// if the Shutdown flag is set, no need to continue with the for loop
-			select {
-			case <-n.kill:
-				glog.Infof("Shutting down server on %s.\n", n.Address)
-				return
-			default:
-				glog.Error(err)
+			} else {
+				// if the Shutdown flag is set, no need to continue with the for loop
+				select {
+				case <-n.kill:
+					log.Infof("Shutting down server on %s.\n", n.Address)
+					return
+				default:
+					log.Error(err)
+				}
 			}
 		}
+	case "udp":
+		go n.Accept(listener.(*net.UDPConn))
+	default:
+		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
+
 }
 
 // getOrSetPeerClient either returns a cached peer client or creates a new one given a net.Conn
 // or dials the client if no net.Conn is provided.
-func (n *Network) getOrSetPeerClient(address string, conn net.Conn) (*PeerClient, error) {
+func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerClient, error) {
 	address, err := ToUnifiedAddress(address)
 	if err != nil {
 		return nil, err
@@ -286,14 +299,24 @@ func (n *Network) getOrSetPeerClient(address string, conn net.Conn) (*PeerClient
 		return nil, errors.New("network: peer should not dial itself")
 	}
 
+	addrInfo, err := ParseAddress(address)
+	if err != nil {
+		return nil, err
+	}
 	// if conn is not nil, check that the sender host matches the net.Conn remote host address
 	if conn != nil {
-		addrInfo, err := ParseAddress(address)
-		if err != nil {
-			return nil, err
-		}
+		var remoteAddrInfo *AddressInfo
+		switch addrInfo.Protocol {
+		case "tcp", "kcp":
+			tcpConn, _ := conn.(*net.TCPConn)
+			remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", tcpConn.RemoteAddr().Network(), conn.(net.Conn).RemoteAddr().String()))
+		case "udp":
+			udpConn, _ := conn.(*net.UDPConn)
+			remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", udpConn.RemoteAddr().Network(), udpConn.RemoteAddr().String()))
+		default:
+			log.Fatal("invalid protocol: " + addrInfo.Protocol)
 
-		remoteAddrInfo, err := ParseAddress(fmt.Sprintf("%s://%s", conn.RemoteAddr().Network(), conn.RemoteAddr().String()))
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -333,13 +356,25 @@ func (n *Network) getOrSetPeerClient(address string, conn net.Conn) (*PeerClient
 			return nil, err
 		}
 	}
-
-	n.connections.Store(address, &ConnState{
-		conn:        conn,
-		writer:      bufio.NewWriterSize(conn, n.opts.writeBufferSize),
-		writerMutex: new(sync.Mutex),
-	})
-
+	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+		tcpConn, _ := conn.(*net.TCPConn)
+		fmt.Println("tcp.client.address:", address)
+		n.connections.Store(address, &ConnState{
+			conn:        conn,
+			writer:      bufio.NewWriterSize(tcpConn, n.opts.writeBufferSize),
+			writerMutex: new(sync.Mutex),
+		})
+	}
+	if addrInfo.Protocol == "udp" {
+		udpConn, _ := conn.(*net.UDPConn)
+		fmt.Println("udp.client.address:", address)
+		fmt.Printf("udp.client.udpConn:%v\n", udpConn)
+		n.connections.Store(address, &ConnState{
+			conn:        conn,
+			writer:      bufio.NewWriterSize(udpConn, n.opts.writeBufferSize),
+			writerMutex: new(sync.Mutex),
+		})
+	}
 	client.Init()
 
 	return client, nil
@@ -347,6 +382,7 @@ func (n *Network) getOrSetPeerClient(address string, conn net.Conn) (*PeerClient
 
 // Client either creates or returns a cached peer client given its host address.
 func (n *Network) Client(address string) (*PeerClient, error) {
+	fmt.Println("IM in CLIENT")
 	return n.getOrSetPeerClient(address, nil)
 }
 
@@ -385,10 +421,11 @@ func (n *Network) Bootstrap(addresses ...string) {
 		client, err := n.Client(address)
 
 		if err != nil {
-			glog.Error(err)
+			log.Error(err)
 			continue
 		}
 
+		fmt.Println("========================================")
 		err = client.Tell(context.Background(), &protobuf.Ping{})
 		if err != nil {
 			continue
@@ -397,7 +434,7 @@ func (n *Network) Bootstrap(addresses ...string) {
 }
 
 // Dial establishes a bidirectional connection to an address, and additionally handshakes with said address.
-func (n *Network) Dial(address string) (net.Conn, error) {
+func (n *Network) Dial(address string) (interface{}, error) {
 	addrInfo, err := ParseAddress(address)
 	if err != nil {
 		return nil, err
@@ -417,10 +454,10 @@ func (n *Network) Dial(address string) (net.Conn, error) {
 	// Choose scheme.
 	t, exists := n.transports.Load(addrInfo.Protocol)
 	if !exists {
-		glog.Fatal("invalid protocol: " + addrInfo.Protocol)
+		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
 
-	var conn net.Conn
+	var conn interface{}
 	conn, err = t.(transport.Layer).Dial(addrInfo.HostPort())
 	if err != nil {
 		return nil, err
@@ -433,7 +470,7 @@ func (n *Network) Dial(address string) (net.Conn, error) {
 }
 
 // Accept handles peer registration and processes incoming message streams.
-func (n *Network) Accept(incoming net.Conn) {
+func (n *Network) Accept(incoming interface{}) {
 	var client *PeerClient
 	var clientInit sync.Once
 
@@ -447,8 +484,19 @@ func (n *Network) Accept(incoming net.Conn) {
 			client.Close()
 		}
 
+		addrInfo, err := ParseAddress(n.Address)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		if incoming != nil {
-			incoming.Close()
+			if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+				incoming.(*net.TCPConn).Close()
+			}
+			if addrInfo.Protocol == "udp" {
+				udpConn, _ := incoming.(*net.UDPConn)
+				udpConn.Close()
+			}
 		}
 	}()
 
@@ -456,7 +504,7 @@ func (n *Network) Accept(incoming net.Conn) {
 		msg, err := n.receiveMessage(incoming)
 		if err != nil {
 			if err != errEmptyMsg {
-				glog.Error(err)
+				log.Error(err)
 			}
 			break
 		}
@@ -478,14 +526,14 @@ func (n *Network) Accept(incoming net.Conn) {
 		})
 
 		if err != nil {
-			glog.Error(err)
+			log.Error(err)
 			return
 		}
 
 		go func() {
 			// Peer sent message with a completely different ID. Disconnect.
 			if !client.ID.Equals(peer.ID(*msg.Sender)) {
-				glog.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
+				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
 				return
 			}
 
@@ -523,6 +571,8 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 	}
 
 	raw, err := proto.Marshal(message)
+	fmt.Println("opcode: ", opcode)
+	fmt.Println("Inner raw msg when Send:", raw)
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +596,7 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 		}
 		msg.Signature = signature
 	}
-
+	fmt.Println("protobuf.Message when raw inner into proto-type:", msg)
 	return msg, nil
 }
 
@@ -559,9 +609,20 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
-	state.conn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+	addrInfo, err := ParseAddress(n.Address)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+		tcpConn, _ := state.conn.(*net.TCPConn)
+		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+	}
+	if addrInfo.Protocol == "udp" {
+		udpConn, _ := state.conn.(*net.UDPConn)
+		udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+	}
 
-	err := n.sendMessage(state.writer, message, state.writerMutex)
+	err = n.sendMessage(state.writer, message, state.writerMutex, state)
 	if err != nil {
 		return err
 	}
@@ -569,7 +630,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if n.opts.writeMode == WRITE_MODE_DIRECT {
 		state.writerMutex.Lock()
 		if err := state.writer.Flush(); err != nil {
-			glog.Warning(err)
+			log.Warnf(err.Error())
 		}
 		state.writerMutex.Unlock()
 	}
@@ -580,17 +641,19 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 func (n *Network) Broadcast(ctx context.Context, message proto.Message) {
 	signed, err := n.PrepareMessage(ctx, message)
 	if err != nil {
-		glog.Errorf("network: failed to broadcast message")
+		log.Errorf("network: failed to broadcast message")
 		return
 	}
 
 	n.EachPeer(func(client *PeerClient) bool {
+		fmt.Println("client.Address of EACH-PEER:", client.Address)
 		err := n.Write(client.Address, signed)
 		if err != nil {
-			glog.Warningf("failed to send message to peer %v [err=%s]", client.ID, err)
+			log.Warnf("failed to send message to peer %v [err=%s]", client.ID, err)
 		}
 		return true
 	})
+	fmt.Println("Broadcase END")
 }
 
 // BroadcastByAddresses broadcasts a message to a set of peer clients denoted by their addresses.

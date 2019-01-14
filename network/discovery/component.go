@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/dht"
 	"github.com/oniio/oniP2p/internal/protobuf"
 	"github.com/oniio/oniP2p/network"
@@ -61,7 +61,7 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 			state.Routes.Update(peerID)
 		}
 
-		glog.Infof("bootstrapped w/ peer(s): %s.", strings.Join(state.Routes.GetPeerAddresses(), ", "))
+		log.Infof("bootstrapped w/ peer(s): %s.", strings.Join(state.Routes.GetPeerAddresses(), ", "))
 	case *protobuf.LookupNodeRequest:
 		if state.DisableLookup {
 			break
@@ -81,7 +81,7 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 			return err
 		}
 
-		glog.Infof("connected peers: %s.", strings.Join(state.Routes.GetPeerAddresses(), ", "))
+		log.Infof("connected peers: %s.", strings.Join(state.Routes.GetPeerAddresses(), ", "))
 	}
 
 	return nil
@@ -97,7 +97,7 @@ func (state *Component) PeerDisconnect(client *network.PeerClient) {
 		if state.Routes.PeerExists(*client.ID) {
 			state.Routes.RemovePeer(*client.ID)
 
-			glog.Infof("Peer %s has disconnected from %s.", client.ID.Address, client.Network.ID.Address)
+			log.Infof("Peer %s has disconnected from %s.", client.ID.Address, client.Network.ID.Address)
 		}
 	}
 }

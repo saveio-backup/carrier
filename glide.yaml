@@ -6,7 +6,7 @@ import:
   version: v1.0.0
 - package: github.com/gogo/protobuf 
   version: v1.1.1
-- package: github.com/golang/glog
+- package: github.com/oniio/oniChain/common/log
 - package: github.com/golang/mock 
   version: v1.1.1
 - package: github.com/klauspost/cpuid
