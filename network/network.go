@@ -311,8 +311,8 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			tcpConn, _ := conn.(*net.TCPConn)
 			remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", tcpConn.RemoteAddr().Network(), conn.(net.Conn).RemoteAddr().String()))
 		case "udp":
-			udpConn, _ := conn.(*net.UDPConn)
-			remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", udpConn.RemoteAddr().Network(), udpConn.RemoteAddr().String()))
+			//udpConn, _ := conn.(*net.UDPConn)
+			//remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", udpConn.RemoteAddr().Network(), udpConn.RemoteAddr().String()))
 		default:
 			log.Fatal("invalid protocol: " + addrInfo.Protocol)
 
@@ -323,7 +323,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 
 		// disalbe checking for address matching to pass for the case when ip mapping address is used
 		// to be further checked for impact
-		if addrInfo.Host != remoteAddrInfo.Host {
+		if (addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp") && addrInfo.Host != remoteAddrInfo.Host {
 			//return nil, errors.New("network: sender address did not match connection remote address")
 		}
 	}
@@ -358,7 +358,6 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	}
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := conn.(*net.TCPConn)
-		fmt.Println("tcp.client.address:", address)
 		n.connections.Store(address, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(tcpConn, n.opts.writeBufferSize),
@@ -367,8 +366,6 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	}
 	if addrInfo.Protocol == "udp" {
 		udpConn, _ := conn.(*net.UDPConn)
-		fmt.Println("udp.client.address:", address)
-		fmt.Printf("udp.client.udpConn:%v\n", udpConn)
 		n.connections.Store(address, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(udpConn, n.opts.writeBufferSize),
@@ -382,7 +379,6 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 
 // Client either creates or returns a cached peer client given its host address.
 func (n *Network) Client(address string) (*PeerClient, error) {
-	fmt.Println("IM in CLIENT")
 	return n.getOrSetPeerClient(address, nil)
 }
 
@@ -425,7 +421,6 @@ func (n *Network) Bootstrap(addresses ...string) {
 			continue
 		}
 
-		fmt.Println("========================================")
 		err = client.Tell(context.Background(), &protobuf.Ping{})
 		if err != nil {
 			continue
@@ -476,17 +471,16 @@ func (n *Network) Accept(incoming interface{}) {
 
 	recvWindow := NewRecvWindow(n.opts.recvWindowSize)
 
+	addrInfo, err := ParseAddress(n.Address)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Cleanup connections when we are done with them.
 	defer func() {
 		time.Sleep(1 * time.Second)
 
 		if client != nil {
 			client.Close()
-		}
-
-		addrInfo, err := ParseAddress(n.Address)
-		if err != nil {
-			log.Fatal(err)
 		}
 
 		if incoming != nil {
@@ -501,7 +495,17 @@ func (n *Network) Accept(incoming interface{}) {
 	}()
 
 	for {
-		msg, err := n.receiveMessage(incoming)
+		var msg *protobuf.Message
+
+		switch addrInfo.Protocol {
+		case "tcp", "kcp":
+			msg, err = n.receiveMessage(incoming)
+		case "udp":
+			msg, err = n.receiveUDPMessage(incoming)
+		default:
+			log.Error(errors.New("please use valid transport protocol, for example: tcp,kcp,udp"))
+		}
+
 		if err != nil {
 			if err != errEmptyMsg {
 				log.Error(err)
@@ -571,8 +575,6 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 	}
 
 	raw, err := proto.Marshal(message)
-	fmt.Println("opcode: ", opcode)
-	fmt.Println("Inner raw msg when Send:", raw)
 	if err != nil {
 		return nil, err
 	}
@@ -596,7 +598,6 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 		}
 		msg.Signature = signature
 	}
-	fmt.Println("protobuf.Message when raw inner into proto-type:", msg)
 	return msg, nil
 }
 
@@ -616,15 +617,18 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(*net.TCPConn)
 		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+		err = n.sendMessage(state.writer, message, state.writerMutex, state)
+		if err != nil {
+			return err
+		}
 	}
 	if addrInfo.Protocol == "udp" {
 		udpConn, _ := state.conn.(*net.UDPConn)
 		udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
-	}
-
-	err = n.sendMessage(state.writer, message, state.writerMutex, state)
-	if err != nil {
-		return err
+		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state)
+		if err != nil {
+			return err
+		}
 	}
 
 	if n.opts.writeMode == WRITE_MODE_DIRECT {
@@ -646,14 +650,12 @@ func (n *Network) Broadcast(ctx context.Context, message proto.Message) {
 	}
 
 	n.EachPeer(func(client *PeerClient) bool {
-		fmt.Println("client.Address of EACH-PEER:", client.Address)
 		err := n.Write(client.Address, signed)
 		if err != nil {
 			log.Warnf("failed to send message to peer %v [err=%s]", client.ID, err)
 		}
 		return true
 	})
-	fmt.Println("Broadcase END")
 }
 
 // BroadcastByAddresses broadcasts a message to a set of peer clients denoted by their addresses.

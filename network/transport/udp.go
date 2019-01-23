@@ -7,7 +7,6 @@
 package transport
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 )
@@ -38,7 +37,6 @@ func (t *UDP) Listen(port int) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("UDP listen-handle-ptr:%v\n", listener)
 	return interface{}(listener), nil
 }
 
@@ -54,8 +52,7 @@ func (t *UDP) Dial(address string) (interface{}, error) {
 		return nil, err
 	}
 
-	conn.SetWriteBuffer(t.WriteBufferSize)
-	conn.SetReadBuffer(t.ReadBufferSize)
-	fmt.Printf("\nDial.address-ptr:%v,remote-address-IP:%s, local-address-IP:%s\n", conn, conn.RemoteAddr(), conn.LocalAddr())
+	//conn.SetWriteBuffer(t.WriteBufferSize)
+	//conn.SetReadBuffer(t.ReadBufferSize)
 	return interface{}(conn), nil
 }
