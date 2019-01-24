@@ -20,8 +20,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const MAX_PACKAGE_SIZE = 1024 * 64
+
 // sendMessage marshals, signs and sends a message over a stream.
-func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState) error {
+func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState, address string) error {
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		log.Errorf("package: failed to Marshal entire message, err: %f\n", err.Error())
@@ -33,12 +35,6 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 
 	writerMutex.Lock()
 	if udpConn, ok := state.conn.(*net.UDPConn); ok {
-		/*		udpAddr, err := net.ResolveUDPAddr("udp", address)
-				udpAddr = udpAddr
-				if err != nil {
-					return err
-				}*/
-		//_, err = udpConn.WriteToUDP(buffer, udpAddr)
 		_, err = udpConn.Write(buffer)
 		if err != nil {
 			log.Errorf("package: failed to write entire message, err: %+v\n", err)
@@ -51,7 +47,7 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 // receiveMessage reads, unmarshals and verifies a message from a net.Conn.
 func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error) {
 	var err error
-	buffer := make([]byte, 1024*64)
+	buffer := make([]byte, MAX_PACKAGE_SIZE)
 
 	udpConn, _ := conn.(*net.UDPConn)
 	_, err = udpConn.Read(buffer)

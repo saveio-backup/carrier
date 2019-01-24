@@ -625,7 +625,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if addrInfo.Protocol == "udp" {
 		udpConn, _ := state.conn.(*net.UDPConn)
 		udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
-		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state)
+		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state, address)
 		if err != nil {
 			return err
 		}
