@@ -51,6 +51,8 @@ message Message {
 
     // opcode specifies the message type
     uint32 opcode = 7;
+    // dial_address is the outgoing address for a udp connection
+    string dial_address = 8;
 }
 
 message Ping {

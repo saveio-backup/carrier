@@ -66,6 +66,7 @@ type Network struct {
 	// Node's cryptographic ID.
 	ID peer.ID
 
+	udpDialAddrs *sync.Map
 	// Map of connection addresses (string) <-> *network.PeerClient
 	// so that the Network doesn't dial multiple times to the same ip
 	peers *sync.Map
@@ -105,6 +106,7 @@ type ConnState struct {
 	writer       *bufio.Writer
 	messageNonce uint64
 	writerMutex  *sync.Mutex
+	IsDial       bool
 }
 
 // Init starts all network I/O workers.
@@ -280,7 +282,7 @@ func (n *Network) Listen() {
 			}
 		}
 	case "udp":
-		go n.Accept(listener.(*net.UDPConn))
+		go n.AcceptUdp(listener.(*net.UDPConn))
 	default:
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
@@ -348,9 +350,10 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	defer func() {
 		client.setOutgoingReady()
 	}()
-
+	isDial := false
 	if conn == nil {
 		conn, err = n.Dial(address)
+		isDial = true
 		if err != nil {
 			n.peers.Delete(address)
 			return nil, err
@@ -370,10 +373,13 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			conn:        conn,
 			writer:      bufio.NewWriterSize(udpConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
+			IsDial:      isDial,
 		})
+		n.udpDialAddrs.Store(address, udpConn.LocalAddr().String())
 	}
 	client.Init()
 
+	client.setIncomingReady()
 	return client, nil
 }
 
@@ -459,7 +465,12 @@ func (n *Network) Dial(address string) (interface{}, error) {
 	}
 
 	// use the connection for also receiving messages
-	go n.Accept(conn)
+	if addrInfo.Protocol == "udp" {
+		go n.AcceptUdp(conn)
+	}
+	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+		go n.Accept(conn)
+	}
 
 	return conn, nil
 }
@@ -471,10 +482,6 @@ func (n *Network) Accept(incoming interface{}) {
 
 	recvWindow := NewRecvWindow(n.opts.recvWindowSize)
 
-	addrInfo, err := ParseAddress(n.Address)
-	if err != nil {
-		log.Fatal(err)
-	}
 	// Cleanup connections when we are done with them.
 	defer func() {
 		time.Sleep(1 * time.Second)
@@ -484,28 +491,12 @@ func (n *Network) Accept(incoming interface{}) {
 		}
 
 		if incoming != nil {
-			if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-				incoming.(*net.TCPConn).Close()
-			}
-			if addrInfo.Protocol == "udp" {
-				udpConn, _ := incoming.(*net.UDPConn)
-				udpConn.Close()
-			}
+			incoming.(*net.TCPConn).Close()
 		}
 	}()
 
 	for {
-		var msg *protobuf.Message
-
-		switch addrInfo.Protocol {
-		case "tcp", "kcp":
-			msg, err = n.receiveMessage(incoming)
-		case "udp":
-			msg, err = n.receiveUDPMessage(incoming)
-		default:
-			log.Error(errors.New("please use valid transport protocol, for example: tcp,kcp,udp"))
-		}
-
+		msg, err := n.receiveMessage(incoming)
 		if err != nil {
 			if err != errEmptyMsg {
 				log.Error(err)
@@ -526,7 +517,7 @@ func (n *Network) Accept(incoming interface{}) {
 				err = errors.New("network: failed to load session")
 			}
 
-			client.setIncomingReady()
+			//client.setIncomingReady() has done in getOrSetPeerClient() function
 		})
 
 		if err != nil {
@@ -550,6 +541,58 @@ func (n *Network) Accept(incoming interface{}) {
 					n.dispatchMessage(client, msg.(*protobuf.Message))
 				})
 			}
+		}()
+	}
+}
+
+// Accept handles peer registration and processes incoming message streams.
+func (n *Network) AcceptUdp(incoming interface{}) {
+	var client *PeerClient
+
+	// Cleanup connections when we are done with them.
+	defer func() {
+		time.Sleep(1 * time.Second)
+
+		if client != nil {
+			client.Close()
+		}
+
+		if incoming != nil {
+			udpConn, _ := incoming.(*net.UDPConn)
+			udpConn.Close()
+		}
+	}()
+
+	for {
+		msg, err := n.receiveUDPMessage(incoming)
+		if err != nil {
+			if err != errEmptyMsg {
+				log.Error(err)
+			}
+			break
+		}
+		client, err = n.getOrSetPeerClient(msg.DialAddress, incoming)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		client.ID = (*peer.ID)(msg.Sender)
+
+		if !n.ConnectionStateExists(msg.DialAddress) {
+			log.Error(errors.New("network: failed to load session"))
+			return
+		}
+
+		go func() {
+			// Peer sent message with a completely different ID. Disconnect.
+			if !client.ID.Equals(peer.ID(*msg.Sender)) {
+				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
+				return
+			}
+			client.Submit(func() {
+				n.dispatchMessage(client, msg)
+			})
 		}()
 	}
 }
@@ -643,6 +686,17 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 
 // Broadcast asynchronously broadcasts a message to all peer clients.
 func (n *Network) Broadcast(ctx context.Context, message proto.Message) {
+	/*
+		addrInfo, err := ParseAddress(address)
+		if addrInfo.Protocol == "udp" {
+			state, _ := n.ConnectionState(address)
+			ctx := WithUDPRequestIP(context.Background(), state.RequestIP)
+			err = client.Tell(ctx, &protobuf.Ping{})
+		}
+		if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+			err = client.Tell(context.Background(), &protobuf.Ping{})
+		}
+	*/
 	signed, err := n.PrepareMessage(ctx, message)
 	if err != nil {
 		log.Errorf("network: failed to broadcast message")

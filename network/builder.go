@@ -238,11 +238,11 @@ func (builder *Builder) Build() (*Network, error) {
 		Components: builder.Components,
 		transports: builder.transports,
 
-		peers:       new(sync.Map),
-		connections: new(sync.Map),
-
-		listeningCh: make(chan struct{}),
-		kill:        make(chan struct{}),
+		peers:        new(sync.Map),
+		connections:  new(sync.Map),
+		udpDialAddrs: new(sync.Map),
+		listeningCh:  make(chan struct{}),
+		kill:         make(chan struct{}),
 	}
 
 	net.Init()

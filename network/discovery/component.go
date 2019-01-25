@@ -54,12 +54,15 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 			break
 		}
 
-		peers := FindNode(ctx.Network(), ctx.Sender(), dht.BucketSize, 8)
+		//todo delete for walking around
+		//peers := FindNode(ctx.Network(), ctx.Sender(), dht.BucketSize, 8)
 
 		// Update routing table w/ closest peers to self.
-		for _, peerID := range peers {
-			state.Routes.Update(peerID)
-		}
+		/*
+			for _, peerID := range peers {
+				state.Routes.Update(peerID)
+			}
+		*/
 
 		log.Infof("bootstrapped w/ peer(s): %s.", strings.Join(state.Routes.GetPeerAddresses(), ", "))
 	case *protobuf.LookupNodeRequest:

@@ -13,6 +13,10 @@ import (
 
 	"encoding/binary"
 
+	"strings"
+
+	"fmt"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto"
@@ -24,6 +28,16 @@ const MAX_PACKAGE_SIZE = 1024 * 64
 
 // sendMessage marshals, signs and sends a message over a stream.
 func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState, address string) error {
+	if state.IsDial {
+		if dialAddr, ok := n.udpDialAddrs.Load(address); ok {
+			message.DialAddress = fmt.Sprintf("udp://%s", dialAddr.(string))
+		} else {
+			log.Errorf("package: failed to load dial address")
+		}
+	} else {
+		message.DialAddress = n.Address
+	}
+
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		log.Errorf("package: failed to Marshal entire message, err: %f\n", err.Error())
@@ -34,11 +48,23 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 	buffer = append(buffer, bytes...)
 
 	writerMutex.Lock()
-	if udpConn, ok := state.conn.(*net.UDPConn); ok {
+	udpConn, ok := state.conn.(*net.UDPConn)
+	if !ok {
+		log.Errorf("package: failed to write entire message, err: %+v\n", err)
+	}
+
+	if state.IsDial {
 		_, err = udpConn.Write(buffer)
+	} else {
+		index := strings.LastIndex(address, "/")
+		resolved, err := net.ResolveUDPAddr("udp", address[index+1:])
 		if err != nil {
-			log.Errorf("package: failed to write entire message, err: %+v\n", err)
+			return err
 		}
+		_, err = udpConn.WriteToUDP(buffer, resolved)
+	}
+	if err != nil {
+		log.Errorf("package: failed to write entire message, err: %+v\n", err)
 	}
 	writerMutex.Unlock()
 	return nil
@@ -50,8 +76,7 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 	buffer := make([]byte, MAX_PACKAGE_SIZE)
 
 	udpConn, _ := conn.(*net.UDPConn)
-	_, err = udpConn.Read(buffer)
-
+	_, _, err = udpConn.ReadFromUDP(buffer)
 	size := binary.BigEndian.Uint16(buffer[0:2])
 	// Deserialize message.
 	msg := new(protobuf.Message)
