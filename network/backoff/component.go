@@ -99,7 +99,7 @@ func (p *Component) startBackoff(addr string) {
 
 	if _, exists := p.backoffs.Load(addr); exists {
 		// don't activate if backoff is already active
-		log.Infof("backoff skipped for addr %s, already active\n", addr)
+		log.Infof("backoff skipped for addr %s, already active", addr)
 		return
 	}
 	// reset the backoff counter
@@ -113,7 +113,7 @@ func (p *Component) startBackoff(addr string) {
 		b := s.(*Backoff)
 		if b.TimeoutExceeded() {
 			// check if the backoff expired
-			log.Infof("backoff ended for addr %s, timed out after %s\n", addr, time.Now().Sub(startTime))
+			log.Infof("backoff ended for addr %s, timed out after %s", addr, time.Now().Sub(startTime))
 			break
 		}
 		// sleep for a bit before connecting

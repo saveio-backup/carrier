@@ -246,7 +246,7 @@ func (n *Network) Listen() {
 
 	n.startListening()
 
-	log.Infof("Listening for peers on %s.\n", n.Address)
+	log.Infof("Listening for peers on %s.", n.Address)
 
 	// handle server shutdowns
 	go func() {
@@ -274,7 +274,7 @@ func (n *Network) Listen() {
 				// if the Shutdown flag is set, no need to continue with the for loop
 				select {
 				case <-n.kill:
-					log.Infof("Shutting down server on %s.\n", n.Address)
+					log.Infof("Shutting down server on %s.", n.Address)
 					return
 				default:
 					log.Error(err)

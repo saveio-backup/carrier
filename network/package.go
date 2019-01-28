@@ -40,7 +40,7 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 
 	bytes, err := proto.Marshal(message)
 	if err != nil {
-		log.Errorf("package: failed to Marshal entire message, err: %f\n", err.Error())
+		log.Errorf("package: failed to Marshal entire message, err: %f", err.Error())
 	}
 
 	buffer := make([]byte, 2)
@@ -50,7 +50,7 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 	writerMutex.Lock()
 	udpConn, ok := state.conn.(*net.UDPConn)
 	if !ok {
-		log.Errorf("package: failed to write entire message, err: %+v\n", err)
+		log.Errorf("package: failed to write entire message, err: %+v", err)
 	}
 
 	if state.IsDial {
@@ -64,7 +64,7 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 		_, err = udpConn.WriteToUDP(buffer, resolved)
 	}
 	if err != nil {
-		log.Errorf("package: failed to write entire message, err: %+v\n", err)
+		log.Errorf("package: failed to write entire message, err: %+v", err)
 	}
 	writerMutex.Unlock()
 	return nil

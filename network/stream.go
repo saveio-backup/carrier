@@ -46,7 +46,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
 
 		if err != nil {
-			log.Errorf("stream: failed to write entire buffer, err: %+v\n", err)
+			log.Errorf("stream: failed to write entire buffer, err: %+v", err)
 		}
 		totalBytesWritten += bytesWritten
 	}

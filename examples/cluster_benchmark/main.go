@@ -73,7 +73,7 @@ func setupPPROF(port int) {
 	r.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/pprof/block", pprof.Handler("block"))
 
-	log.Infof("Pprof listening on port %d.\n", port+500)
+	log.Infof("Pprof listening on port %d.", port+500)
 	http.ListenAndServe(fmt.Sprintf(":%d", port+500), r)
 }
 

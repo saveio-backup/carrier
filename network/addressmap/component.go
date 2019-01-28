@@ -23,13 +23,13 @@ func (p *Component) Startup(n *network.Network) {
 
 	info, err := network.ParseAddress(n.Address)
 	if err != nil {
-		log.Errorf("error parsing network address %s\n", n.Address)
+		log.Errorf("error parsing network address %s", n.Address)
 		return
 	}
 
 	mapInfo, err := network.ParseAddress(p.MappingAddress)
 	if err != nil {
-		log.Errorf("error parsing mapping address %s\n", p.MappingAddress)
+		log.Errorf("error parsing mapping address %s", p.MappingAddress)
 		return
 	}
 
