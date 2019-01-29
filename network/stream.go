@@ -68,7 +68,7 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 	bytesRead, totalBytesRead := 0, 0
 
 	for totalBytesRead < 4 && err == nil {
-		bytesRead, err = conn.(*net.TCPConn).Read(buffer[totalBytesRead:])
+		bytesRead, err = conn.(net.Conn).Read(buffer[totalBytesRead:])
 		size = binary.BigEndian.Uint32(buffer)
 		totalBytesRead += bytesRead
 	}
@@ -87,7 +87,7 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 	bytesRead, totalBytesRead = 0, 0
 
 	for totalBytesRead < int(size) && err == nil {
-		bytesRead, err = conn.(*net.TCPConn).Read(buffer[totalBytesRead:])
+		bytesRead, err = conn.(net.Conn).Read(buffer[totalBytesRead:])
 
 		//bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead

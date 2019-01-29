@@ -51,6 +51,8 @@ var (
 
 // Network represents the current networking state for this node.
 type Network struct {
+	netID uint32
+
 	opts options
 
 	// Node's keypair.
@@ -310,8 +312,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		var remoteAddrInfo *AddressInfo
 		switch addrInfo.Protocol {
 		case "tcp", "kcp":
-			tcpConn, _ := conn.(*net.TCPConn)
-			remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", tcpConn.RemoteAddr().Network(), conn.(net.Conn).RemoteAddr().String()))
+			remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", conn.(net.Conn).RemoteAddr().Network(), conn.(net.Conn).RemoteAddr().String()))
 		case "udp":
 			//udpConn, _ := conn.(*net.UDPConn)
 			//remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", udpConn.RemoteAddr().Network(), udpConn.RemoteAddr().String()))
@@ -360,10 +361,10 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		}
 	}
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-		tcpConn, _ := conn.(*net.TCPConn)
+		netConn, _ := conn.(net.Conn)
 		n.connections.Store(address, &ConnState{
 			conn:        conn,
-			writer:      bufio.NewWriterSize(tcpConn, n.opts.writeBufferSize),
+			writer:      bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
 		})
 	}
@@ -491,7 +492,7 @@ func (n *Network) Accept(incoming interface{}) {
 		}
 
 		if incoming != nil {
-			incoming.(*net.TCPConn).Close()
+			incoming.(net.Conn).Close()
 		}
 	}()
 
@@ -658,7 +659,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		log.Fatal(err)
 	}
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-		tcpConn, _ := state.conn.(*net.TCPConn)
+		tcpConn, _ := state.conn.(net.Conn)
 		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendMessage(state.writer, message, state.writerMutex, state)
 		if err != nil {
@@ -775,4 +776,12 @@ func (n *Network) EachPeer(fn func(client *PeerClient) bool) {
 		client := value.(*PeerClient)
 		return fn(client)
 	})
+}
+
+func (n *Network) SetNetworkID(netID uint32) {
+	n.netID = netID
+}
+
+func (n *Network) GetNetworkID() uint32 {
+	return n.netID
 }
