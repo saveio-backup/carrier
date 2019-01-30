@@ -14,6 +14,8 @@ import (
 	"github.com/oniio/oniP2p/network/discovery"
 	"github.com/oniio/oniP2p/network/keepalive"
 	"github.com/oniio/oniP2p/types/opcode"
+	"github.com/oniio/oniP2p/network/nat"
+	"github.com/golang/glog"
 )
 
 type ChatComponent struct{ *network.Component }
@@ -28,21 +30,21 @@ func (state *ChatComponent) Receive(ctx *network.ComponentContext) error {
 }
 
 func main() {
-	// glog defaults to logging to a file, override this flag to log to console for testing
 	flag.Set("logtostderr", "true")
 
 	// process other flags
-	portFlag := flag.Int("port", 3000, "port to listen to")
+	portFlag := flag.Int("port", 30002, "port to listen to")
 	hostFlag := flag.String("host", "localhost", "host to listen to")
 	protocolFlag := flag.String("protocol", "tcp", "protocol to use (kcp/tcp)")
 	peersFlag := flag.String("peers", "", "peers to connect to")
+	natFlag := flag.Bool("upnpnat", true, "enable nat traversal")
 	flag.Parse()
 
 	port := uint16(*portFlag)
 	host := *hostFlag
 	protocol := *protocolFlag
 	peers := strings.Split(*peersFlag, ",")
-
+	natEnabled := *natFlag
 	keys := ed25519.RandomKeyPair()
 
 	log.Infof("Private Key: %s", keys.PrivateKeyHex())
@@ -62,6 +64,10 @@ func main() {
 	}
 	builder.AddComponent(keepalive.New(options...))
 
+	// Register NAT traversal Component.
+	if natEnabled {
+		nat.RegisterStunComponent(builder)
+	}
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))
 
@@ -83,7 +89,7 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		input, _ := reader.ReadString('\n')
-
+		glog.Infoln("We Chat> ")
 		// skip blank lines
 		if len(strings.TrimSpace(input)) == 0 {
 			continue

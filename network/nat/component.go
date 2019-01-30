@@ -35,7 +35,6 @@ func (p *Component) Startup(n *network.Network) {
 	if err != nil {
 		return
 	}
-
 	p.internalPort = int(info.Port)
 
 	gateway, err := nat.DiscoverGateway()

@@ -2,21 +2,21 @@ package network
 
 // ComponentInterface is used to proxy callbacks to a particular Component instance.
 type ComponentInterface interface {
-	// Callback for when the network starts listening for peers.
-	Startup(net *Network)
+// Callback for when the network starts listening for peers.
+Startup(net *Network)
 
-	// Callback for when an incoming message is received. Return true
-	// if the Component will intercept messages to be processed.
-	Receive(ctx *ComponentContext) error
+// Callback for when an incoming message is received. Return true
+// if the Component will intercept messages to be processed.
+Receive(ctx *ComponentContext) error
 
-	// Callback for when the network stops listening for peers.
-	Cleanup(net *Network)
+// Callback for when the network stops listening for peers.
+Cleanup(net *Network)
 
-	// Callback for when a peer connects to the network.
-	PeerConnect(client *PeerClient)
+// Callback for when a peer connects to the network.
+PeerConnect(client *PeerClient)
 
-	// Callback for when a peer disconnects from the network.
-	PeerDisconnect(client *PeerClient)
+// Callback for when a peer disconnects from the network.
+PeerDisconnect(client *PeerClient)
 }
 
 // Component is an abstract class which all Components extend.

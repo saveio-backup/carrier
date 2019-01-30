@@ -50,7 +50,7 @@ func ExampleBasicComponent() {
 		builder.SetKeys(ed25519.RandomKeyPair())
 		builder.SetAddress(network.FormatAddress("tcp", host, uint16(startPort+i)))
 
-		builder.AddComponent(new(discovery.Component))
+		builder.AddComponent(new(discovery.Component)) //dht
 
 		Components = append(Components, new(BasicComponent))
 		builder.AddComponent(Components[i])
