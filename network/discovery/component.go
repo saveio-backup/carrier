@@ -85,6 +85,8 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 		}
 
 		log.Infof("connected peers: %s.", strings.Join(state.Routes.GetPeerAddresses(), ", "))
+	case *protobuf.Disconnect:
+		ctx.Disconnect()
 	}
 
 	return nil

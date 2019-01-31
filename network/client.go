@@ -134,10 +134,14 @@ func (c *PeerClient) Close() error {
 			if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 				state.conn.(net.Conn).Close()
 			}
+			if addrInfo.Protocol == "udp" {
+				state.conn.(*net.UDPConn).Close()
+			}
 		}
 
 		c.Network.peers.Delete(c.ID.Address)
 		c.Network.connections.Delete(c.ID.Address)
+		c.Network.udpDialAddrs.Delete(c.ID.Address)
 	}
 
 	return nil

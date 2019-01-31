@@ -16,6 +16,10 @@ import (
 	"github.com/oniio/oniP2p/peer"
 	"github.com/oniio/oniP2p/types/opcode"
 
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/pkg/errors"
@@ -68,7 +72,11 @@ type Network struct {
 	// Node's cryptographic ID.
 	ID peer.ID
 
+	// Map of real remote ip:port (key) with real local ip:port(value);
+	// especially, when a udp client call server, local port is dynamic,
+	// so we need to record the real port;
 	udpDialAddrs *sync.Map
+
 	// Map of connection addresses (string) <-> *network.PeerClient
 	// so that the Network doesn't dial multiple times to the same ip
 	peers *sync.Map
@@ -108,13 +116,25 @@ type ConnState struct {
 	writer       *bufio.Writer
 	messageNonce uint64
 	writerMutex  *sync.Mutex
-	IsDial       bool
+	IsDial       bool // when dial out to server on udp condition, value is true; otherwise, it is false;
 }
 
 // Init starts all network I/O workers.
 func (n *Network) Init() {
 	// Spawn write flusher.
 	go n.flushLoop()
+	go n.waitExit()
+}
+
+func (n *Network) waitExit() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	select {
+	case sig := <-sigs:
+		log.Infof("Network received exit signal:%v.", sig.String())
+		n.Close()
+		os.Exit(0)
+	}
 }
 
 func (n *Network) flushLoop() {
@@ -163,6 +183,8 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 		ptr = &protobuf.LookupNodeRequest{}
 	case opcode.LookupNodeResponseCode:
 		ptr = &protobuf.LookupNodeResponse{}
+	case opcode.DisconnectCode:
+		ptr = &protobuf.Disconnect{}
 	case opcode.UnregisteredCode:
 		log.Error("network: message received had no opcode")
 		return
@@ -308,6 +330,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return nil, err
 	}
 	// if conn is not nil, check that the sender host matches the net.Conn remote host address
+	//	todo: delete the following statement on if conn!=nil{...}
 	if conn != nil {
 		var remoteAddrInfo *AddressInfo
 		switch addrInfo.Protocol {
@@ -687,17 +710,6 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 
 // Broadcast asynchronously broadcasts a message to all peer clients.
 func (n *Network) Broadcast(ctx context.Context, message proto.Message) {
-	/*
-		addrInfo, err := ParseAddress(address)
-		if addrInfo.Protocol == "udp" {
-			state, _ := n.ConnectionState(address)
-			ctx := WithUDPRequestIP(context.Background(), state.RequestIP)
-			err = client.Tell(ctx, &protobuf.Ping{})
-		}
-		if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-			err = client.Tell(context.Background(), &protobuf.Ping{})
-		}
-	*/
 	signed, err := n.PrepareMessage(ctx, message)
 	if err != nil {
 		log.Errorf("network: failed to broadcast message")
@@ -766,6 +778,8 @@ func (n *Network) Close() {
 	close(n.kill)
 
 	n.EachPeer(func(client *PeerClient) bool {
+		// tell remote endpoint Disconnect MSG: 'I am going to leave, please release yourself's resource'
+		client.Tell(context.Background(), &protobuf.Disconnect{})
 		client.Close()
 		return true
 	})

@@ -44,3 +44,7 @@ func (pctx *ComponentContext) Self() peer.ID {
 func (pctx *ComponentContext) Sender() peer.ID {
 	return *pctx.client.ID
 }
+
+func (pctx *ComponentContext) Disconnect() {
+	pctx.client.Close()
+}
