@@ -50,6 +50,15 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 		}
 		totalBytesWritten += bytesWritten
 	}
+
+	select {
+	case <-n.kill:
+		if err := bw.Flush(); err != nil {
+			return err
+		}
+	default:
+	}
+
 	writerMutex.Unlock()
 
 	if err != nil {
