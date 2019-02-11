@@ -33,9 +33,9 @@ func main() {
 	flag.Set("logtostderr", "true")
 
 	// process other flags
-	portFlag := flag.Int("port", 30002, "port to listen to")
-	hostFlag := flag.String("host", "localhost", "host to listen to")
-	protocolFlag := flag.String("protocol", "tcp", "protocol to use (kcp/tcp)")
+	portFlag := flag.Int("port", 60002, "local port to listen to")
+	hostFlag := flag.String("host", nat.GetValidLocalIP().String(), "local host to listen to")
+	protocolFlag := flag.String("protocol", "udp", "protocol to use (kcp/tcp/udp)")
 	peersFlag := flag.String("peers", "", "peers to connect to")
 	natFlag := flag.Bool("upnpnat", true, "enable nat traversal")
 	flag.Parse()
@@ -81,8 +81,8 @@ func main() {
 	}
 
 	go net.Listen()
-
 	if len(peers) > 0 {
+		glog.Infoln("befor bootstrap peers")
 		net.Bootstrap(peers...)
 	}
 

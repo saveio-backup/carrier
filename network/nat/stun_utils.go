@@ -43,7 +43,7 @@ func getPeerAddr() <-chan string {
 		result <- strings.Trim(peer,"\r\n")
 	}()
 
-	glog.Infoln("get peer result:",<-result) //FIXME: TO TEST
+	//glog.Infoln("get peer result:",<-result) //FIXME: TO TEST
 	return result
 }
 
@@ -66,5 +66,21 @@ func send(msg []byte, conn *net.UDPConn, addr *net.UDPAddr) error{
 }
 
 func sendStr(msg string, conn *net.UDPConn, addr *net.UDPAddr)error{
+	glog.Infoln("msgstr:",msg)
 	return send([]byte(msg), conn, addr)
+}
+
+func GetValidLocalIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err!=nil{
+		glog.Fatalln(err)
+	}
+	defer conn.Close()
+	//localAddr := conn.LocalAddr().String()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	//idx := strings.LastIndex(localAddr, ":")
+	fmt.Printf("local addr:%s\n",localAddr)
+	//return localAddr[0:idx]
+	return localAddr.IP
+
 }

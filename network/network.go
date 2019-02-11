@@ -21,8 +21,9 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/oniio/oniChain/common/log"
 	"github.com/pkg/errors"
+	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 )
 
 type writeMode int
@@ -149,7 +150,7 @@ func (n *Network) flushLoop() {
 				if state, ok := value.(*ConnState); ok {
 					state.writerMutex.Lock()
 					if err := state.writer.Flush(); err != nil {
-						log.Warnf(err.Error())
+						glog.Warningln(err.Error())
 					}
 					state.writerMutex.Unlock()
 				}

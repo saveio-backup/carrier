@@ -14,6 +14,7 @@ import (
 	"net"
 	"time"
 	"strconv"
+	"strings"
 )
 
 type StunComponent struct {
@@ -39,7 +40,7 @@ const (
 	udp     = "udp4"
 	pingMsg = "ping"
 	pongMsg = "pong"
-	rto     = 500
+	rto     = 5000
 )
 
 func (st *StunComponent) Startup(n *network.Network) {
@@ -47,16 +48,21 @@ func (st *StunComponent) Startup(n *network.Network) {
 	flag.Parse()
 	info, err := network.ParseAddress(n.Address)
 	if err != nil {
-		glog.Warning("Unable to Parse Address: ", err)
-		return
+		glog.Fatalln("Unable to Parse Address: ", err)
 	}
 	st.internalPort = int(info.Port)
+	st.internalIP = net.ParseIP(info.Host)
 
 	srvAddr, err := net.ResolveUDPAddr(udp, *StunServer)
 	if err != nil {
 		glog.Fatalln("resolve srvAddr:", err)
 	}
-	conn, err := net.ListenUDP(udp, nil)
+
+	ls:=net.JoinHostPort(info.Host,strconv.Itoa(int(info.Port)))
+	lAddr,err:=net.ResolveUDPAddr(udp,ls)
+	fmt.Printf("lAddr:%s\n",lAddr.String())
+	conn, err := net.ListenUDP(udp, lAddr)
+
 	st.conn=conn
 	if err != nil {
 		glog.Fatalln("listenUDP:", err)
@@ -72,9 +78,8 @@ func (st *StunComponent) Startup(n *network.Network) {
 	messageChan := listen(conn)
 	var peerAddrChan <-chan string
 
-	keepAlive := time.Tick(rto * time.Millisecond)
+	keepAlive:=time.Tick(rto * time.Millisecond)
 	keepAliveMsg := pingMsg
-
 	var quit <-chan time.Time
 
 	gotPong := false
@@ -89,14 +94,19 @@ func (st *StunComponent) Startup(n *network.Network) {
 			}
 			switch {
 			case string(message) == pingMsg:
+				glog.Infoln("receive pingMsg")
 				keepAliveMsg = pongMsg
 			case string(message) == pongMsg:
+				glog.Infoln("Received pong message. 2")
 				if !gotPong {
 					glog.Infoln("Received pong message.")
 				}
-				gotPong = true
 
 				keepAliveMsg = pongMsg
+
+				gotPong = true
+
+
 
 			case stun.IsMessage(message):
 				m := new(stun.Message)
@@ -107,7 +117,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 					break
 				}
 				var xorAddr stun.XORMappedAddress
-				if err := xorAddr.GetFrom(m); err!=nil{
+				if err := xorAddr.GetFrom(m); err != nil{
 					glog.Infoln("getFrom:",err)
 					break
 				}
@@ -128,18 +138,20 @@ func (st *StunComponent) Startup(n *network.Network) {
 
 			}
 
-			case peerStr := <-peerAddrChan:
-				peerAddr ,err = net.ResolveUDPAddr(udp,peerStr)
-				glog.Infof("peerAddr :%s",peerAddr) //FIXME: for testing
-				if err!=nil{
-					glog.Info("resolve peeraddr:",err)
+		case peerStr := <-peerAddrChan:
+			peerAddr, err = net.ResolveUDPAddr(udp,peerStr)
+			glog.Infof("peerAddr :%s\n",peerAddr) //FIXME: for testing
+			if err!=nil{
+				glog.Info("resolve peeraddr:",err)
 				}
 
 		case <-keepAlive:
 			//keep alive with stun server or the peer which he has knew
 			if peerAddr == nil{
-				err = sendBindingRequest(conn,srvAddr)
+				//log.Infoln("peerAddr is nil")
+				err = sendBindingRequest(conn, srvAddr)
 			} else {
+				glog.Infoln("peerAddr is not nil")
 				err = sendStr(keepAliveMsg, conn, peerAddr)
 				if keepAliveMsg == pongMsg{
 					sentPong = true
@@ -148,9 +160,8 @@ func (st *StunComponent) Startup(n *network.Network) {
 			if err!=nil {
 				glog.Fatalln("keepalive:", err)
 			}
-
-			case <-quit:
-				st.Cleanup(n) //FIXME? make clean conn with stun server only!
+		case <-quit:
+			st.Cleanup(n) //FIXME? make clean conn with stun server only!
 		}
 
 		if quit == nil && gotPong && sentPong{
@@ -172,4 +183,12 @@ func RegisterStunComponent(builder *network.Builder) {
 
 func(st *StunComponent)GetPublicAddr()string{
 	return net.JoinHostPort(st.externalIP.String(),strconv.Itoa(st.externalPort))
+}
+
+func CBS(b []byte) string {
+	s := make([]string, len(b))
+	for i := range b {
+		s[i] = strconv.Itoa(int(b[i]))
+	}
+	return strings.Join(s, ",")
 }

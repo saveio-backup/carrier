@@ -99,3 +99,4 @@ func (p *Component) Cleanup(n *network.Network) {
 func RegisterComponent(builder *network.Builder) {
 	builder.AddComponentWithPriority(-99999, new(Component))
 }
+
