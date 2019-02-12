@@ -3,7 +3,6 @@ package main
 import _ "net/http/pprof"
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"time"
 
+	"context"
+
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/examples/local_benchmark/messages"
 	"github.com/oniio/oniP2p/network"
@@ -23,7 +24,11 @@ import (
 
 var profile = flag.String("profile", "", "write cpu profile to file")
 var port = flag.Uint("port", 3002, "port to listen on")
-var receiver = "tcp://localhost:3001"
+var receiver = map[string]string{
+	"udp": "udp://localhost:3001",
+	"tcp": "tcp://localhost:3001",
+	"kcp": "kcp://localhost:3001",
+}
 
 func main() {
 	flag.Set("logtostderr", "true")
@@ -32,7 +37,9 @@ func main() {
 		log.Println(http.ListenAndServe("localhost:7070", nil))
 	}()
 
+	protocolFlag := flag.String("protocol", "tcp", "protocol to use (kcp/tcp/udp)")
 	flag.Parse()
+	protocol := *protocolFlag
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.BasicMessage{})
@@ -55,7 +62,7 @@ func main() {
 	}
 
 	builder := network.NewBuilder()
-	builder.SetAddress("tcp://localhost:" + strconv.Itoa(int(*port)))
+	builder.SetAddress(protocol + "://localhost:" + strconv.Itoa(int(*port)))
 	builder.SetKeys(ed25519.RandomKeyPair())
 
 	net, err := builder.Build()
@@ -64,19 +71,30 @@ func main() {
 	}
 
 	go net.Listen()
-	net.Bootstrap(receiver)
+	net.Bootstrap(receiver[protocol])
 
 	time.Sleep(500 * time.Millisecond)
 
-	fmt.Printf("Spamming messages to %s...\n", receiver)
+	fmt.Printf("Spamming messages to %s...\n", receiver[protocol])
 
-	client, err := net.Client(receiver)
+	client, err := net.Client(receiver[protocol])
 	if err != nil {
 		panic(err)
 	}
 
+	ctx := network.WithSignMessage(context.Background(), true)
+	count := 0
+	go func() {
+		for range time.Tick(1 * time.Second) {
+			fmt.Printf("Send %d messages.\n", count)
+
+			count = 0
+		}
+
+	}()
 	for {
-		err = client.Tell(context.Background(), &messages.BasicMessage{})
+		err = client.Tell(ctx, &messages.BasicMessage{})
+		count += 1
 		if err != nil {
 			panic(err)
 		}

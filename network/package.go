@@ -19,7 +19,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniP2p/crypto"
 	"github.com/oniio/oniP2p/internal/protobuf"
 	"github.com/pkg/errors"
 )
@@ -91,15 +90,15 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 	}
 
 	// Verify signature of message.
-	if msg.Signature != nil && !crypto.Verify(
-		n.opts.signaturePolicy,
-		n.opts.hashPolicy,
-		msg.Sender.NetKey,
-		SerializeMessage(msg.Sender, msg.Message),
-		msg.Signature,
-	) {
-		return nil, errors.New("received message had an malformed signature")
-	}
+	/*	if msg.Signature != nil && !crypto.Verify(
+			n.opts.signaturePolicy,
+			n.opts.hashPolicy,
+			msg.Sender.NetKey,
+			SerializeMessage(msg.Sender, msg.Message),
+			msg.Signature,
+		) {
+			return nil, errors.New("received message had an malformed signature")
+		}*/
 
 	return msg, nil
 }

@@ -34,6 +34,11 @@ func (state *BenchmarkComponent) Receive(ctx *network.ComponentContext) error {
 }
 
 var profile = flag.String("profile", "", "write cpu profile to file")
+var Address = map[string]string{
+	"tcp": "tcp://localhost:3001",
+	"udp": "udp://localhost:3001",
+	"kcp": "kcp://localhost:3001",
+}
 
 func main() {
 	flag.Set("logtostderr", "true")
@@ -42,8 +47,9 @@ func main() {
 		log.Println(http.ListenAndServe("localhost:6060", nil))
 	}()
 
+	protocolFlag := flag.String("protocol", "tcp", "protocol to use (kcp/tcp/udp)")
 	flag.Parse()
-
+	protocol := *protocolFlag
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.BasicMessage{})
 
@@ -65,7 +71,7 @@ func main() {
 	}
 
 	builder := network.NewBuilder()
-	builder.SetAddress("tcp://localhost:3001")
+	builder.SetAddress(Address[protocol])
 	builder.SetKeys(ed25519.RandomKeyPair())
 
 	state := new(BenchmarkComponent)
@@ -78,7 +84,7 @@ func main() {
 
 	go net.Listen()
 
-	fmt.Println("Waiting for sender on tcp://localhost:3001.")
+	fmt.Println("Waiting for sender on ", Address[protocol])
 
 	// Run loop every 1 second.
 	for range time.Tick(1 * time.Second) {

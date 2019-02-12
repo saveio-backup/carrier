@@ -12,6 +12,7 @@ import (
 	"github.com/oniio/oniP2p/examples/chat/messages"
 	"github.com/oniio/oniP2p/network"
 	"github.com/oniio/oniP2p/network/discovery"
+	"github.com/oniio/oniP2p/network/keepalive"
 	"github.com/oniio/oniP2p/types/opcode"
 )
 
@@ -51,6 +52,15 @@ func main() {
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
+
+	// Add keepalive Component
+	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
+	options := []keepalive.ComponentOption{
+		keepalive.WithKeepaliveInterval(keepalive.DefaultKeepaliveInterval),
+		keepalive.WithKeepaliveTimeout(keepalive.DefaultKeepaliveTimeout),
+		keepalive.WithPeerStateChan(peerStateChan),
+	}
+	builder.AddComponent(keepalive.New(options...))
 
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))

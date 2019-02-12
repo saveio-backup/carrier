@@ -595,20 +595,31 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 			}
 			break
 		}
-		client, err = n.getOrSetPeerClient(msg.DialAddress, incoming)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		client.ID = (*peer.ID)(msg.Sender)
-
-		if !n.ConnectionStateExists(msg.DialAddress) {
-			log.Error(errors.New("network: failed to load session"))
-			return
-		}
-
 		go func() {
+			if msg.Signature != nil && !crypto.Verify(
+				n.opts.signaturePolicy,
+				n.opts.hashPolicy,
+				msg.Sender.NetKey,
+				SerializeMessage(msg.Sender, msg.Message),
+				msg.Signature,
+			) {
+				log.Error("received message had an malformed signature")
+				return
+			}
+
+			client, err = n.getOrSetPeerClient(msg.DialAddress, incoming)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+
+			client.ID = (*peer.ID)(msg.Sender)
+
+			if !n.ConnectionStateExists(msg.DialAddress) {
+				log.Error(errors.New("network: failed to load session"))
+				return
+			}
+
 			// Peer sent message with a completely different ID. Disconnect.
 			if !client.ID.Equals(peer.ID(*msg.Sender)) {
 				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
