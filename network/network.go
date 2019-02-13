@@ -550,6 +550,16 @@ func (n *Network) Accept(incoming interface{}) {
 		}
 
 		go func() {
+			if msg.Signature != nil && !crypto.Verify(
+				n.opts.signaturePolicy,
+				n.opts.hashPolicy,
+				msg.Sender.NetKey,
+				SerializeMessage(msg.Sender, msg.Message),
+				msg.Signature,
+			) {
+				log.Errorf("received message had an malformed signature")
+				return
+			}
 			// Peer sent message with a completely different ID. Disconnect.
 			if !client.ID.Equals(peer.ID(*msg.Sender)) {
 				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
