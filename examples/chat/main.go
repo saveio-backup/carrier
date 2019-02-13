@@ -37,7 +37,7 @@ func main() {
 	hostFlag := flag.String("host", nat.GetValidLocalIP().String(), "local host to listen to")
 	protocolFlag := flag.String("protocol", "udp", "protocol to use (kcp/tcp/udp)")
 	peersFlag := flag.String("peers", "", "peers to connect to")
-	natFlag := flag.Bool("upnpnat", true, "enable nat traversal")
+	natFlag := flag.Bool("stun", true, "enable nat traversal")
 	flag.Parse()
 
 	port := uint16(*portFlag)
