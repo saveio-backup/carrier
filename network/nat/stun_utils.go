@@ -7,13 +7,12 @@ package nat
 
 import (
 	"fmt"
-	"bufio"
-	"os"
 	"github.com/golang/glog"
 	"github.com/gortc/stun"
-	"strings"
 	"net"
+	"time"
 )
+var BindingIndicate =stun.NewType(stun.MethodBinding,stun.ClassIndication)
 
 func listen(conn *net.UDPConn) <-chan []byte {
 	messages := make(chan []byte)
@@ -33,19 +32,6 @@ func listen(conn *net.UDPConn) <-chan []byte {
 	return messages
 }
 
-func getPeerAddr() <-chan string {
-	result := make(chan string)
-
-	go func() {
-		reader := bufio.NewReader(os.Stdin) //FIXME: change scan method
-		glog.Infoln("Enter remote peer address:")
-		peer, _:=reader.ReadString('\n')
-		result <- strings.Trim(peer,"\r\n")
-	}()
-
-	//glog.Infoln("get peer result:",<-result) //FIXME: TO TEST
-	return result
-}
 
 func sendBindingRequest(conn *net.UDPConn, addr *net.UDPAddr) error{
 	m:=stun.MustBuild(stun.TransactionID,stun.BindingRequest)
@@ -56,11 +42,19 @@ func sendBindingRequest(conn *net.UDPConn, addr *net.UDPAddr) error{
 	}
 	return nil
 }
+func sendKeepAlive(conn *net.UDPConn, addr *net.UDPAddr)error{
+	m:=stun.MustBuild(stun.TransactionID,BindingIndicate)
+	err:= send(m.Raw,conn,addr)
+	if err!=nil{
+		return fmt.Errorf("sendKeepAlive: %v",err)
+	}
+	return nil
+}
 
 func send(msg []byte, conn *net.UDPConn, addr *net.UDPAddr) error{
 	_, err := conn.WriteToUDP(msg, addr)
 	if err !=nil {
-		return fmt.Errorf("sendBindReq: %v",err)
+		return fmt.Errorf("send: %v",err)
 	}
 	return nil
 }
@@ -76,11 +70,56 @@ func GetValidLocalIP() net.IP {
 		glog.Fatalln(err)
 	}
 	defer conn.Close()
-	//localAddr := conn.LocalAddr().String()
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	//idx := strings.LastIndex(localAddr, ":")
-	fmt.Printf("local addr:%s\n",localAddr)
-	//return localAddr[0:idx]
 	return localAddr.IP
+
+}
+
+func (st *StunComponent) GetExternalAddr() (ip net.IP,port int) {
+	c, err := stun.Dial("udp", "stun.l.google.com:19302")
+
+	if err != nil {
+		panic(err)
+	}
+
+
+	message := stun.MustBuild(stun.TransactionID, stun.BindingRequest)
+
+	if err := c.Do(message, func(res stun.Event) {
+		if res.Error != nil {
+			panic(res.Error)
+		}
+
+		var xorAddr stun.XORMappedAddress
+		if err := xorAddr.GetFrom(res.Message); err != nil {
+			panic(err)
+		}
+
+		ip = xorAddr.IP
+		port = xorAddr.Port
+		st.externalIP=ip
+		st.externalPort=port
+	}); err != nil {
+		panic(err)
+	}
+
+	return
+}
+
+func (st *StunComponent)keepAlive(srvAddr *net.UDPAddr){
+	keepAlive:=time.Tick(rto * time.Millisecond)
+	for {
+
+		select {
+		case <-keepAlive:
+			err := sendBindingRequest(st.conn,srvAddr)
+			if err !=nil {
+				glog.Fatalln("keepAlive error: ",err)
+				break
+			}
+
+		}
+	}
+
 
 }

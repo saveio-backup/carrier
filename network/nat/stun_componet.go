@@ -14,7 +14,6 @@ import (
 	"net"
 	"time"
 	"strconv"
-	"strings"
 )
 
 type StunComponent struct {
@@ -38,9 +37,7 @@ var (
 
 const (
 	udp     = "udp4"
-	pingMsg = "ping"
-	pongMsg = "pong"
-	rto     = 5000
+	rto     = 3000
 )
 
 func (st *StunComponent) Startup(n *network.Network) {
@@ -60,7 +57,6 @@ func (st *StunComponent) Startup(n *network.Network) {
 
 	ls:=net.JoinHostPort(info.Host,strconv.Itoa(int(info.Port)))
 	lAddr,err:=net.ResolveUDPAddr(udp,ls)
-	fmt.Printf("lAddr:%s\n",lAddr.String())
 	conn, err := net.ListenUDP(udp, lAddr)
 
 	st.conn=conn
@@ -68,114 +64,63 @@ func (st *StunComponent) Startup(n *network.Network) {
 		glog.Fatalln("listenUDP:", err)
 	}
 
-	defer st.Cleanup(n)  //FIXME? use network.conn?
-
 	glog.Infof("Listening on %s\n", conn.LocalAddr())
-
+	err = sendBindingRequest(conn,srvAddr)
 	var publicAddr stun.XORMappedAddress
-	var peerAddr *net.UDPAddr
 
 	messageChan := listen(conn)
-	var peerAddrChan <-chan string
-
-	keepAlive:=time.Tick(rto * time.Millisecond)
-	keepAliveMsg := pingMsg
-	var quit <-chan time.Time
-
-	gotPong := false
-	sentPong := false
-
 	for {
-		select {
-		case message, ok := <-messageChan:
-			if !ok {
-				glog.Infoln("no message in messageChan") //FIXME: FOR TEST
-				return
+		message,ok :=<-messageChan
+		if !ok{
+			glog.Error("Read from msgCh error")
+			break
+		}
+		if stun.IsMessage(message){
+			m := new(stun.Message)
+			m.Raw = message
+			err := m.Decode()
+			if err != nil {
+				glog.Warningln("decode:",err)
+				break
 			}
-			switch {
-			case string(message) == pingMsg:
-				glog.Infoln("receive pingMsg")
-				keepAliveMsg = pongMsg
-			case string(message) == pongMsg:
-				glog.Infoln("Received pong message. 2")
-				if !gotPong {
-					glog.Infoln("Received pong message.")
-				}
-
-				keepAliveMsg = pongMsg
-
-				gotPong = true
-
-
-
-			case stun.IsMessage(message):
-				m := new(stun.Message)
-				m.Raw = message
-				err := m.Decode()
-				if err != nil {
-					glog.Warningln("decode:",err)
-					break
-				}
-				var xorAddr stun.XORMappedAddress
-				if err := xorAddr.GetFrom(m); err != nil{
-					glog.Infoln("getFrom:",err)
-					break
-				}
-
-				if publicAddr.String() != xorAddr.String(){
-					glog.Infof("My public IP and Port is:%s",xorAddr)
-
-					st.externalIP=xorAddr.IP
-					st.externalPort=xorAddr.Port
-
-					publicAddr = xorAddr
-
-					peerAddrChan = getPeerAddr()
-				}
-
-			default:
-				glog.Fatalln("unknown message", message)
-
+			var xorAddr stun.XORMappedAddress
+			if err := xorAddr.GetFrom(m); err != nil{
+				break
 			}
+			if publicAddr.String() != xorAddr.String(){
+				glog.Infof("My public IP and Port is:%s",xorAddr)
+				st.externalIP=xorAddr.IP
+				st.externalPort=xorAddr.Port
 
-		case peerStr := <-peerAddrChan:
-			peerAddr, err = net.ResolveUDPAddr(udp,peerStr)
-			glog.Infof("peerAddr :%s\n",peerAddr) //FIXME: for testing
-			if err!=nil{
-				glog.Info("resolve peeraddr:",err)
-				}
-
-		case <-keepAlive:
-			//keep alive with stun server or the peer which he has knew
-			if peerAddr == nil{
-				//log.Infoln("peerAddr is nil")
-				err = sendBindingRequest(conn, srvAddr)
-			} else {
-				glog.Infoln("peerAddr is not nil")
-				err = sendStr(keepAliveMsg, conn, peerAddr)
-				if keepAliveMsg == pongMsg{
-					sentPong = true
-				}
+				publicAddr = xorAddr
+				break
 			}
-			if err!=nil {
-				glog.Fatalln("keepalive:", err)
-			}
-		case <-quit:
-			st.Cleanup(n) //FIXME? make clean conn with stun server only!
+		}else{
+			glog.Fatalln("unknown message", message)
 		}
 
-		if quit == nil && gotPong && sentPong{
-			glog.Infoln("Success! Quiting in two seconds. ")
-			quit = time.After(2 * time.Second)
-		}
 	}
 
-}
+	keepAlive:=time.Tick(rto * time.Millisecond)
+	go func() {
+		for {
+			select {
+			case <-keepAlive:
+				err = sendKeepAlive(conn,srvAddr)
+				if err!=nil {
+					glog.Fatalln("keepalive:", err)
+				}
+			}
 
+		}
+	}()
+}
+/*
 func (st *StunComponent) Cleanup(n *network.Network){
 	glog.Infoln("Cleanup conn...")
 	st.conn.Close()
 }
+*/
 
 func RegisterStunComponent(builder *network.Builder) {
 	builder.AddComponentWithPriority(-99998, new(StunComponent))
@@ -184,11 +129,10 @@ func RegisterStunComponent(builder *network.Builder) {
 func(st *StunComponent)GetPublicAddr()string{
 	return net.JoinHostPort(st.externalIP.String(),strconv.Itoa(st.externalPort))
 }
+func (st *StunComponent)GetPrivateAddr()string  {
+	return net.JoinHostPort(st.internalIP.String(),strconv.Itoa(st.internalPort))
 
-func CBS(b []byte) string {
-	s := make([]string, len(b))
-	for i := range b {
-		s[i] = strconv.Itoa(int(b[i]))
-	}
-	return strings.Join(s, ",")
 }
+
+
+

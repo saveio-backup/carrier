@@ -82,7 +82,6 @@ func main() {
 
 	go net.Listen()
 	if len(peers) > 0 {
-		glog.Infoln("befor bootstrap peers")
 		net.Bootstrap(peers...)
 	}
 
