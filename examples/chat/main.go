@@ -15,7 +15,6 @@ import (
 	"github.com/oniio/oniP2p/network/keepalive"
 	"github.com/oniio/oniP2p/types/opcode"
 	"github.com/oniio/oniP2p/network/nat"
-	"github.com/golang/glog"
 )
 
 type ChatComponent struct{ *network.Component }
@@ -88,7 +87,7 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		input, _ := reader.ReadString('\n')
-		glog.Infoln("We Chat> ")
+		log.Info("We Chat> ")
 		// skip blank lines
 		if len(strings.TrimSpace(input)) == 0 {
 			continue

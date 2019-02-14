@@ -7,12 +7,16 @@ package nat
 
 import (
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/gortc/stun"
 	"net"
 	"time"
 )
-var BindingIndicate =stun.NewType(stun.MethodBinding,stun.ClassIndication)
+var (
+	BindingIndicate =stun.NewType(stun.MethodBinding,stun.ClassIndication)
+	PublicServer = "8.8.8.8:80"
+	PublicStunSrv1 = "stun.l.google.com:19302"
+	)
 
 func listen(conn *net.UDPConn) <-chan []byte {
 	messages := make(chan []byte)
@@ -59,15 +63,10 @@ func send(msg []byte, conn *net.UDPConn, addr *net.UDPAddr) error{
 	return nil
 }
 
-func sendStr(msg string, conn *net.UDPConn, addr *net.UDPAddr)error{
-	glog.Infoln("msgstr:",msg)
-	return send([]byte(msg), conn, addr)
-}
-
 func GetValidLocalIP() net.IP {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+	conn, err := net.Dial("udp", PublicServer)
 	if err!=nil{
-		glog.Fatalln(err)
+		log.Fatal(err)
 	}
 	defer conn.Close()
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
@@ -76,12 +75,11 @@ func GetValidLocalIP() net.IP {
 }
 
 func (st *StunComponent) GetExternalAddr() (ip net.IP,port int) {
-	c, err := stun.Dial("udp", "stun.l.google.com:19302")
+	c, err := stun.Dial("udp", PublicStunSrv1)
 
 	if err != nil {
 		panic(err)
 	}
-
 
 	message := stun.MustBuild(stun.TransactionID, stun.BindingRequest)
 
@@ -114,7 +112,7 @@ func (st *StunComponent)keepAlive(srvAddr *net.UDPAddr){
 		case <-keepAlive:
 			err := sendBindingRequest(st.conn,srvAddr)
 			if err !=nil {
-				glog.Fatalln("keepAlive error: ",err)
+				log.Fatal("keepAlive error: ",err)
 				break
 			}
 

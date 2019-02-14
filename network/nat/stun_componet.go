@@ -8,7 +8,7 @@ package nat
 import (
 	"flag"
 	"fmt"
-	"github.com/golang/glog"
+	"github.com/oniio/oniChain/common/log"
 	"github.com/gortc/stun"
 	"github.com/oniio/oniP2p/network"
 	"net"
@@ -29,10 +29,8 @@ type StunComponent struct {
 }
 
 var (
-	// StunComponentID to reference NAT Component
-	StunComponentID                            = (*StunComponent)(nil)
 	_               network.ComponentInterface = (*StunComponent)(nil)
-	StunServer                                 = flag.String("server", fmt.Sprintf("stun.l.google.com:19302"), "Stun server Address")
+	StunServer                                 = flag.String("server", fmt.Sprintf(PublicStunSrv1), "Stun server Address")
 )
 
 const (
@@ -41,18 +39,18 @@ const (
 )
 
 func (st *StunComponent) Startup(n *network.Network) {
-	glog.Infof("Setting up NAT traversal with Stun5389 for address: %s", n.Address)
+	log.Infof("Setting up NAT traversal with Stun5389 for address: %s\n", n.Address)
 	flag.Parse()
 	info, err := network.ParseAddress(n.Address)
 	if err != nil {
-		glog.Fatalln("Unable to Parse Address: ", err)
+		log.Fatal("Unable to Parse Address:", err)
 	}
 	st.internalPort = int(info.Port)
 	st.internalIP = net.ParseIP(info.Host)
 
 	srvAddr, err := net.ResolveUDPAddr(udp, *StunServer)
 	if err != nil {
-		glog.Fatalln("resolve srvAddr:", err)
+		log.Fatal("resolve srvAddr:", err)
 	}
 
 	ls:=net.JoinHostPort(info.Host,strconv.Itoa(int(info.Port)))
@@ -61,10 +59,9 @@ func (st *StunComponent) Startup(n *network.Network) {
 
 	st.conn=conn
 	if err != nil {
-		glog.Fatalln("listenUDP:", err)
+		log.Fatal("listenUDP:", err)
 	}
 
-	glog.Infof("Listening on %s\n", conn.LocalAddr())
 	err = sendBindingRequest(conn,srvAddr)
 	var publicAddr stun.XORMappedAddress
 
@@ -72,7 +69,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 	for {
 		message,ok :=<-messageChan
 		if !ok{
-			glog.Error("Read from msgCh error")
+			log.Error("Read from msgCh error")
 			break
 		}
 		if stun.IsMessage(message){
@@ -80,7 +77,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 			m.Raw = message
 			err := m.Decode()
 			if err != nil {
-				glog.Warningln("decode:",err)
+				log.Warnf("decode:%v",err)
 				break
 			}
 			var xorAddr stun.XORMappedAddress
@@ -88,7 +85,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 				break
 			}
 			if publicAddr.String() != xorAddr.String(){
-				glog.Infof("My public IP and Port is:%s",xorAddr)
+				log.Infof("My public IP and Port is:%s\n",xorAddr)
 				st.externalIP=xorAddr.IP
 				st.externalPort=xorAddr.Port
 
@@ -96,7 +93,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 				break
 			}
 		}else{
-			glog.Fatalln("unknown message", message)
+			log.Fatal("unknown message:", message)
 		}
 
 	}
@@ -108,7 +105,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 			case <-keepAlive:
 				err = sendKeepAlive(conn,srvAddr)
 				if err!=nil {
-					glog.Fatalln("keepalive:", err)
+					log.Fatal("keepalive:", err)
 				}
 			}
 
@@ -117,7 +114,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 }
 /*
 func (st *StunComponent) Cleanup(n *network.Network){
-	glog.Infoln("Cleanup conn...")
+	log.Info("Cleanup conn...")
 	st.conn.Close()
 }
 */
