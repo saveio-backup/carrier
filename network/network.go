@@ -21,9 +21,9 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
 	"github.com/golang/glog"
 	"github.com/oniio/oniChain/common/log"
+	"github.com/pkg/errors"
 )
 
 type writeMode int
@@ -69,6 +69,11 @@ type Network struct {
 	// Map of Components registered to the network.
 	// map[string]Component
 	Components *ComponentList
+
+	Nat struct {
+		Enable bool
+		Conn   *net.UDPConn
+	}
 
 	// Node's cryptographic ID.
 	ID peer.ID
@@ -261,9 +266,13 @@ func (n *Network) Listen() {
 
 	var listener interface{}
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
-		listener, err = t.(transport.Layer).Listen(int(addrInfo.Port))
-		if err != nil {
-			log.Fatal(err)
+		if n.Nat.Enable {
+			listener = n.Nat.Conn
+		} else {
+			listener, err = t.(transport.Layer).Listen(int(addrInfo.Port))
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	} else {
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)

@@ -13,8 +13,8 @@ import (
 	"github.com/oniio/oniP2p/network"
 	"github.com/oniio/oniP2p/network/discovery"
 	"github.com/oniio/oniP2p/network/keepalive"
-	"github.com/oniio/oniP2p/types/opcode"
 	"github.com/oniio/oniP2p/network/nat"
+	"github.com/oniio/oniP2p/types/opcode"
 )
 
 type ChatComponent struct{ *network.Component }

@@ -8,12 +8,13 @@ package nat
 import (
 	"flag"
 	"fmt"
-	"github.com/oniio/oniChain/common/log"
-	"github.com/gortc/stun"
-	"github.com/oniio/oniP2p/network"
 	"net"
-	"time"
 	"strconv"
+	"time"
+
+	"github.com/gortc/stun"
+	"github.com/oniio/oniChain/common/log"
+	"github.com/oniio/oniP2p/network"
 )
 
 type StunComponent struct {
@@ -29,13 +30,13 @@ type StunComponent struct {
 }
 
 var (
-	_               network.ComponentInterface = (*StunComponent)(nil)
-	StunServer                                 = flag.String("server", fmt.Sprintf(PublicStunSrv1), "Stun server Address")
+	_          network.ComponentInterface = (*StunComponent)(nil)
+	StunServer                            = flag.String("server", fmt.Sprintf(PublicStunSrv1), "Stun server Address")
 )
 
 const (
-	udp     = "udp4"
-	rto     = 3000
+	udp = "udp4"
+	rto = 3000
 )
 
 func (st *StunComponent) Startup(n *network.Network) {
@@ -53,65 +54,68 @@ func (st *StunComponent) Startup(n *network.Network) {
 		log.Fatal("resolve srvAddr:", err)
 	}
 
-	ls:=net.JoinHostPort(info.Host,strconv.Itoa(int(info.Port)))
-	lAddr,err:=net.ResolveUDPAddr(udp,ls)
+	ls := net.JoinHostPort(info.Host, strconv.Itoa(int(info.Port)))
+	lAddr, err := net.ResolveUDPAddr(udp, ls)
 	conn, err := net.ListenUDP(udp, lAddr)
 
-	st.conn=conn
+	st.conn = conn
 	if err != nil {
 		log.Fatal("listenUDP:", err)
 	}
 
-	err = sendBindingRequest(conn,srvAddr)
+	err = sendBindingRequest(conn, srvAddr)
 	var publicAddr stun.XORMappedAddress
 
 	messageChan := listen(conn)
 	for {
-		message,ok :=<-messageChan
-		if !ok{
+		message, ok := <-messageChan
+		if !ok {
 			log.Error("Read from msgCh error")
 			break
 		}
-		if stun.IsMessage(message){
+		if stun.IsMessage(message) {
 			m := new(stun.Message)
 			m.Raw = message
 			err := m.Decode()
 			if err != nil {
-				log.Warnf("decode:%v",err)
+				log.Warnf("decode:%v", err)
 				break
 			}
 			var xorAddr stun.XORMappedAddress
-			if err := xorAddr.GetFrom(m); err != nil{
+			if err := xorAddr.GetFrom(m); err != nil {
 				break
 			}
-			if publicAddr.String() != xorAddr.String(){
-				log.Infof("My public IP and Port is:%s\n",xorAddr)
-				st.externalIP=xorAddr.IP
-				st.externalPort=xorAddr.Port
+			if publicAddr.String() != xorAddr.String() {
+				log.Infof("My public IP and Port is:%s\n", xorAddr)
+				st.externalIP = xorAddr.IP
+				st.externalPort = xorAddr.Port
 
 				publicAddr = xorAddr
 				break
 			}
-		}else{
+		} else {
 			log.Fatal("unknown message:", message)
 		}
 
 	}
 
-	keepAlive:=time.Tick(rto * time.Millisecond)
+	keepAlive := time.Tick(rto * time.Millisecond)
 	go func() {
 		for {
 			select {
 			case <-keepAlive:
-				err = sendKeepAlive(conn,srvAddr)
-				if err!=nil {
+				err = sendKeepAlive(conn, srvAddr)
+				if err != nil {
 					log.Fatal("keepalive:", err)
 				}
 			}
 
 		}
 	}()
+	n.Nat.Enable = true
+	n.Nat.Conn = st.conn
 }
+
 /*
 func (st *StunComponent) Cleanup(n *network.Network){
 	log.Info("Cleanup conn...")
@@ -123,13 +127,10 @@ func RegisterStunComponent(builder *network.Builder) {
 	builder.AddComponentWithPriority(-99998, new(StunComponent))
 }
 
-func(st *StunComponent)GetPublicAddr()string{
-	return net.JoinHostPort(st.externalIP.String(),strconv.Itoa(st.externalPort))
+func (st *StunComponent) GetPublicAddr() string {
+	return net.JoinHostPort(st.externalIP.String(), strconv.Itoa(st.externalPort))
 }
-func (st *StunComponent)GetPrivateAddr()string  {
-	return net.JoinHostPort(st.internalIP.String(),strconv.Itoa(st.internalPort))
+func (st *StunComponent) GetPrivateAddr() string {
+	return net.JoinHostPort(st.internalIP.String(), strconv.Itoa(st.internalPort))
 
 }
-
-
-
