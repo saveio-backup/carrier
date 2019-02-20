@@ -6,7 +6,7 @@ import (
 	"flag"
 	"os"
 	"strings"
-
+	"net"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/examples/chat/messages"
@@ -17,6 +17,9 @@ import (
 	"github.com/oniio/oniP2p/types/opcode"
 )
 
+const (
+	udp = "udp4"
+)
 type ChatComponent struct{ *network.Component }
 
 func (state *ChatComponent) Receive(ctx *network.ComponentContext) error {
@@ -73,15 +76,17 @@ func main() {
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 
-	net, err := builder.Build()
+	networkBuilder, err := builder.Build()
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
-
-	go net.Listen()
+	lAddr, err := net.ResolveUDPAddr(udp, host)
+	conn, err := net.ListenUDP(udp, lAddr)
+	networkBuilder.Conn=conn
+	go networkBuilder.Listen()
 	if len(peers) > 0 {
-		net.Bootstrap(peers...)
+		networkBuilder.Bootstrap(peers...)
 	}
 
 	reader := bufio.NewReader(os.Stdin)
@@ -93,10 +98,10 @@ func main() {
 			continue
 		}
 
-		log.Infof("<%s> %s", net.Address, input)
+		log.Infof("<%s> %s", networkBuilder.Address, input)
 
 		ctx := network.WithSignMessage(context.Background(), true)
-		net.Broadcast(ctx, &messages.ChatMessage{Message: input})
+		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: input})
 	}
 
 }

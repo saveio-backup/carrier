@@ -70,11 +70,6 @@ type Network struct {
 	// map[string]Component
 	Components *ComponentList
 
-	Nat struct {
-		Enable bool
-		Conn   *net.UDPConn
-	}
-
 	// Node's cryptographic ID.
 	ID peer.ID
 
@@ -91,6 +86,7 @@ type Network struct {
 
 	// Map of connection addresses (string) <-> *ConnState
 	connections *sync.Map
+	Conn *net.UDPConn
 
 	// Map of protocol addresses (string) <-> *transport.Layer
 	transports *sync.Map
@@ -266,13 +262,9 @@ func (n *Network) Listen() {
 
 	var listener interface{}
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
-		if n.Nat.Enable {
-			listener = n.Nat.Conn
-		} else {
-			listener, err = t.(transport.Layer).Listen(int(addrInfo.Port))
-			if err != nil {
-				log.Fatal(err)
-			}
+		listener, err = t.(transport.Layer).Listen(int(addrInfo.Port))
+		if err != nil {
+			log.Fatal(err)
 		}
 	} else {
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)

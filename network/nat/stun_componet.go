@@ -54,10 +54,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 		log.Fatal("resolve srvAddr:", err)
 	}
 
-	ls := net.JoinHostPort(info.Host, strconv.Itoa(int(info.Port)))
-	lAddr, err := net.ResolveUDPAddr(udp, ls)
-	conn, err := net.ListenUDP(udp, lAddr)
-
+	conn:=n.Conn
 	st.conn = conn
 	if err != nil {
 		log.Fatal("listenUDP:", err)
@@ -112,8 +109,6 @@ func (st *StunComponent) Startup(n *network.Network) {
 
 		}
 	}()
-	n.Nat.Enable = true
-	n.Nat.Conn = st.conn
 }
 
 /*
