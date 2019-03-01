@@ -86,7 +86,7 @@ type Network struct {
 
 	// Map of connection addresses (string) <-> *ConnState
 	connections *sync.Map
-	Conn *net.UDPConn
+	Conn        *net.UDPConn
 
 	// Map of protocol addresses (string) <-> *transport.Layer
 	transports *sync.Map
@@ -309,6 +309,7 @@ func (n *Network) Listen() {
 		}
 	case "udp":
 		go n.AcceptUdp(listener.(*net.UDPConn))
+		select {}
 	default:
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
@@ -605,7 +606,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 			if err != errEmptyMsg {
 				log.Error(err)
 			}
-			break
+			continue
 		}
 		go func() {
 			if msg.Signature != nil && !crypto.Verify(
