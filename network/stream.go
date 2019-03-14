@@ -109,7 +109,7 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 	}
 
 	// Check if any of the message headers are invalid or null.
-	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID==0 {
+	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID != n.GetNetworkID() {
 		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
 
