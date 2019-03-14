@@ -29,7 +29,7 @@ import (
 type writeMode int
 
 const (
-	WRITE_MODE_LOOP writeMode = iota
+	WRITE_MODE_LOOP   writeMode = iota
 	WRITE_MODE_DIRECT
 )
 
@@ -64,7 +64,7 @@ type Network struct {
 	keys *crypto.KeyPair
 
 	// Full address to listen on. `protocol://host:port`
-	Address string
+	Address, ExternalAddr string
 
 	// Map of Components registered to the network.
 	// map[string]Component
@@ -242,19 +242,6 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 
 // Listen starts listening for peers on a port.
 func (n *Network) Listen() {
-
-	// Handle 'network starts listening' callback for Components.
-	n.Components.Each(func(Component ComponentInterface) {
-		Component.Startup(n)
-	})
-
-	// Handle 'network stops listening' callback for Components.
-	defer func() {
-		n.Components.Each(func(Component ComponentInterface) {
-			Component.Cleanup(n)
-		})
-	}()
-
 	addrInfo, err := ParseAddress(n.Address)
 	if err != nil {
 		log.Fatal(err)
@@ -263,16 +250,26 @@ func (n *Network) Listen() {
 	var listener interface{}
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
 		listener, err = t.(transport.Layer).Listen(int(addrInfo.Port))
+		if udpconn, ok := listener.(*net.UDPConn); ok {
+			n.Conn = udpconn
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
-
+	// Handle 'network starts listening' callback for Components.
+	n.Components.Each(func(Component ComponentInterface) {
+		Component.Startup(n)
+	})
 	n.startListening()
-
-	log.Infof("Listening for peers on %s.", n.Address)
+	// Handle 'network stops listening' callback for Components.
+	defer func() {
+		n.Components.Each(func(Component ComponentInterface) {
+			Component.Cleanup(n)
+		})
+	}()
 
 	// handle server shutdowns
 	go func() {
@@ -676,6 +673,7 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 		Message: raw,
 		Opcode:  uint32(opcode),
 		Sender:  &id,
+		NetID:   n.netID,
 	}
 
 	if GetSignMessage(ctx) {
@@ -708,7 +706,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
 		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
-		err = n.sendMessage(state.writer, message, state.writerMutex, state)
+		err = n.sendMessage(state.writer, message, state.writerMutex)
 		if err != nil {
 			return err
 		}

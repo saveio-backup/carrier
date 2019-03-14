@@ -15,23 +15,25 @@ import (
 	"github.com/gortc/stun"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/network"
+	"sync"
 )
 
 type StunComponent struct {
 	*network.Component
-
 	internalIP net.IP
 	externalIP net.IP
 
 	internalPort int
 	externalPort int
-
+	mu sync.Mutex
 	conn *net.UDPConn
 }
 
 var (
+	StunComponentID                            = (*StunComponent)(nil)
 	_          network.ComponentInterface = (*StunComponent)(nil)
 	StunServer                            = flag.String("server", fmt.Sprintf(PublicStunSrv1), "Stun server Address")
+	Kill       chan struct{}
 )
 
 const (
@@ -54,7 +56,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 		log.Fatal("resolve srvAddr:", err)
 	}
 
-	conn:=n.Conn
+	conn := n.Conn
 	st.conn = conn
 	if err != nil {
 		log.Fatal("listenUDP:", err)
@@ -80,14 +82,18 @@ func (st *StunComponent) Startup(n *network.Network) {
 			}
 			var xorAddr stun.XORMappedAddress
 			if err := xorAddr.GetFrom(m); err != nil {
-				break
+				log.Error(err)
+				continue
 			}
 			if publicAddr.String() != xorAddr.String() {
-				log.Infof("My public IP and Port is:%s\n", xorAddr)
+				st.mu.Lock()
+				log.Infof("My public IP and Port is :%s\n", xorAddr)
 				st.externalIP = xorAddr.IP
 				st.externalPort = xorAddr.Port
-
 				publicAddr = xorAddr
+				Kill=make(chan struct{})
+				close(Kill)
+				st.mu.Unlock()
 				break
 			}
 		} else {

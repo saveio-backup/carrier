@@ -6,7 +6,6 @@ import (
 	"flag"
 	"os"
 	"strings"
-	"net"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/crypto/ed25519"
 	"github.com/oniio/oniP2p/examples/chat/messages"
@@ -81,10 +80,17 @@ func main() {
 		log.Fatal(err)
 		return
 	}
-	lAddr, err := net.ResolveUDPAddr(udp, host)
-	conn, err := net.ListenUDP(udp, lAddr)
-	networkBuilder.Conn=conn
 	go networkBuilder.Listen()
+	networkBuilder.BlockUntilListening()
+	sc,reg:=networkBuilder.Component(nat.StunComponentID)
+	if !reg{
+		log.Error("stun component don't reg ")
+	}else {
+		exAddr:=sc.(*nat.StunComponent).GetPublicAddr()
+		networkBuilder.ExternalAddr=exAddr
+	}
+	log.Infof("Listening for peers on %s.", networkBuilder.ExternalAddr)
+
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)
 	}

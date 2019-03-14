@@ -2,20 +2,16 @@ syntax = "proto3";
 
 package protobuf;
 
-option java_multiple_files = true;
-option java_package = "org.perlin.noise.proto";
-option java_outer_classname = "NoiseProto";
+// import "gogo/protobuf/gogoproto/gogo.proto";
 
-import "gogo/protobuf/gogoproto/gogo.proto";
-
-option (gogoproto.equal_all) = true;
-option (gogoproto.goproto_stringer_all) = false;
-option (gogoproto.gostring_all) = true;
-option (gogoproto.marshaler_all) = true;
-option (gogoproto.sizer_all) = true;
-option (gogoproto.stringer_all) = true;
-option (gogoproto.unmarshaler_all) = true;
-option (gogoproto.verbose_equal_all) = true;
+// option (gogoproto.equal_all) = true;
+// option (gogoproto.goproto_stringer_all) = false;
+// option (gogoproto.gostring_all) = true;
+// option (gogoproto.marshaler_all) = true;
+// option (gogoproto.sizer_all) = true;
+// option (gogoproto.stringer_all) = true;
+// option (gogoproto.unmarshaler_all) = true;
+// option (gogoproto.verbose_equal_all) = true;
 
 // Test options
 // FIXME: uncomment when fixed https://github.com/gogo/protobuf/issues/407
@@ -53,6 +49,7 @@ message Message {
     uint32 opcode = 7;
     // dial_address is the outgoing address for a udp connection
     string dial_address = 8;
+    uint32 netID = 9;
 }
 
 message Ping {

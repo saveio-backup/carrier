@@ -17,7 +17,7 @@ import (
 var errEmptyMsg = errors.New("received an empty message from a peer")
 
 // sendMessage marshals, signs and sends a message over a stream.
-func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState) error {
+func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex) error {
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
@@ -34,6 +34,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	bytesWritten, totalBytesWritten := 0, 0
 
 	writerMutex.Lock()
+
 	bw, isBuffered := w.(*bufio.Writer)
 	if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
 		if err := bw.Flush(); err != nil {
@@ -43,7 +44,6 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 
 	for totalBytesWritten < len(buffer) && err == nil {
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
-
 		if err != nil {
 			log.Errorf("stream: failed to write entire buffer, err: %+v", err)
 		}
@@ -77,9 +77,9 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 
 	for totalBytesRead < 4 && err == nil {
 		bytesRead, err = conn.(net.Conn).Read(buffer[totalBytesRead:])
-		size = binary.BigEndian.Uint32(buffer)
 		totalBytesRead += bytesRead
 	}
+	size = binary.BigEndian.Uint32(buffer)
 
 	if size == 0 {
 		return nil, errEmptyMsg
@@ -109,7 +109,7 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 	}
 
 	// Check if any of the message headers are invalid or null.
-	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 {
+	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID==0 {
 		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
 

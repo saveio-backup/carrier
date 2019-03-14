@@ -42,7 +42,7 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 		log.Errorf("package: failed to Marshal entire message, err: %f", err.Error())
 	}
 
-	buffer := make([]byte, 2)
+	buffer := make([]byte, MAX_PACKAGE_SIZE)
 	binary.BigEndian.PutUint16(buffer, uint16(len(bytes)))
 	buffer = append(buffer, bytes...)
 
@@ -85,8 +85,8 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 	}
 
 	// Check if any of the message headers are invalid or null.
-	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 {
-		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
+	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID == 0 {
+		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature,or no NetID) from a peer")
 	}
 
 	// Verify signature of message.

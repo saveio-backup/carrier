@@ -33,6 +33,10 @@ func listen(conn *net.UDPConn) <-chan []byte {
 			}
 			buf = buf[:n]
 			messages <- buf
+			select {
+			case <-Kill:
+				return
+			}
 		}
 	}()
 	return messages
