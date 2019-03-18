@@ -23,7 +23,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const MAX_PACKAGE_SIZE = 1024 * 64
+const (
+	MAX_PACKAGE_SIZE        = 1024 * 64
+	STORE_PACKAGE_REAL_SIZE = 2
+)
 
 // sendMessage marshals, signs and sends a message over a stream.
 func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState, address string) error {
@@ -42,10 +45,12 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 		log.Errorf("package: failed to Marshal entire message, err: %f", err.Error())
 	}
 
-	buffer := make([]byte, MAX_PACKAGE_SIZE)
+	buffer := make([]byte, STORE_PACKAGE_REAL_SIZE)
 	binary.BigEndian.PutUint16(buffer, uint16(len(bytes)))
 	buffer = append(buffer, bytes...)
-
+	if len(buffer) > MAX_PACKAGE_SIZE {
+		log.Errorf("Package size bigger than 64k is not allow with UDP protocol.")
+	}
 	writerMutex.Lock()
 	udpConn, ok := state.conn.(*net.UDPConn)
 	if !ok {
