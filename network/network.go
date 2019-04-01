@@ -605,7 +605,8 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 			}
 			continue
 		}
-		go func() {
+		//go func() {  msg buffer maybe over write by next package.
+		func() {
 			if msg.Signature != nil && !crypto.Verify(
 				n.opts.signaturePolicy,
 				n.opts.hashPolicy,

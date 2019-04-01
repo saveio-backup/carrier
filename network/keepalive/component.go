@@ -7,6 +7,7 @@ import (
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/internal/protobuf"
 	"github.com/oniio/oniP2p/network"
+	"sync"
 )
 
 const (
@@ -27,8 +28,8 @@ type Component struct {
 	peerStateChan chan *PeerStateEvent
 	stopCh        chan struct{}
 	// map to save last state for a peer
-	lastStates map[string]PeerState
-
+	//lastStates map[string]PeerState
+	lastStates *sync.Map
 	net *network.Network
 }
 
@@ -91,8 +92,7 @@ func New(opts ...ComponentOption) *Component {
 	defaultOptions()(p)
 
 	p.stopCh = make(chan struct{})
-	p.lastStates = make(map[string]PeerState)
-
+	p.lastStates = new(sync.Map)
 	for _, opt := range opts {
 		opt(p)
 	}
@@ -164,10 +164,8 @@ func (p *Component) timeout() {
 }
 
 func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state PeerState) {
-	last, ok := p.lastStates[client.Address]
-
-	p.lastStates[client.Address] = state
-
+	last, ok:= p.lastStates.Load(client.Address)
+	p.lastStates.Store(client.Address, state)
 	// no state change, no need notify
 	if ok && last == state {
 		return
