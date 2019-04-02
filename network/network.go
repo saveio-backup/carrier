@@ -29,7 +29,7 @@ import (
 type writeMode int
 
 const (
-	WRITE_MODE_LOOP   writeMode = iota
+	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
 
@@ -599,6 +599,9 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 
 	for {
 		msg, err := n.receiveUDPMessage(incoming)
+		if msg == nil {
+			continue
+		}
 		if err != nil {
 			if err != errEmptyMsg {
 				log.Error(err)

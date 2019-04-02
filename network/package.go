@@ -80,7 +80,10 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 	buffer := make([]byte, MAX_PACKAGE_SIZE)
 
 	udpConn, _ := conn.(*net.UDPConn)
-	_, _, err = udpConn.ReadFromUDP(buffer)
+	length, _, err := udpConn.ReadFromUDP(buffer)
+	if length == 0 {
+		return nil, nil
+	}
 	size := binary.BigEndian.Uint16(buffer[0:2])
 	// Deserialize message.
 	msg := new(protobuf.Message)
