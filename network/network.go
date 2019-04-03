@@ -599,7 +599,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 
 	for {
 		msg, err := n.receiveUDPMessage(incoming)
-		if msg == nil {
+		if msg == nil{
 			continue
 		}
 		if err != nil {
