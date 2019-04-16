@@ -12,10 +12,11 @@ import (
 	"strconv"
 	"time"
 
+	"sync"
+
 	"github.com/gortc/stun"
 	"github.com/oniio/oniChain/common/log"
 	"github.com/oniio/oniP2p/network"
-	"sync"
 )
 
 type StunComponent struct {
@@ -25,15 +26,15 @@ type StunComponent struct {
 
 	internalPort int
 	externalPort int
-	mu sync.Mutex
-	conn *net.UDPConn
+	mu           sync.Mutex
+	conn         *net.UDPConn
 }
 
 var (
 	StunComponentID                            = (*StunComponent)(nil)
-	_          network.ComponentInterface = (*StunComponent)(nil)
-	StunServer                            = flag.String("server", fmt.Sprintf(PublicStunSrv1), "Stun server Address")
-	Kill       chan struct{}
+	_               network.ComponentInterface = (*StunComponent)(nil)
+	StunServer                                 = flag.String("server", fmt.Sprintf(PublicStunSrv1), "Stun server Address")
+	Kill            chan struct{}
 )
 
 const (
@@ -43,7 +44,6 @@ const (
 
 func (st *StunComponent) Startup(n *network.Network) {
 	log.Infof("Setting up NAT traversal with Stun5389 for address: %s\n", n.Address)
-	flag.Parse()
 	info, err := network.ParseAddress(n.Address)
 	if err != nil {
 		log.Fatal("Unable to Parse Address:", err)
@@ -91,7 +91,7 @@ func (st *StunComponent) Startup(n *network.Network) {
 				st.externalIP = xorAddr.IP
 				st.externalPort = xorAddr.Port
 				publicAddr = xorAddr
-				Kill=make(chan struct{})
+				Kill = make(chan struct{})
 				close(Kill)
 				st.mu.Unlock()
 				break
