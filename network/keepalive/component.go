@@ -177,3 +177,11 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 		log.Infof("[keepalive] peerStateEvent: address %s state %s", client.Address, stateString[state])
 	}
 }
+
+func (p *Component)GetPeerStateChan()chan *PeerStateEvent{
+	return p.peerStateChan
+}
+
+func (p *Component)GetStopChan()chan struct{}{
+	return p.stopCh
+}
