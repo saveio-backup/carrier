@@ -50,6 +50,7 @@ message Message {
     // dial_address is the outgoing address for a udp connection
     string dial_address = 8;
     uint32 netID = 9;
+    bool IsProxy = 10;
 }
 
 message Ping {
@@ -77,4 +78,9 @@ message KeepaliveResponse {
 }
 
 message Disconnect{
+}
+
+message Proxy {
+    string origin_address = 1;
+    string proxy_address = 2;
 }

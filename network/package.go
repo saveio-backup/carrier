@@ -33,6 +33,7 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 	if state.IsDial {
 		if dialAddr, ok := n.udpDialAddrs.Load(address); ok {
 			message.DialAddress = fmt.Sprintf("udp://%s", dialAddr.(string))
+			message.DialAddress = n.Address
 		} else {
 			log.Errorf("package: failed to load dial address")
 		}
@@ -90,6 +91,10 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 	err = proto.Unmarshal(buffer[2:2+size], msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal message")
+	}
+
+	if msg.IsProxy == true{
+		return msg, nil
 	}
 
 	// Check if any of the message headers are invalid or null.

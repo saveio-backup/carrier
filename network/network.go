@@ -187,6 +187,8 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 		ptr = &protobuf.LookupNodeResponse{}
 	case opcode.DisconnectCode:
 		ptr = &protobuf.Disconnect{}
+	case opcode.ProxyCode:
+		ptr = &protobuf.Proxy{}
 	case opcode.UnregisteredCode:
 		log.Error("network: message received had no opcode")
 		return
@@ -311,6 +313,14 @@ func (n *Network) Listen() {
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
 
+}
+
+func (n *Network)GetPeerClient(address string) *PeerClient {
+	if client, ok:= n.peers.Load(address); ok{
+		return client.(*PeerClient)
+	}else{
+		return nil
+	}
 }
 
 // getOrSetPeerClient either returns a cached peer client or creates a new one given a net.Conn
@@ -620,8 +630,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 				log.Error("received message had an malformed signature")
 				return
 			}
-
-			client, err = n.getOrSetPeerClient(msg.DialAddress, incoming)
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
 			if err != nil {
 				log.Error(err)
 				return
@@ -629,7 +638,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 
 			client.ID = (*peer.ID)(msg.Sender)
 
-			if !n.ConnectionStateExists(msg.DialAddress) {
+			if !n.ConnectionStateExists(msg.Sender.Address) {
 				log.Error(errors.New("network: failed to load session"))
 				return
 			}

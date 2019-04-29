@@ -14,6 +14,7 @@ import (
 	"github.com/oniio/oniP2p/network/keepalive"
 	"github.com/oniio/oniP2p/network/nat"
 	"github.com/oniio/oniP2p/types/opcode"
+	"github.com/oniio/oniP2p/network/proxy"
 )
 
 const (
@@ -75,6 +76,8 @@ func main() {
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 
+	builder.AddComponent(new(proxy.ProxyComponent))
+
 	networkBuilder, err := builder.Build()
 	if err != nil {
 		log.Fatal(err)
@@ -82,14 +85,6 @@ func main() {
 	}
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	sc,reg:=networkBuilder.Component(nat.StunComponentID)
-	if !reg{
-		log.Error("stun component don't reg ")
-	}else {
-		exAddr:=sc.(*nat.StunComponent).GetPublicAddr()
-		networkBuilder.ExternalAddr=exAddr
-	}
-	log.Infof("Listening for peers on %s.", networkBuilder.ExternalAddr)
 
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)
