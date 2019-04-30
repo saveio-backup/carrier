@@ -3,7 +3,7 @@ package ed25519
 import (
 	"crypto/rand"
 
-	"github.com/oniio/oniP2p/crypto"
+	"github.com/saveio/carrier/crypto"
 )
 
 // Ed25519 represents the ed25519 cryptographic signature scheme.

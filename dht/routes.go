@@ -5,7 +5,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/oniio/oniP2p/peer"
+	"github.com/saveio/carrier/peer"
 )
 
 // BucketSize defines the NodeID, Key, and routing table data structures.

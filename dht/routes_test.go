@@ -11,8 +11,8 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/oniio/oniP2p/crypto/blake2b"
-	"github.com/oniio/oniP2p/peer"
+	"github.com/saveio/carrier/crypto/blake2b"
+	"github.com/saveio/carrier/peer"
 )
 
 var (

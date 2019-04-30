@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oniio/oniP2p/dht"
-	"github.com/oniio/oniP2p/internal/protobuf"
-	"github.com/oniio/oniP2p/network"
-	"github.com/oniio/oniP2p/peer"
+	"github.com/saveio/carrier/dht"
+	"github.com/saveio/carrier/internal/protobuf"
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/peer"
 )
 
 func queryPeerByID(net *network.Network, peerID peer.ID, targetID peer.ID, responses chan []*protobuf.ID) {

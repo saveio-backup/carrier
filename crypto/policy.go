@@ -1,5 +1,5 @@
-//go:generate mockgen -destination=mocks/mock_signature_policy.go -package=mocks github.com/oniio/oniP2p/crypto SignaturePolicy
-//go:generate mockgen -destination=mocks/mock_hash_policy.go -package=mocks github.com/oniio/oniP2p/crypto HashPolicy
+//go:generate mockgen -destination=mocks/mock_signature_policy.go -package=mocks github.com/saveio/carrier/crypto SignaturePolicy
+//go:generate mockgen -destination=mocks/mock_hash_policy.go -package=mocks github.com/saveio/carrier/crypto HashPolicy
 
 package crypto
 

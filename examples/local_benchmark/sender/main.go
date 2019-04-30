@@ -16,10 +16,10 @@ import (
 
 	"context"
 
-	"github.com/oniio/oniP2p/crypto/ed25519"
-	"github.com/oniio/oniP2p/examples/local_benchmark/messages"
-	"github.com/oniio/oniP2p/network"
-	"github.com/oniio/oniP2p/types/opcode"
+	"github.com/saveio/carrier/crypto/ed25519"
+	"github.com/saveio/carrier/examples/local_benchmark/messages"
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/types/opcode"
 )
 
 var profile = flag.String("profile", "", "write cpu profile to file")

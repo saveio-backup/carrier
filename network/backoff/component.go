@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/oniio/oniP2p/internal/protobuf"
-	"github.com/oniio/oniP2p/network"
+	"github.com/saveio/carrier/internal/protobuf"
+	"github.com/saveio/carrier/network"
 
-	"github.com/oniio/oniChain/common/log"
+	"github.com/saveio/themis/common/log"
 )
 
 const (

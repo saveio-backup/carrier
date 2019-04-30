@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oniio/oniP2p/network"
-	"github.com/oniio/oniP2p/network/discovery"
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/network/discovery"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/oniio/oniChain/common/log"
+	"github.com/saveio/themis/common/log"
 	"github.com/golang/glog"
 )
 

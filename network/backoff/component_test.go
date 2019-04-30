@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oniio/oniP2p/crypto"
-	"github.com/oniio/oniP2p/crypto/ed25519"
-	"github.com/oniio/oniP2p/examples/basic/messages"
-	"github.com/oniio/oniP2p/network"
-	"github.com/oniio/oniP2p/network/discovery"
-	"github.com/oniio/oniP2p/types/opcode"
+	"github.com/saveio/carrier/crypto"
+	"github.com/saveio/carrier/crypto/ed25519"
+	"github.com/saveio/carrier/examples/basic/messages"
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/network/discovery"
+	"github.com/saveio/carrier/types/opcode"
 	"github.com/pkg/errors"
 )
 

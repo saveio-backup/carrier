@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/oniio/oniP2p/crypto/blake2b"
+	"github.com/saveio/carrier/crypto/blake2b"
 )
 
 var (

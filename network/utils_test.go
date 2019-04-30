@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/oniio/oniP2p/internal/protobuf"
-	"github.com/oniio/oniP2p/peer"
+	"github.com/saveio/carrier/internal/protobuf"
+	"github.com/saveio/carrier/peer"
 )
 
 func TestSerializeMessageInfoForSigning(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oniio/oniP2p/crypto/ed25519"
-	"github.com/oniio/oniP2p/network"
+	"github.com/saveio/carrier/crypto/ed25519"
+	"github.com/saveio/carrier/network"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oniio/oniP2p/internal/test/protobuf"
-	"github.com/oniio/oniP2p/network"
-	"github.com/oniio/oniP2p/types/opcode"
+	"github.com/saveio/carrier/internal/test/protobuf"
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/types/opcode"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -1,7 +1,7 @@
 package blake2b
 
 import (
-	"github.com/oniio/oniP2p/crypto"
+	"github.com/saveio/carrier/crypto"
 
 	blake2blib "github.com/minio/blake2b-simd"
 )

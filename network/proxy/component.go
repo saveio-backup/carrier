@@ -2,10 +2,10 @@ package proxy
 
 import (
 	"context"
-	"github.com/oniio/oniP2p/internal/protobuf"
-	"github.com/oniio/oniP2p/network"
+	"github.com/saveio/carrier/internal/protobuf"
+	"github.com/saveio/carrier/network"
 	"time"
-	"github.com/oniio/oniChain/common/log"
+	"github.com/saveio/themis/common/log"
 )
 
 const PROXY_SERVE  = "udp://127.0.0.1:6008"

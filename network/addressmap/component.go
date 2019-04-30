@@ -1,9 +1,9 @@
 package addressmap
 
 import (
-	"github.com/oniio/oniChain/common/log"
-	"github.com/oniio/oniP2p/network"
-	"github.com/oniio/oniP2p/peer"
+	"github.com/saveio/themis/common/log"
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/peer"
 )
 
 type Component struct {

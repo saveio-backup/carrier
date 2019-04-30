@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	pb "github.com/oniio/oniP2p/internal/protobuf"
-	"github.com/oniio/oniP2p/internal/test/protobuf"
+	pb "github.com/saveio/carrier/internal/protobuf"
+	"github.com/saveio/carrier/internal/test/protobuf"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"

@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oniio/oniP2p/crypto"
-	"github.com/oniio/oniP2p/crypto/blake2b"
-	"github.com/oniio/oniP2p/crypto/ed25519"
-	"github.com/oniio/oniP2p/internal/test/protobuf"
-	"github.com/oniio/oniP2p/network"
-	"github.com/oniio/oniP2p/network/discovery"
-	"github.com/oniio/oniP2p/peer"
-	"github.com/oniio/oniP2p/types/opcode"
+	"github.com/saveio/carrier/crypto"
+	"github.com/saveio/carrier/crypto/blake2b"
+	"github.com/saveio/carrier/crypto/ed25519"
+	"github.com/saveio/carrier/internal/test/protobuf"
+	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/network/discovery"
+	"github.com/saveio/carrier/peer"
+	"github.com/saveio/carrier/types/opcode"
 )
 
 func init() {

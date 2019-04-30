@@ -6,7 +6,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/oniio/oniP2p/crypto"
+	"github.com/saveio/carrier/crypto"
 )
 
 func BenchmarkHash(b *testing.B) {

@@ -1,8 +1,8 @@
 package test
 
 import (
-	"github.com/oniio/oniP2p/internal/test/protobuf"
-	"github.com/oniio/oniP2p/network"
+	"github.com/saveio/carrier/internal/test/protobuf"
+	"github.com/saveio/carrier/network"
 )
 
 var (

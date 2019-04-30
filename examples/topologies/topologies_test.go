@@ -3,7 +3,7 @@ package topologies
 import (
 	"testing"
 
-	"github.com/oniio/oniP2p/network"
+	"github.com/saveio/carrier/network"
 )
 
 const basePort = 19700

@@ -1,7 +1,7 @@
 package blake2b
 
 import (
-	"github.com/oniio/oniP2p/crypto"
+	"github.com/saveio/carrier/crypto"
 )
 
 // Noop is a HashPolicy that returns the original input.
