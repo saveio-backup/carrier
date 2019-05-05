@@ -8,8 +8,6 @@ import (
 	"github.com/saveio/themis/common/log"
 )
 
-const PROXY_SERVE  = "udp://192.168.1.116:6008"
-
 type ProxyComponent struct {
 	*network.Component
 }

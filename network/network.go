@@ -189,8 +189,10 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 		ptr = &protobuf.LookupNodeResponse{}
 	case opcode.DisconnectCode:
 		ptr = &protobuf.Disconnect{}
-	case opcode.ProxyCode:
-		ptr = &protobuf.Proxy{}
+	case opcode.ProxyRequestCode:
+		ptr = &protobuf.ProxyRequest{}
+	case opcode.ProxyResponseCode:
+		ptr = &protobuf.ProxyResponse{}
 	case opcode.UnregisteredCode:
 		log.Error("network: message received had no opcode")
 		return

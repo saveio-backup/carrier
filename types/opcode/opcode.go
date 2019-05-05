@@ -23,7 +23,8 @@ func init() {
 		{&protobuf.Keepalive{}, KeepaliveCode},
 		{&protobuf.KeepaliveResponse{}, KeepaliveResponseCode},
 		{&protobuf.Disconnect{}, DisconnectCode},
-		{&protobuf.Proxy{}, ProxyCode},
+		{&protobuf.ProxyRequest{}, ProxyRequestCode},
+		{&protobuf.ProxyResponse{}, ProxyResponseCode},
 	}
 
 	for _, pair := range msgOpcodePairs {
@@ -43,7 +44,8 @@ const (
 	LookupNodeRequestCode  Opcode = 0x0000c // 12
 	LookupNodeResponseCode Opcode = 0x0000d // 13
 	DisconnectCode         Opcode = 0x0000e // 14
-	ProxyCode         	   Opcode = 0x0000f // 15
+	ProxyRequestCode       Opcode = 0x0000f // 15
+	ProxyResponseCode      Opcode = 0x00009 //  9
 	KeepaliveCode          Opcode = 0x00002 // 20
 	KeepaliveResponseCode  Opcode = 0x00003 // 21
 )
