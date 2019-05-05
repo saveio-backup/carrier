@@ -36,7 +36,7 @@ func (m *ID) Reset()         { *m = ID{} }
 func (m *ID) String() string { return proto.CompactTextString(m) }
 func (*ID) ProtoMessage()    {}
 func (*ID) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{0}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{0}
 }
 func (m *ID) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -113,7 +113,7 @@ func (m *Message) Reset()         { *m = Message{} }
 func (m *Message) String() string { return proto.CompactTextString(m) }
 func (*Message) ProtoMessage()    {}
 func (*Message) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{1}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{1}
 }
 func (m *Message) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -222,7 +222,7 @@ func (m *Ping) Reset()         { *m = Ping{} }
 func (m *Ping) String() string { return proto.CompactTextString(m) }
 func (*Ping) ProtoMessage()    {}
 func (*Ping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{2}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{2}
 }
 func (m *Ping) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -261,7 +261,7 @@ func (m *Pong) Reset()         { *m = Pong{} }
 func (m *Pong) String() string { return proto.CompactTextString(m) }
 func (*Pong) ProtoMessage()    {}
 func (*Pong) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{3}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{3}
 }
 func (m *Pong) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -301,7 +301,7 @@ func (m *LookupNodeRequest) Reset()         { *m = LookupNodeRequest{} }
 func (m *LookupNodeRequest) String() string { return proto.CompactTextString(m) }
 func (*LookupNodeRequest) ProtoMessage()    {}
 func (*LookupNodeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{4}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{4}
 }
 func (m *LookupNodeRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -348,7 +348,7 @@ func (m *LookupNodeResponse) Reset()         { *m = LookupNodeResponse{} }
 func (m *LookupNodeResponse) String() string { return proto.CompactTextString(m) }
 func (*LookupNodeResponse) ProtoMessage()    {}
 func (*LookupNodeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{5}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{5}
 }
 func (m *LookupNodeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -395,7 +395,7 @@ func (m *Bytes) Reset()         { *m = Bytes{} }
 func (m *Bytes) String() string { return proto.CompactTextString(m) }
 func (*Bytes) ProtoMessage()    {}
 func (*Bytes) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{6}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{6}
 }
 func (m *Bytes) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -441,7 +441,7 @@ func (m *Keepalive) Reset()         { *m = Keepalive{} }
 func (m *Keepalive) String() string { return proto.CompactTextString(m) }
 func (*Keepalive) ProtoMessage()    {}
 func (*Keepalive) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{7}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{7}
 }
 func (m *Keepalive) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -480,7 +480,7 @@ func (m *KeepaliveResponse) Reset()         { *m = KeepaliveResponse{} }
 func (m *KeepaliveResponse) String() string { return proto.CompactTextString(m) }
 func (*KeepaliveResponse) ProtoMessage()    {}
 func (*KeepaliveResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{8}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{8}
 }
 func (m *KeepaliveResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -519,7 +519,7 @@ func (m *Disconnect) Reset()         { *m = Disconnect{} }
 func (m *Disconnect) String() string { return proto.CompactTextString(m) }
 func (*Disconnect) ProtoMessage()    {}
 func (*Disconnect) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{9}
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{9}
 }
 func (m *Disconnect) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -548,7 +548,7 @@ func (m *Disconnect) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Disconnect proto.InternalMessageInfo
 
-type Proxy struct {
+type ProxyRequest struct {
 	OriginAddress        string   `protobuf:"bytes,1,opt,name=origin_address,json=originAddress,proto3" json:"origin_address,omitempty"`
 	ProxyAddress         string   `protobuf:"bytes,2,opt,name=proxy_address,json=proxyAddress,proto3" json:"proxy_address,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -556,18 +556,18 @@ type Proxy struct {
 	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *Proxy) Reset()         { *m = Proxy{} }
-func (m *Proxy) String() string { return proto.CompactTextString(m) }
-func (*Proxy) ProtoMessage()    {}
-func (*Proxy) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_ffb9fc9c71468593, []int{10}
+func (m *ProxyRequest) Reset()         { *m = ProxyRequest{} }
+func (m *ProxyRequest) String() string { return proto.CompactTextString(m) }
+func (*ProxyRequest) ProtoMessage()    {}
+func (*ProxyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{10}
 }
-func (m *Proxy) XXX_Unmarshal(b []byte) error {
+func (m *ProxyRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *Proxy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ProxyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_Proxy.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ProxyRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalTo(b)
@@ -577,26 +577,81 @@ func (m *Proxy) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Proxy) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Proxy.Merge(dst, src)
+func (dst *ProxyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProxyRequest.Merge(dst, src)
 }
-func (m *Proxy) XXX_Size() int {
+func (m *ProxyRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *Proxy) XXX_DiscardUnknown() {
-	xxx_messageInfo_Proxy.DiscardUnknown(m)
+func (m *ProxyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProxyRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_Proxy proto.InternalMessageInfo
+var xxx_messageInfo_ProxyRequest proto.InternalMessageInfo
 
-func (m *Proxy) GetOriginAddress() string {
+func (m *ProxyRequest) GetOriginAddress() string {
 	if m != nil {
 		return m.OriginAddress
 	}
 	return ""
 }
 
-func (m *Proxy) GetProxyAddress() string {
+func (m *ProxyRequest) GetProxyAddress() string {
+	if m != nil {
+		return m.ProxyAddress
+	}
+	return ""
+}
+
+type ProxyResponse struct {
+	OriginAddress        string   `protobuf:"bytes,1,opt,name=origin_address,json=originAddress,proto3" json:"origin_address,omitempty"`
+	ProxyAddress         string   `protobuf:"bytes,2,opt,name=proxy_address,json=proxyAddress,proto3" json:"proxy_address,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ProxyResponse) Reset()         { *m = ProxyResponse{} }
+func (m *ProxyResponse) String() string { return proto.CompactTextString(m) }
+func (*ProxyResponse) ProtoMessage()    {}
+func (*ProxyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_stream_9a1ab36dfc2e8cae, []int{11}
+}
+func (m *ProxyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ProxyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ProxyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *ProxyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProxyResponse.Merge(dst, src)
+}
+func (m *ProxyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ProxyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProxyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProxyResponse proto.InternalMessageInfo
+
+func (m *ProxyResponse) GetOriginAddress() string {
+	if m != nil {
+		return m.OriginAddress
+	}
+	return ""
+}
+
+func (m *ProxyResponse) GetProxyAddress() string {
 	if m != nil {
 		return m.ProxyAddress
 	}
@@ -614,7 +669,8 @@ func init() {
 	proto.RegisterType((*Keepalive)(nil), "protobuf.Keepalive")
 	proto.RegisterType((*KeepaliveResponse)(nil), "protobuf.KeepaliveResponse")
 	proto.RegisterType((*Disconnect)(nil), "protobuf.Disconnect")
-	proto.RegisterType((*Proxy)(nil), "protobuf.Proxy")
+	proto.RegisterType((*ProxyRequest)(nil), "protobuf.ProxyRequest")
+	proto.RegisterType((*ProxyResponse)(nil), "protobuf.ProxyResponse")
 }
 func (m *ID) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -940,7 +996,7 @@ func (m *Disconnect) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *Proxy) Marshal() (dAtA []byte, err error) {
+func (m *ProxyRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -950,7 +1006,40 @@ func (m *Proxy) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *Proxy) MarshalTo(dAtA []byte) (int, error) {
+func (m *ProxyRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.OriginAddress) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintStream(dAtA, i, uint64(len(m.OriginAddress)))
+		i += copy(dAtA[i:], m.OriginAddress)
+	}
+	if len(m.ProxyAddress) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintStream(dAtA, i, uint64(len(m.ProxyAddress)))
+		i += copy(dAtA[i:], m.ProxyAddress)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
+func (m *ProxyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ProxyResponse) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -1132,7 +1221,24 @@ func (m *Disconnect) Size() (n int) {
 	return n
 }
 
-func (m *Proxy) Size() (n int) {
+func (m *ProxyRequest) Size() (n int) {
+	var l int
+	_ = l
+	l = len(m.OriginAddress)
+	if l > 0 {
+		n += 1 + l + sovStream(uint64(l))
+	}
+	l = len(m.ProxyAddress)
+	if l > 0 {
+		n += 1 + l + sovStream(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *ProxyResponse) Size() (n int) {
 	var l int
 	_ = l
 	l = len(m.OriginAddress)
@@ -2098,7 +2204,7 @@ func (m *Disconnect) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Proxy) Unmarshal(dAtA []byte) error {
+func (m *ProxyRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2121,10 +2227,119 @@ func (m *Proxy) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: Proxy: wiretype end group for non-group")
+			return fmt.Errorf("proto: ProxyRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Proxy: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ProxyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OriginAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStream
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OriginAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProxyAddress", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStream
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProxyAddress = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStream(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStream
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProxyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStream
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProxyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProxyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2312,37 +2527,38 @@ var (
 	ErrIntOverflowStream   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("stream.proto", fileDescriptor_stream_ffb9fc9c71468593) }
+func init() { proto.RegisterFile("stream.proto", fileDescriptor_stream_9a1ab36dfc2e8cae) }
 
-var fileDescriptor_stream_ffb9fc9c71468593 = []byte{
-	// 457 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x64, 0x92, 0xd1, 0x6e, 0xd3, 0x30,
-	0x14, 0x86, 0x71, 0xd6, 0xa4, 0xcd, 0x69, 0x3a, 0x31, 0x83, 0xc0, 0x12, 0x50, 0x05, 0x0f, 0xa4,
-	0x5c, 0xf5, 0x02, 0x6e, 0xe0, 0x92, 0xa9, 0x02, 0x55, 0x83, 0x69, 0x0a, 0x0f, 0x10, 0x79, 0xcd,
-	0x59, 0x14, 0x2d, 0xb3, 0x83, 0xed, 0x22, 0xf2, 0x26, 0xbc, 0x0b, 0x2f, 0xc0, 0x25, 0x8f, 0x80,
-	0xca, 0x8b, 0xa0, 0x38, 0xce, 0x60, 0xda, 0x95, 0xfd, 0xff, 0xe7, 0x3f, 0x3e, 0x3d, 0x5f, 0x03,
-	0x89, 0xb1, 0x1a, 0xc5, 0xf5, 0xaa, 0xd5, 0xca, 0x2a, 0x3a, 0x73, 0xc7, 0xc5, 0xee, 0x92, 0x7f,
-	0x80, 0x60, 0xb3, 0xa6, 0x8f, 0x61, 0x2a, 0xd1, 0x16, 0x57, 0xd8, 0x31, 0x92, 0x92, 0x2c, 0xc9,
-	0x23, 0x89, 0xf6, 0x14, 0x3b, 0xca, 0x60, 0x2a, 0xca, 0x52, 0xa3, 0x31, 0x2c, 0x48, 0x49, 0x16,
-	0xe7, 0xa3, 0xa4, 0x87, 0x10, 0xd4, 0x25, 0x3b, 0x70, 0xe9, 0xa0, 0x2e, 0xf9, 0x8f, 0x00, 0xa6,
-	0x9f, 0xd0, 0x18, 0x51, 0x61, 0xdf, 0x75, 0x3d, 0x5c, 0xfd, 0x73, 0xa3, 0xa4, 0x2f, 0x20, 0x32,
-	0x28, 0x4b, 0xd4, 0xee, 0xb9, 0xf9, 0xab, 0x64, 0x35, 0xfe, 0x92, 0xd5, 0x66, 0x9d, 0xfb, 0x1a,
-	0x7d, 0x0a, 0xb1, 0xa9, 0x2b, 0x29, 0xec, 0x4e, 0xa3, 0x1f, 0xf1, 0xcf, 0xa0, 0xc7, 0xb0, 0xd0,
-	0xf8, 0x65, 0x87, 0xc6, 0x16, 0x52, 0xc9, 0x2d, 0xb2, 0x49, 0x4a, 0xb2, 0x49, 0x9e, 0x78, 0xf3,
-	0xac, 0xf7, 0xfa, 0x90, 0x9f, 0xe9, 0x43, 0xe1, 0x10, 0xf2, 0xe6, 0x10, 0x7a, 0x06, 0xa0, 0xb1,
-	0x6d, 0xba, 0xe2, 0xb2, 0x11, 0x15, 0x8b, 0x52, 0x92, 0xcd, 0xf2, 0xd8, 0x39, 0xef, 0x1b, 0x51,
-	0xd1, 0x47, 0x10, 0xa9, 0x76, 0xab, 0x4a, 0x64, 0xd3, 0x94, 0x64, 0x8b, 0xdc, 0x2b, 0xfa, 0x1c,
-	0x92, 0xb2, 0x16, 0x4d, 0x31, 0x92, 0x99, 0x39, 0x32, 0xf3, 0xde, 0x7b, 0xe7, 0xe9, 0x3c, 0x84,
-	0x50, 0xa2, 0xdd, 0xac, 0x59, 0xec, 0x3a, 0x07, 0xd1, 0x73, 0xd9, 0x98, 0x73, 0xad, 0xbe, 0x75,
-	0x0c, 0xdc, 0xb0, 0x51, 0xf2, 0x08, 0x26, 0xe7, 0xb5, 0xac, 0xdc, 0xa9, 0x64, 0xc5, 0xdf, 0xc2,
-	0xd1, 0x47, 0xa5, 0xae, 0x76, 0xed, 0x99, 0x2a, 0x31, 0x1f, 0x16, 0xeb, 0xe1, 0x59, 0xa1, 0x2b,
-	0xb4, 0x8e, 0xea, 0x1d, 0x78, 0x43, 0x8d, 0xbf, 0x01, 0xfa, 0x7f, 0xab, 0x69, 0x95, 0x34, 0x48,
-	0x39, 0x84, 0x2d, 0xa2, 0x36, 0x8c, 0xa4, 0x07, 0x77, 0x5a, 0x87, 0x12, 0x7f, 0x02, 0xe1, 0x49,
-	0x67, 0xd1, 0x50, 0x0a, 0x93, 0x52, 0x58, 0xe1, 0xff, 0x3c, 0x77, 0xe7, 0x73, 0x88, 0x4f, 0x11,
-	0x5b, 0xd1, 0xd4, 0x5f, 0x91, 0x3f, 0x80, 0xa3, 0x1b, 0x31, 0x8e, 0xe0, 0x09, 0xc0, 0xba, 0x36,
-	0x5b, 0x25, 0x25, 0x6e, 0x2d, 0xff, 0x0c, 0xa1, 0x5b, 0x8d, 0xbe, 0x84, 0x43, 0xa5, 0xeb, 0xaa,
-	0x96, 0x37, 0xbc, 0x88, 0xe3, 0xb5, 0x18, 0xdc, 0x91, 0xd8, 0x31, 0x2c, 0xda, 0x3e, 0x5f, 0xdc,
-	0xfe, 0xde, 0x12, 0x67, 0xfa, 0xd0, 0xc9, 0xfd, 0x9f, 0xfb, 0x25, 0xf9, 0xb5, 0x5f, 0x92, 0xdf,
-	0xfb, 0x25, 0xf9, 0xfe, 0x67, 0x79, 0xef, 0x22, 0x72, 0x7b, 0xbc, 0xfe, 0x1b, 0x00, 0x00, 0xff,
-	0xff, 0xc9, 0xdd, 0x9d, 0x77, 0xe0, 0x02, 0x00, 0x00,
+var fileDescriptor_stream_9a1ab36dfc2e8cae = []byte{
+	// 471 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x92, 0xc1, 0x6e, 0xd4, 0x3c,
+	0x14, 0x85, 0x7f, 0xa7, 0x33, 0x99, 0xc9, 0x9d, 0xa4, 0xfa, 0x6b, 0x10, 0x58, 0x02, 0x46, 0xc1,
+	0x05, 0x29, 0xab, 0x59, 0xc0, 0x06, 0x96, 0x54, 0x23, 0xd0, 0xa8, 0x50, 0x55, 0x59, 0xc2, 0x22,
+	0x72, 0x27, 0xb7, 0x51, 0xd4, 0xd4, 0x0e, 0xb6, 0x07, 0x91, 0x37, 0xe1, 0x5d, 0x78, 0x01, 0x96,
+	0x3c, 0x02, 0x1a, 0x5e, 0x04, 0xc5, 0x71, 0x0a, 0xa8, 0x5b, 0x56, 0xf6, 0x39, 0x3e, 0xf7, 0x5e,
+	0xfb, 0x4b, 0x20, 0x36, 0x56, 0xa3, 0xb8, 0x5e, 0xb5, 0x5a, 0x59, 0x45, 0xe7, 0x6e, 0xb9, 0xd8,
+	0x5d, 0xf2, 0x37, 0x10, 0x6c, 0xd6, 0xf4, 0x3e, 0xcc, 0x24, 0xda, 0xe2, 0x0a, 0x3b, 0x46, 0x52,
+	0x92, 0xc5, 0x79, 0x28, 0xd1, 0x9e, 0x62, 0x47, 0x19, 0xcc, 0x44, 0x59, 0x6a, 0x34, 0x86, 0x05,
+	0x29, 0xc9, 0xa2, 0x7c, 0x94, 0xf4, 0x10, 0x82, 0xba, 0x64, 0x07, 0x2e, 0x1d, 0xd4, 0x25, 0xff,
+	0x1a, 0xc0, 0xec, 0x1d, 0x1a, 0x23, 0x2a, 0xec, 0xab, 0xae, 0x87, 0xad, 0x6f, 0x37, 0x4a, 0xfa,
+	0x04, 0x42, 0x83, 0xb2, 0x44, 0xed, 0xda, 0x2d, 0x9e, 0xc5, 0xab, 0xf1, 0x26, 0xab, 0xcd, 0x3a,
+	0xf7, 0x67, 0xf4, 0x21, 0x44, 0xa6, 0xae, 0xa4, 0xb0, 0x3b, 0x8d, 0x7e, 0xc4, 0x6f, 0x83, 0x1e,
+	0x43, 0xa2, 0xf1, 0xe3, 0x0e, 0x8d, 0x2d, 0xa4, 0x92, 0x5b, 0x64, 0x93, 0x94, 0x64, 0x93, 0x3c,
+	0xf6, 0xe6, 0x59, 0xef, 0xf5, 0x21, 0x3f, 0xd3, 0x87, 0xa6, 0x43, 0xc8, 0x9b, 0x43, 0xe8, 0x11,
+	0x80, 0xc6, 0xb6, 0xe9, 0x8a, 0xcb, 0x46, 0x54, 0x2c, 0x4c, 0x49, 0x36, 0xcf, 0x23, 0xe7, 0xbc,
+	0x6e, 0x44, 0x45, 0xef, 0x41, 0xa8, 0xda, 0xad, 0x2a, 0x91, 0xcd, 0x52, 0x92, 0x25, 0xb9, 0x57,
+	0xf4, 0x31, 0xc4, 0x65, 0x2d, 0x9a, 0x62, 0x24, 0x33, 0x77, 0x64, 0x16, 0xbd, 0xf7, 0xca, 0xd3,
+	0xb9, 0x0b, 0x53, 0x89, 0x76, 0xb3, 0x66, 0x91, 0xab, 0x1c, 0x44, 0xcf, 0x65, 0x63, 0xce, 0xb5,
+	0xfa, 0xdc, 0x31, 0x70, 0xc3, 0x46, 0xc9, 0x43, 0x98, 0x9c, 0xd7, 0xb2, 0x72, 0xab, 0x92, 0x15,
+	0x7f, 0x09, 0x47, 0x6f, 0x95, 0xba, 0xda, 0xb5, 0x67, 0xaa, 0xc4, 0x7c, 0x78, 0x58, 0x0f, 0xcf,
+	0x0a, 0x5d, 0xa1, 0x75, 0x54, 0x6f, 0xc1, 0x1b, 0xce, 0xf8, 0x0b, 0xa0, 0x7f, 0x96, 0x9a, 0x56,
+	0x49, 0x83, 0x94, 0xc3, 0xb4, 0x45, 0xd4, 0x86, 0x91, 0xf4, 0xe0, 0x56, 0xe9, 0x70, 0xc4, 0x1f,
+	0xc0, 0xf4, 0xa4, 0xb3, 0x68, 0x28, 0x85, 0x49, 0x29, 0xac, 0xf0, 0x1f, 0xcf, 0xed, 0xf9, 0x02,
+	0xa2, 0x53, 0xc4, 0x56, 0x34, 0xf5, 0x27, 0xe4, 0x77, 0xe0, 0xe8, 0x46, 0x8c, 0x23, 0x78, 0x0c,
+	0xb0, 0xae, 0xcd, 0x56, 0x49, 0x89, 0x5b, 0xcb, 0xdf, 0x43, 0xec, 0x9e, 0x36, 0x5e, 0xfe, 0x29,
+	0x1c, 0x2a, 0x5d, 0x57, 0xb5, 0xbc, 0xc1, 0x46, 0x1c, 0xb6, 0x64, 0x70, 0x47, 0x70, 0xc7, 0x90,
+	0xb4, 0x7d, 0x59, 0xf1, 0xf7, 0x6f, 0x17, 0x3b, 0xd3, 0x87, 0xf8, 0x07, 0x48, 0x7c, 0x6f, 0xff,
+	0xba, 0x7f, 0xd8, 0xfc, 0xe4, 0xff, 0x6f, 0xfb, 0x25, 0xf9, 0xbe, 0x5f, 0x92, 0x1f, 0xfb, 0x25,
+	0xf9, 0xf2, 0x73, 0xf9, 0xdf, 0x45, 0xe8, 0x58, 0x3d, 0xff, 0x15, 0x00, 0x00, 0xff, 0xff, 0x63,
+	0xf7, 0x38, 0xe3, 0x44, 0x03, 0x00, 0x00,
 }

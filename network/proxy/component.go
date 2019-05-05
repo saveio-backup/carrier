@@ -8,7 +8,7 @@ import (
 	"github.com/saveio/themis/common/log"
 )
 
-const PROXY_SERVE  = "udp://127.0.0.1:6008"
+const PROXY_SERVE  = "udp://192.168.1.116:6008"
 
 type ProxyComponent struct {
 	*network.Component
@@ -18,12 +18,13 @@ type ProxyComponent struct {
 func (p *ProxyComponent) Startup(net *network.Network) {
 	go func() {
 		for{
-			client := net.GetPeerClient(PROXY_SERVE)
+			net.Bootstrap(net.GetProxyServer())
+			client := net.GetPeerClient(net.GetProxyServer())
 			if client == nil{
 				log.Info("Waiting one minute for Dialing to Proxy-Server successed...")
 				time.Sleep(time.Second*1)
 			}else{
-				client.Tell(context.Background(),&protobuf.Proxy{})
+				client.Tell(context.Background(),&protobuf.ProxyRequest{})
 				return
 			}
 		}
@@ -32,9 +33,9 @@ func (p *ProxyComponent) Startup(net *network.Network) {
 
 func (p *ProxyComponent) Receive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
-	case *protobuf.Proxy:
-		log.Info("Node public ip is:", ctx.Message().(*protobuf.Proxy).ProxyAddress)
-		ctx.Network().ID.Address= "udp://"+ctx.Message().(*protobuf.Proxy).ProxyAddress
+	case *protobuf.ProxyResponse:
+		log.Info("Node public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
+		ctx.Network().ID.Address= "udp://"+ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 	}
 
 	return nil

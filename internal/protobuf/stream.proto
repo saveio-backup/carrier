@@ -80,7 +80,12 @@ message KeepaliveResponse {
 message Disconnect{
 }
 
-message Proxy {
+message ProxyRequest {
+    string origin_address = 1;
+    string proxy_address = 2;
+}
+
+message ProxyResponse {
     string origin_address = 1;
     string proxy_address = 2;
 }

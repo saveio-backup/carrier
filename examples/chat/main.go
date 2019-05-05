@@ -11,8 +11,6 @@ import (
 	"github.com/saveio/carrier/examples/chat/messages"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/discovery"
-	"github.com/saveio/carrier/network/keepalive"
-	"github.com/saveio/carrier/network/nat"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/carrier/network/proxy"
 )
@@ -36,17 +34,17 @@ func main() {
 
 	// process other flags
 	portFlag := flag.Int("port", 60002, "local port to listen to")
-	hostFlag := flag.String("host", nat.GetValidLocalIP().String(), "local host to listen to")
+	hostFlag := flag.String("host", "localhost", "local host to listen to")
 	protocolFlag := flag.String("protocol", "udp", "protocol to use (kcp/tcp/udp)")
 	peersFlag := flag.String("peers", "", "peers to connect to")
-	natFlag := flag.Bool("stun", true, "enable nat traversal")
+	proxyFlag := flag.String("proxy", "localhost", "proxy server ip")
 	flag.Parse()
 
 	port := uint16(*portFlag)
 	host := *hostFlag
 	protocol := *protocolFlag
 	peers := strings.Split(*peersFlag, ",")
-	natEnabled := *natFlag
+	proxyServer := *proxyFlag
 	keys := ed25519.RandomKeyPair()
 
 	log.Infof("Private Key: %s", keys.PrivateKeyHex())
@@ -58,18 +56,14 @@ func main() {
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
 
 	// Add keepalive Component
-	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
+/*	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
 	options := []keepalive.ComponentOption{
 		keepalive.WithKeepaliveInterval(keepalive.DefaultKeepaliveInterval),
 		keepalive.WithKeepaliveTimeout(keepalive.DefaultKeepaliveTimeout),
 		keepalive.WithPeerStateChan(peerStateChan),
 	}
-	builder.AddComponent(keepalive.New(options...))
+	builder.AddComponent(keepalive.New(options...))*/
 
-	// Register NAT traversal Component.
-	if natEnabled {
-		nat.RegisterStunComponent(builder)
-	}
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))
 
@@ -83,6 +77,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
 

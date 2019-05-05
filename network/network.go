@@ -96,6 +96,8 @@ type Network struct {
 
 	// <-kill will begin the server shutdown process
 	kill chan struct{}
+
+	proxyServer string
 }
 
 // options for network struct
@@ -833,4 +835,12 @@ func (n *Network) SetNetworkID(netID uint32) {
 
 func (n *Network) GetNetworkID() uint32 {
 	return n.netID
+}
+
+func (n *Network)SetProxyServer(serverIP string)  {
+	n.proxyServer = serverIP
+}
+
+func (n *Network)GetProxyServer() string {
+	return n.proxyServer
 }
