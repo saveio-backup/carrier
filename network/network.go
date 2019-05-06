@@ -502,10 +502,6 @@ func (n *Network) Dial(address string) (interface{}, error) {
 		return nil, err
 	}
 
-	// use the connection for also receiving messages
-	if addrInfo.Protocol == "udp" {
-		go n.AcceptUdp(conn)
-	}
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		go n.Accept(conn)
 	}
@@ -634,7 +630,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 				log.Error("received message had an malformed signature")
 				return
 			}
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 			if err != nil {
 				log.Error(err)
 				return
@@ -845,4 +841,8 @@ func (n *Network)SetProxyServer(serverIP string)  {
 
 func (n *Network)GetProxyServer() string {
 	return n.proxyServer
+}
+
+func (n *Network)DeletePeerClient(address string) {
+	n.peers.Delete(address)
 }
