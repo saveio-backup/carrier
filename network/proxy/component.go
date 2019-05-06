@@ -5,8 +5,6 @@ import (
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
 	"context"
-	"encoding/binary"
-	"github.com/golang/protobuf/proto"
 	"net"
 )
 
@@ -20,15 +18,8 @@ func sendProxyRequest(n *network.Network) error {
 		log.Error("failed to sign message in send proxy request")
 		return err
 	}
-	bytes, err := proto.Marshal(signed)
-	if err != nil {
-		log.Errorf("package: failed to Marshal entire message, err: %f", err.Error())
-		return err
-	}
 
-	buffer := make([]byte, network.STORE_PACKAGE_REAL_SIZE)
-	binary.BigEndian.PutUint16(buffer, uint16(len(bytes)))
-	buffer = append(buffer, bytes...)
+	buffer := n.BuildRawContent(signed)
 	addrInfo, err := network.ParseAddress(n.GetProxyServer())
 	if err != nil {
 		log.Error("parse address error in send proxy request:",err.Error())
@@ -66,6 +57,7 @@ func (p *ProxyComponent) Receive(ctx *network.ComponentContext) error {
 		} else {
 			ctx.Network().ID.Address = relayIP
 		}
+		ctx.Network().FinishProxyServer()
 	}
 
 	return nil

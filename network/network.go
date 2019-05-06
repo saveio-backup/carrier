@@ -3,7 +3,6 @@ package network
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"math/rand"
 	"net"
 	"sync"
@@ -73,11 +72,6 @@ type Network struct {
 	// Node's cryptographic ID.
 	ID peer.ID
 
-	// Map of real remote ip:port (key) with real local ip:port(value);
-	// especially, when a udp client call server, local port is dynamic,
-	// so we need to record the real port;
-	udpDialAddrs *sync.Map
-
 	// Map of connection addresses (string) <-> *network.PeerClient
 	// so that the Network doesn't dial multiple times to the same ip
 	peers *sync.Map
@@ -98,6 +92,8 @@ type Network struct {
 	kill chan struct{}
 
 	proxyServer string
+
+	proxyFinish chan struct{}
 }
 
 // options for network struct
@@ -120,7 +116,6 @@ type ConnState struct {
 	writer       *bufio.Writer
 	messageNonce uint64
 	writerMutex  *sync.Mutex
-	IsDial       bool // when dial out to server on udp condition, value is true; otherwise, it is false;
 }
 
 // Init starts all network I/O workers.
@@ -343,30 +338,6 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	if err != nil {
 		return nil, err
 	}
-	// if conn is not nil, check that the sender host matches the net.Conn remote host address
-	//	todo: delete the following statement on if conn!=nil{...}
-	if conn != nil {
-		var remoteAddrInfo *AddressInfo
-		switch addrInfo.Protocol {
-		case "tcp", "kcp":
-			remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", conn.(net.Conn).RemoteAddr().Network(), conn.(net.Conn).RemoteAddr().String()))
-		case "udp":
-			//udpConn, _ := conn.(*net.UDPConn)
-			//remoteAddrInfo, err = ParseAddress(fmt.Sprintf("%s://%s", udpConn.RemoteAddr().Network(), udpConn.RemoteAddr().String()))
-		default:
-			log.Fatal("invalid protocol: " + addrInfo.Protocol)
-
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		// disalbe checking for address matching to pass for the case when ip mapping address is used
-		// to be further checked for impact
-		if (addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp") && addrInfo.Host != remoteAddrInfo.Host {
-			//return nil, errors.New("network: sender address did not match connection remote address")
-		}
-	}
 
 	clientNew, err := createPeerClient(n, address)
 	if err != nil {
@@ -388,10 +359,10 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	defer func() {
 		client.setOutgoingReady()
 	}()
-	isDial := false
+
 	if conn == nil {
 		conn, err = n.Dial(address)
-		isDial = true
+
 		if err != nil {
 			n.peers.Delete(address)
 			return nil, err
@@ -411,9 +382,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			conn:        conn,
 			writer:      bufio.NewWriterSize(udpConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
-			IsDial:      isDial,
 		})
-		n.udpDialAddrs.Store(address, udpConn.LocalAddr().String())
 	}
 	client.Init()
 
@@ -449,6 +418,10 @@ func (n *Network) startListening() {
 // BlockUntilListening blocks until this node is listening for new peers.
 func (n *Network) BlockUntilListening() {
 	<-n.listeningCh
+}
+
+func (n *Network)BlockUntilProxyFinish()  {
+	<-n.proxyFinish
 }
 
 // Bootstrap with a number of peers and commence a handshake.
@@ -845,4 +818,8 @@ func (n *Network)GetProxyServer() string {
 
 func (n *Network)DeletePeerClient(address string) {
 	n.peers.Delete(address)
+}
+
+func (n *Network) FinishProxyServer() {
+	close(n.proxyFinish)
 }

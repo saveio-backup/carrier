@@ -13,14 +13,11 @@ import (
 
 	"encoding/binary"
 
-	"strings"
-
-	"fmt"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/pkg/errors"
+	"github.com/saveio/carrier/types/opcode"
 )
 
 const (
@@ -28,22 +25,11 @@ const (
 	STORE_PACKAGE_REAL_SIZE = 2
 )
 
-// sendMessage marshals, signs and sends a message over a stream.
-func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState, address string) error {
-	if state.IsDial {
-		if dialAddr, ok := n.udpDialAddrs.Load(address); ok {
-			message.DialAddress = fmt.Sprintf("udp://%s", dialAddr.(string))
-			message.DialAddress = n.Address
-		} else {
-			log.Errorf("package: failed to load dial address")
-		}
-	} else {
-		message.DialAddress = n.Address
-	}
-
+func (n *Network)BuildRawContent( message *protobuf.Message) []byte {
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		log.Errorf("package: failed to Marshal entire message, err: %f", err.Error())
+		return nil
 	}
 
 	buffer := make([]byte, STORE_PACKAGE_REAL_SIZE)
@@ -51,23 +37,21 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 	buffer = append(buffer, bytes...)
 	if len(buffer) > MAX_PACKAGE_SIZE {
 		log.Errorf("Package size bigger than 64k is not allow with UDP protocol.")
+		return nil
+	}
+	return buffer
+}
+
+// sendMessage marshals, signs and sends a message over a stream.
+func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState, address string) error {
+	buffer:=n.BuildRawContent(message)
+	if nil == buffer{
+		log.Error("build raw conent from protobuf err in send udp message")
+		return nil
 	}
 	writerMutex.Lock()
-	udpConn, ok := state.conn.(*net.UDPConn)
-	if !ok {
-		log.Errorf("package: failed to write entire message, err: %+v", err)
-	}
-
-	if state.IsDial {
-		_, err = udpConn.Write(buffer)
-	} else {
-		index := strings.LastIndex(address, "/")
-		resolved, err := net.ResolveUDPAddr("udp", address[index+1:])
-		if err != nil {
-			return err
-		}
-		_, err = udpConn.WriteToUDP(buffer, resolved)
-	}
+	udpConn, _ := state.conn.(*net.UDPConn)
+	_, err := udpConn.Write(buffer)
 	if err != nil {
 		log.Errorf("package: failed to write entire message, err: %+v", err)
 	}
@@ -93,7 +77,7 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
 
-	if msg.IsProxy == true{
+	if msg.Opcode == uint32(opcode.ProxyResponseCode){
 		return msg, nil
 	}
 
@@ -101,17 +85,6 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID != n.GetNetworkID() {
 		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature,or no NetID) from a peer")
 	}
-
-	// Verify signature of message.
-	/*	if msg.Signature != nil && !crypto.Verify(
-			n.opts.signaturePolicy,
-			n.opts.hashPolicy,
-			msg.Sender.NetKey,
-			SerializeMessage(msg.Sender, msg.Message),
-			msg.Signature,
-		) {
-			return nil, errors.New("received message had an malformed signature")
-		}*/
 
 	return msg, nil
 }

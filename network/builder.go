@@ -240,8 +240,8 @@ func (builder *Builder) Build() (*Network, error) {
 
 		peers:        new(sync.Map),
 		connections:  new(sync.Map),
-		udpDialAddrs: new(sync.Map),
 		listeningCh:  make(chan struct{}),
+		proxyFinish:  make(chan struct{}),
 		kill:         make(chan struct{}),
 	}
 

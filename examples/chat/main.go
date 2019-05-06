@@ -80,6 +80,7 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
+	networkBuilder.BlockUntilProxyFinish()
 
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)
