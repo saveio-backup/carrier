@@ -39,12 +39,14 @@ const (
 	PEER_UNKNOWN     PeerState = 0 // peer network unknown
 	PEER_UNREACHABLE PeerState = 1 // peer network unreachable
 	PEER_REACHABLE   PeerState = 2 // peer network reachable
+	PEER_READY		 PeerState = 3 // udp peer ready for write to server. (as for udp is unconnect, we have to need ready state)
 )
 
 var stateString []string = []string{
 	"unknown",
 	"unreachable",
 	"reachable",
+	"ready",
 }
 
 type PeerStateEvent struct {
@@ -113,7 +115,16 @@ func (p *Component) Cleanup(net *network.Network) {
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
-	p.updateLastStateAndNotify(client, PEER_REACHABLE)
+	addrInfo, err:=network.ParseAddress(client.Address)
+	if err!=nil{
+		log.Error("parse address ", client.Address, " error in PeerConnect:", err.Error())
+	}
+	if addrInfo.Protocol == "udp"{
+		p.updateLastStateAndNotify(client, PEER_READY)
+		client.Tell(context.Background(), &protobuf.Keepalive{})
+	} else{
+		p.updateLastStateAndNotify(client, PEER_REACHABLE)
+	}
 }
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
@@ -130,6 +141,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 			return err
 		}
 	case *protobuf.KeepaliveResponse:
+		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 	}
 
 	return nil
@@ -156,7 +168,7 @@ func (p *Component) keepaliveService() {
 func (p *Component) timeout() {
 	p.net.EachPeer(func(client *network.PeerClient) bool {
 		// timeout notify state change
-		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
+		if time.Now().Second()-client.Time.Second() >= int(p.keepaliveTimeout){
 			p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
 		}
 		return true

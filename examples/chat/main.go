@@ -12,7 +12,7 @@ import (
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/discovery"
 	"github.com/saveio/carrier/types/opcode"
-	"github.com/saveio/carrier/network/proxy"
+	"github.com/saveio/carrier/network/keepalive"
 )
 
 const (
@@ -56,13 +56,13 @@ func main() {
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
 
 	// Add keepalive Component
-/*	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
+	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
 	options := []keepalive.ComponentOption{
 		keepalive.WithKeepaliveInterval(keepalive.DefaultKeepaliveInterval),
 		keepalive.WithKeepaliveTimeout(keepalive.DefaultKeepaliveTimeout),
 		keepalive.WithPeerStateChan(peerStateChan),
 	}
-	builder.AddComponent(keepalive.New(options...))*/
+	builder.AddComponent(keepalive.New(options...))
 
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))
@@ -70,7 +70,7 @@ func main() {
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 
-	builder.AddComponent(new(proxy.ProxyComponent))
+	//builder.AddComponent(new(proxy.ProxyComponent))
 
 	networkBuilder, err := builder.Build()
 	if err != nil {
@@ -80,7 +80,7 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	networkBuilder.BlockUntilProxyFinish()
+	//networkBuilder.BlockUntilProxyFinish()
 
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)
