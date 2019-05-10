@@ -13,11 +13,9 @@ import (
 	"github.com/saveio/carrier/network/discovery"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/carrier/network/keepalive"
+	"github.com/saveio/carrier/network/proxy"
 )
 
-const (
-	udp = "udp4"
-)
 type ChatComponent struct{ *network.Component }
 
 func (state *ChatComponent) Receive(ctx *network.ComponentContext) error {
@@ -70,7 +68,7 @@ func main() {
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 
-	//builder.AddComponent(new(proxy.ProxyComponent))
+	builder.AddComponent(new(proxy.ProxyComponent))
 
 	networkBuilder, err := builder.Build()
 	if err != nil {
@@ -80,7 +78,7 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	//networkBuilder.BlockUntilProxyFinish()
+	networkBuilder.BlockUntilProxyFinish()
 
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)

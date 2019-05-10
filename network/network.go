@@ -532,7 +532,8 @@ func (n *Network) Accept(incoming interface{}) {
 			return
 		}
 
-		go func() {
+		//go func() {
+		func() {
 			if msg.Signature != nil && !crypto.Verify(
 				n.opts.signaturePolicy,
 				n.opts.hashPolicy,

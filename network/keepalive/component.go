@@ -42,7 +42,7 @@ const (
 	PEER_READY		 PeerState = 3 // udp peer ready for write to server. (as for udp is unconnect, we have to need ready state)
 )
 
-var stateString []string = []string{
+var stateString = []string{
 	"unknown",
 	"unreachable",
 	"reachable",
