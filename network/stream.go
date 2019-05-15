@@ -12,6 +12,7 @@ import (
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/pkg/errors"
+	"github.com/saveio/carrier/types/opcode"
 )
 
 var errEmptyMsg = errors.New("received an empty message from a peer")
@@ -108,21 +109,14 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
 
+	if msg.Opcode == uint32(opcode.ProxyResponseCode){
+		return msg, nil
+	}
+
 	// Check if any of the message headers are invalid or null.
 	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID != n.GetNetworkID() {
 		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
-
-	// Verify signature of message.
-	/*	if msg.Signature != nil && !crypto.Verify(
-			n.opts.signaturePolicy,
-			n.opts.hashPolicy,
-			msg.Sender.NetKey,
-			SerializeMessage(msg.Sender, msg.Message),
-			msg.Signature,
-		) {
-			return nil, errors.New("received message had an malformed signature")
-		}*/
 
 	return msg, nil
 }

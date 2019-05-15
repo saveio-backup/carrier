@@ -32,7 +32,7 @@ func main() {
 
 	// process other flags
 	portFlag := flag.Int("port", 60002, "local port to listen to")
-	hostFlag := flag.String("host", "localhost", "local host to listen to")
+	hostFlag := flag.String("host", "127.0.0.1", "local host to listen to")
 	protocolFlag := flag.String("protocol", "udp", "protocol to use (kcp/tcp/udp)")
 	peersFlag := flag.String("peers", "", "peers to connect to")
 	proxyFlag := flag.String("proxy", "localhost", "proxy server ip")

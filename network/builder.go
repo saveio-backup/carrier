@@ -141,9 +141,9 @@ func NewBuilder() *Builder {
 	}
 
 	// Register default transport layers.
-	builder.RegisterTransportLayer("tcp", transport.NewTCP())
+	//builder.RegisterTransportLayer("tcp", transport.NewTCP())
 	builder.RegisterTransportLayer("kcp", transport.NewKCP())
-	builder.RegisterTransportLayer("udp", transport.NewUDP())
+	//builder.RegisterTransportLayer("udp", transport.NewUDP())
 
 	return builder
 }
@@ -241,10 +241,13 @@ func (builder *Builder) Build() (*Network, error) {
 		peers:        new(sync.Map),
 		connections:  new(sync.Map),
 		listeningCh:  make(chan struct{}),
-		proxyFinish:  make(chan struct{}),
+		proxyFinish:  new(sync.Map),
 		kill:         make(chan struct{}),
 	}
-
+	net.transports.Range(func(protocol, _ interface{}) bool{
+		net.proxyFinish.Store(protocol, make(chan struct{}))
+		return true
+	})
 	net.Init()
 
 	return net, nil

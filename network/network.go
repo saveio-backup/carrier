@@ -93,7 +93,7 @@ type Network struct {
 
 	proxyServer string
 
-	proxyFinish chan struct{}
+	proxyFinish *sync.Map
 }
 
 // options for network struct
@@ -421,7 +421,10 @@ func (n *Network) BlockUntilListening() {
 }
 
 func (n *Network)BlockUntilProxyFinish()  {
-	<-n.proxyFinish
+	n.proxyFinish.Range(func(protocol, notify interface{}) bool {
+		<- notify.(chan struct{})
+		return true
+	})
 }
 
 // Bootstrap with a number of peers and commence a handshake.
@@ -821,6 +824,15 @@ func (n *Network)DeletePeerClient(address string) {
 	n.peers.Delete(address)
 }
 
-func (n *Network) FinishProxyServer() {
-	close(n.proxyFinish)
+func (n *Network) FinishProxyServer(protocol string) {
+	n.proxyFinish.Range(func(p, notify interface{}) bool {
+		if protocol == p.(string){
+			close(notify.(chan struct{}))
+		}
+		return true
+	})
+}
+
+func (n *Network)Transports() *sync.Map {
+	return n.transports
 }
