@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"github.com/saveio/carrier/network"
-	"fmt"
 )
 
 
@@ -29,7 +28,6 @@ func (p *ProxyComponent) Receive(ctx *network.ComponentContext) error {
 			UDPComponentReceive(ctx)
 		}
 		if protocol.(string) == "kcp"{
-			fmt.Println("proxy component receive, protocol is kcp...")
 			KCPComponentReceive(ctx)
 		}
 		return true

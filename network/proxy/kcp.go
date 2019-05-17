@@ -58,7 +58,7 @@ func  KCPComponentReceive(ctx *network.ComponentContext) error {
 	case *protobuf.ProxyResponse:
 		log.Info("Node public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
 
-		relayIP:= "udp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
+		relayIP:= "kcp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 
 		if relayIP == ctx.Network().ID.Address{
 			ctx.Network().DeletePeerClient(ctx.Network().GetProxyServer())

@@ -49,7 +49,7 @@ func main() {
 	log.Infof("Public Key: %s", keys.PublicKeyHex())
 
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.ChatMessage{})
-	builder := network.NewBuilder()
+	builder := network.NewBuilderWithProtocol(protocol)
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
 

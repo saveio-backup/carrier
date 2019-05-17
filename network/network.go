@@ -462,7 +462,7 @@ func (n *Network) Dial(address string) (interface{}, error) {
 		}
 		// check if dialing address is same as its own IP
 		if addrInfo.Host == host.Host {
-			addrInfo.Host = "127.0.0.1"
+			//addrInfo.Host = "127.0.0.1"
 		}
 	}
 
@@ -488,7 +488,7 @@ func (n *Network) Dial(address string) (interface{}, error) {
 // Accept handles peer registration and processes incoming message streams.
 func (n *Network) Accept(incoming interface{}) {
 	var client *PeerClient
-	var clientInit sync.Once
+	//var clientInit sync.Once
 
 	recvWindow := NewRecvWindow(n.opts.recvWindowSize)
 
@@ -515,8 +515,8 @@ func (n *Network) Accept(incoming interface{}) {
 		}
 
 		// Initialize client if not exists.
-		clientInit.Do(func() {
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+		//clientInit.Do(func() {
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 			if err != nil {
 				return
 			}
@@ -528,7 +528,7 @@ func (n *Network) Accept(incoming interface{}) {
 			}
 
 			//client.setIncomingReady() has done in getOrSetPeerClient() function
-		})
+		//})
 
 		if err != nil {
 			log.Error(err)
