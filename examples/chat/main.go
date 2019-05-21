@@ -49,7 +49,7 @@ func main() {
 	log.Infof("Public Key: %s", keys.PublicKeyHex())
 
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.ChatMessage{})
-	builder := network.NewBuilderWithProtocol(protocol)
+	builder := network.NewBuilder()
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
 
@@ -68,7 +68,7 @@ func main() {
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 
-	builder.AddComponent(new(proxy.ProxyComponent))
+	builder.AddComponent(new(proxy.UDPProxyComponent))
 
 	networkBuilder, err := builder.Build()
 	if err != nil {
@@ -78,7 +78,7 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	networkBuilder.BlockUntilProxyFinish()
+	networkBuilder.BlockUntilUDPProxyFinish()
 
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)

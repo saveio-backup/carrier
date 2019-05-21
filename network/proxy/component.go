@@ -4,33 +4,30 @@ import (
 	"github.com/saveio/carrier/network"
 )
 
-
-type ProxyComponent struct {
+type UDPProxyComponent struct {
 	*network.Component
 }
 
 // Startup implements the Component callback
-func (p *ProxyComponent) Startup(n *network.Network) {
-	n.Transports().Range(func(protocol, _ interface{})bool{
-		if protocol.(string) == "udp"{
-			UDPComponentStartup(n)
-		}
-		if protocol.(string) == "kcp"{
-			KCPComponentStartup(n)
-		}
-		return true
-	})
+func (p *UDPProxyComponent) Startup(n *network.Network) {
+	UDPComponentStartup(n)
 }
 
-func (p *ProxyComponent) Receive(ctx *network.ComponentContext) error {
-	ctx.Network().Transports().Range(func(protocol, _ interface{})bool{
-		if protocol.(string) == "udp" {
-			UDPComponentReceive(ctx)
-		}
-		if protocol.(string) == "kcp"{
-			KCPComponentReceive(ctx)
-		}
-		return true
-	})
+func (p *UDPProxyComponent) Receive(ctx *network.ComponentContext) error {
+	UDPComponentReceive(ctx)
+	return nil
+}
+
+type KCPProxyComponent struct {
+	*network.Component
+}
+
+// Startup implements the Component callback
+func (p *KCPProxyComponent) Startup(n *network.Network) {
+	KCPComponentStartup(n)
+}
+
+func (p *KCPProxyComponent) Receive(ctx *network.ComponentContext) error {
+	KCPComponentReceive(ctx)
 	return nil
 }

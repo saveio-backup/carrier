@@ -420,6 +420,18 @@ func (n *Network) BlockUntilListening() {
 	<-n.listeningCh
 }
 
+func (n *Network)BlockUntilKCPProxyFinish() {
+	if notify, ok:=n.proxyFinish.Load("kcp"); ok{
+		<- notify.(chan struct{})
+	}
+}
+
+func (n *Network)BlockUntilUDPProxyFinish() {
+	if notify, ok:=n.proxyFinish.Load("udp"); ok{
+		<- notify.(chan struct{})
+	}
+}
+
 func (n *Network)BlockUntilProxyFinish()  {
 	n.proxyFinish.Range(func(protocol, notify interface{}) bool {
 		<- notify.(chan struct{})
