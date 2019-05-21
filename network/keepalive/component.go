@@ -168,7 +168,7 @@ func (p *Component) keepaliveService() {
 func (p *Component) timeout() {
 	p.net.EachPeer(func(client *network.PeerClient) bool {
 		// timeout notify state change
-		if time.Now().Second()-client.Time.Second() >= int(p.keepaliveTimeout){
+		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
 			p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
 		}
 		return true
