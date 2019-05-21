@@ -77,7 +77,7 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
 
-	if msg.Opcode == uint32(opcode.ProxyResponseCode){
+	if msg.Opcode == uint32(opcode.ProxyResponseCode) || msg.Opcode == uint32(opcode.KeepaliveResponseCode){
 		return msg, nil
 	}
 
