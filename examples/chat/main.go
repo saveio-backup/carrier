@@ -67,8 +67,12 @@ func main() {
 
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
-
-	builder.AddComponent(new(proxy.UDPProxyComponent))
+	if protocol == "udp"{
+		builder.AddComponent(new(proxy.UDPProxyComponent))
+	}
+	if protocol == "kcp"{
+		builder.AddComponent(new(proxy.KCPProxyComponent))
+	}
 
 	networkBuilder, err := builder.Build()
 	if err != nil {
@@ -78,7 +82,12 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	networkBuilder.BlockUntilUDPProxyFinish()
+	if protocol == "udp"{
+		networkBuilder.BlockUntilUDPProxyFinish()
+	}
+	if protocol == "kcp"{
+		networkBuilder.BlockUntilKCPProxyFinish()
+	}
 
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)
