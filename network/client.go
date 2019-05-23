@@ -354,3 +354,7 @@ func (c *PeerClient) IsOutgoingReady() bool {
 		return false
 	}
 }
+
+func (c *PeerClient)ResetConnectionID(cid []byte) {
+	c.ID.ConnectionId = cid
+}

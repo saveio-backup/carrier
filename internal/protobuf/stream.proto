@@ -25,6 +25,8 @@ message ID {
     string address = 2;
     // id is the computed hash of the net key
     bytes id = 3;
+    //used in communication with proxy server
+    bytes connection_id=4;
 }
 
 message Message {

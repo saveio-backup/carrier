@@ -8,6 +8,7 @@ import (
 
 	"github.com/saveio/carrier/crypto/blake2b"
 	"github.com/saveio/carrier/internal/protobuf"
+	"github.com/saveio/carrier/crypto/ed25519"
 )
 
 // ID is an identity of nodes, using its public key hash and network address.
@@ -15,7 +16,7 @@ type ID protobuf.ID
 
 // CreateID is a factory function creating ID.
 func CreateID(address string, publicKey []byte) ID {
-	return ID{Address: address, NetKey: publicKey, Id: blake2b.New().HashBytes(publicKey)}
+	return ID{Address: address, NetKey: publicKey, Id: blake2b.New().HashBytes(publicKey), ConnectionId: blake2b.New().HashBytes(ed25519.RandomKeyPair().PublicKey)}
 }
 
 // String returns the identity address and public key.
