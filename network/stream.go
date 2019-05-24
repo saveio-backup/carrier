@@ -35,6 +35,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	bytesWritten, totalBytesWritten := 0, 0
 
 	writerMutex.Lock()
+	defer writerMutex.Unlock()
 
 	bw, isBuffered := w.(*bufio.Writer)
 	if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
@@ -50,16 +51,6 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 		}
 		totalBytesWritten += bytesWritten
 	}
-
-	select {
-	case <-n.kill:
-		if err := bw.Flush(); err != nil {
-			return err
-		}
-	default:
-	}
-
-	writerMutex.Unlock()
 
 	if err != nil {
 		return errors.Wrap(err, "stream: failed to write to socket")

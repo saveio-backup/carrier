@@ -602,14 +602,11 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 
 	for {
 		msg, err := n.receiveUDPMessage(incoming)
-		if msg == nil{
-			continue
-		}
-		if err != nil {
+		if err != nil || msg == nil{
 			if err != errEmptyMsg {
 				log.Error(err)
 			}
-			continue
+			break
 		}
 		//go func() {  msg buffer maybe over write by next package.
 		func() {

@@ -50,12 +50,12 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 		return nil
 	}
 	writerMutex.Lock()
+	defer writerMutex.Unlock()
 	udpConn, _ := state.conn.(*net.UDPConn)
 	_, err := udpConn.Write(buffer)
 	if err != nil {
 		log.Errorf("package: failed to write entire message, err: %+v", err)
 	}
-	writerMutex.Unlock()
 	return nil
 }
 
