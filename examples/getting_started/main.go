@@ -7,9 +7,9 @@ import (
 	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network"
-	"github.com/saveio/carrier/network/backoff"
-	"github.com/saveio/carrier/network/discovery"
-	"github.com/saveio/carrier/network/nat"
+	"github.com/saveio/carrier/network/components/backoff"
+	"github.com/saveio/carrier/network/components/discovery"
+	"github.com/saveio/carrier/network/components/nat"
 )
 
 func main() {

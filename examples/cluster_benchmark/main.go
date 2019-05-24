@@ -14,8 +14,8 @@ import (
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/cluster_benchmark/messages"
 	"github.com/saveio/carrier/network"
-	"github.com/saveio/carrier/network/backoff"
-	"github.com/saveio/carrier/network/discovery"
+	"github.com/saveio/carrier/network/components/backoff"
+	"github.com/saveio/carrier/network/components/discovery"
 	"github.com/saveio/carrier/types/opcode"
 )
 

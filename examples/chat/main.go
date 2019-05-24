@@ -10,10 +10,10 @@ import (
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/chat/messages"
 	"github.com/saveio/carrier/network"
-	"github.com/saveio/carrier/network/discovery"
+	"github.com/saveio/carrier/network/components/discovery"
 	"github.com/saveio/carrier/types/opcode"
-	"github.com/saveio/carrier/network/keepalive"
-	"github.com/saveio/carrier/network/proxy"
+	"github.com/saveio/carrier/network/components/keepalive"
+	"github.com/saveio/carrier/network/components/proxy"
 )
 
 type ChatComponent struct{ *network.Component }
