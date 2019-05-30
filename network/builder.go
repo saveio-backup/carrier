@@ -5,12 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/blake2b"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network/transport"
 	"github.com/saveio/carrier/peer"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -257,13 +257,13 @@ func (builder *Builder) Build() (*Network, error) {
 		Components: builder.Components,
 		transports: builder.transports,
 
-		peers:        new(sync.Map),
-		connections:  new(sync.Map),
-		listeningCh:  make(chan struct{}),
-		proxyFinish:  new(sync.Map),
-		kill:         make(chan struct{}),
+		peers:       new(sync.Map),
+		connections: new(sync.Map),
+		listeningCh: make(chan struct{}),
+		proxyFinish: new(sync.Map),
+		kill:        make(chan struct{}),
 	}
-	net.transports.Range(func(protocol, _ interface{}) bool{
+	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.proxyFinish.Store(protocol, make(chan struct{}))
 		return true
 	})

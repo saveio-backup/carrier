@@ -14,10 +14,10 @@ import (
 	"encoding/binary"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/saveio/themis/common/log"
-	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/pkg/errors"
+	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/types/opcode"
+	"github.com/saveio/themis/common/log"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 	STORE_PACKAGE_REAL_SIZE = 2
 )
 
-func (n *Network)BuildRawContent( message *protobuf.Message) []byte {
+func (n *Network) BuildRawContent(message *protobuf.Message) []byte {
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		log.Errorf("package: failed to Marshal entire message, err: %f", err.Error())
@@ -44,8 +44,8 @@ func (n *Network)BuildRawContent( message *protobuf.Message) []byte {
 
 // sendMessage marshals, signs and sends a message over a stream.
 func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, state *ConnState, address string) error {
-	buffer:=n.BuildRawContent(message)
-	if nil == buffer{
+	buffer := n.BuildRawContent(message)
+	if nil == buffer {
 		log.Error("build raw conent from protobuf err in send udp message")
 		return nil
 	}
@@ -77,7 +77,7 @@ func (n *Network) receiveUDPMessage(conn interface{}) (*protobuf.Message, error)
 		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
 
-	if msg.Opcode == uint32(opcode.ProxyResponseCode) || msg.Opcode == uint32(opcode.KeepaliveResponseCode){
+	if msg.Opcode == uint32(opcode.ProxyResponseCode) || msg.Opcode == uint32(opcode.KeepaliveResponseCode) {
 		return msg, nil
 	}
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/dht"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/peer"
+	"github.com/saveio/themis/common/log"
 )
 
 type Component struct {

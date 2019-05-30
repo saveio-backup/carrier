@@ -7,9 +7,9 @@ import (
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/discovery"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/saveio/themis/common/log"
 	"github.com/golang/glog"
+	"github.com/saveio/themis/common/log"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNatConnect(t *testing.T) {
@@ -20,7 +20,7 @@ func TestNatConnect(t *testing.T) {
 	for i := 0; i < numNodes; i++ {
 		b := network.NewBuilder()
 		port := network.GetRandomUnusedPort()
-		glog.Infof("randomUnusedPort:%d ",port)
+		glog.Infof("randomUnusedPort:%d ", port)
 		b.SetAddress(network.FormatAddress("tcp", "localhost", uint16(port)))
 		RegisterComponent(b)
 		b.AddComponent(new(discovery.Component))
@@ -40,7 +40,7 @@ func TestNatConnect(t *testing.T) {
 	peers := routes.GetPeers()
 	for len(peers) < numNodes-1 {
 		peers = routes.GetPeers()
-		log.Info("peers: ",peers)
+		log.Info("peers: ", peers)
 		time.Sleep(50 * time.Millisecond)
 	}
 

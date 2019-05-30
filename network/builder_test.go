@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/saveio/carrier/crypto/blake2b"
 	"github.com/saveio/carrier/crypto/ed25519"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -10,13 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/cluster_benchmark/messages"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/discovery"
 	"github.com/saveio/carrier/types/opcode"
+	"github.com/saveio/themis/common/log"
 )
 
 const MESSAGE_THRESHOLD uint64 = 2000

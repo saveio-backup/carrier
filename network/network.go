@@ -21,8 +21,8 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
-	"github.com/saveio/themis/common/log"
 	"github.com/pkg/errors"
+	"github.com/saveio/themis/common/log"
 )
 
 type writeMode int
@@ -318,10 +318,10 @@ func (n *Network) Listen() {
 
 }
 
-func (n *Network)GetPeerClient(address string) *PeerClient {
-	if client, ok:= n.peers.Load(address); ok{
+func (n *Network) GetPeerClient(address string) *PeerClient {
+	if client, ok := n.peers.Load(address); ok {
 		return client.(*PeerClient)
-	}else{
+	} else {
 		return nil
 	}
 }
@@ -424,21 +424,21 @@ func (n *Network) BlockUntilListening() {
 	<-n.listeningCh
 }
 
-func (n *Network)BlockUntilKCPProxyFinish() {
-	if notify, ok:=n.proxyFinish.Load("kcp"); ok{
-		<- notify.(chan struct{})
+func (n *Network) BlockUntilKCPProxyFinish() {
+	if notify, ok := n.proxyFinish.Load("kcp"); ok {
+		<-notify.(chan struct{})
 	}
 }
 
-func (n *Network)BlockUntilUDPProxyFinish() {
-	if notify, ok:=n.proxyFinish.Load("udp"); ok{
-		<- notify.(chan struct{})
+func (n *Network) BlockUntilUDPProxyFinish() {
+	if notify, ok := n.proxyFinish.Load("udp"); ok {
+		<-notify.(chan struct{})
 	}
 }
 
-func (n *Network)BlockUntilProxyFinish()  {
+func (n *Network) BlockUntilProxyFinish() {
 	n.proxyFinish.Range(func(protocol, notify interface{}) bool {
-		<- notify.(chan struct{})
+		<-notify.(chan struct{})
 		return true
 	})
 }
@@ -495,18 +495,16 @@ func (n *Network) Dial(address string) (interface{}, error) {
 	}
 
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-		go n.Accept(conn)
+		go n.Accept(conn.(net.Conn))
 	}
 
 	return conn, nil
 }
 
 // Accept handles peer registration and processes incoming message streams.
-func (n *Network) Accept(incoming interface{}) {
+func (n *Network) Accept(incoming net.Conn) {
 	var client *PeerClient
 	//var clientInit sync.Once
-
-	recvWindow := NewRecvWindow(n.opts.recvWindowSize)
 
 	// Cleanup connections when we are done with them.
 	defer func() {
@@ -517,7 +515,7 @@ func (n *Network) Accept(incoming interface{}) {
 		}
 
 		if incoming != nil {
-			incoming.(net.Conn).Close()
+			incoming.Close()
 		}
 	}()
 
@@ -530,20 +528,18 @@ func (n *Network) Accept(incoming interface{}) {
 			break
 		}
 
-		// Initialize client if not exists.
-		//clientInit.Do(func() {
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
-			if err != nil {
-				return
-			}
+		client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+		if err != nil {
+			return
+		}
 
-			client.ID = (*peer.ID)(msg.Sender)
+		client.ID = (*peer.ID)(msg.Sender)
 
-			if !n.ConnectionStateExists(client.ID.Address) {
-				err = errors.New("network: failed to load session")
-			}
+		if !n.ConnectionStateExists(client.ID.Address) {
+			err = errors.New("network: failed to load session")
+		}
 
-			//client.setIncomingReady() has done in getOrSetPeerClient() function
+		//client.setIncomingReady() has done in getOrSetPeerClient() function
 		//})
 
 		if err != nil {
@@ -551,34 +547,30 @@ func (n *Network) Accept(incoming interface{}) {
 			return
 		}
 
-		//go func() {
-		func() {
-			if msg.Signature != nil && !crypto.Verify(
-				n.opts.signaturePolicy,
-				n.opts.hashPolicy,
-				msg.Sender.NetKey,
-				SerializeMessage(msg.Sender, msg.Message),
-				msg.Signature,
-			) {
-				log.Errorf("received message had an malformed signature")
-				return
-			}
-			// Peer sent message with a completely different ID. Disconnect.
-			if !client.ID.Equals(peer.ID(*msg.Sender)) {
-				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
-				return
-			}
+		if msg.Signature != nil && !crypto.Verify(
+			n.opts.signaturePolicy,
+			n.opts.hashPolicy,
+			msg.Sender.NetKey,
+			SerializeMessage(msg.Sender, msg.Message),
+			msg.Signature,
+		) {
+			log.Errorf("received message had an malformed signature")
+			return
+		}
+		// Peer sent message with a completely different ID. Disconnect.
+		if !client.ID.Equals(peer.ID(*msg.Sender)) {
+			log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
+			return
+		}
 
-			recvWindow.Push(msg.MessageNonce, msg)
-
-			ready := recvWindow.Pop()
-			for _, msg := range ready {
-				msg := msg
-				client.Submit(func() {
-					n.dispatchMessage(client, msg.(*protobuf.Message))
-				})
-			}
-		}()
+		client.RecvWindow.Push(msg.MessageNonce, msg)
+		ready := client.RecvWindow.Pop()
+		for _, msg := range ready {
+			msg := msg
+			client.Submit(func() {
+				n.dispatchMessage(client, msg.(*protobuf.Message))
+			})
+		}
 	}
 }
 
@@ -602,7 +594,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 
 	for {
 		msg, err := n.receiveUDPMessage(incoming)
-		if err != nil || msg == nil{
+		if err != nil || msg == nil {
 			if err != errEmptyMsg {
 				log.Error(err)
 			}
@@ -825,27 +817,27 @@ func (n *Network) GetNetworkID() uint32 {
 	return n.netID
 }
 
-func (n *Network)SetProxyServer(serverIP string)  {
+func (n *Network) SetProxyServer(serverIP string) {
 	n.proxyServer = serverIP
 }
 
-func (n *Network)GetProxyServer() string {
+func (n *Network) GetProxyServer() string {
 	return n.proxyServer
 }
 
-func (n *Network)DeletePeerClient(address string) {
+func (n *Network) DeletePeerClient(address string) {
 	n.peers.Delete(address)
 }
 
 func (n *Network) FinishProxyServer(protocol string) {
 	n.proxyFinish.Range(func(p, notify interface{}) bool {
-		if protocol == p.(string){
+		if protocol == p.(string) {
 			close(notify.(chan struct{}))
 		}
 		return true
 	})
 }
 
-func (n *Network)Transports() *sync.Map {
+func (n *Network) Transports() *sync.Map {
 	return n.transports
 }

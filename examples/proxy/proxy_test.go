@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/proxy/messages"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/components/discovery"
 	"github.com/saveio/carrier/peer"
 	"github.com/saveio/carrier/types/opcode"
-	"github.com/pkg/errors"
 )
 
 const (

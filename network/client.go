@@ -34,6 +34,7 @@ type PeerClient struct {
 	closed      uint32 // for atomic ops
 	closeSignal chan struct{}
 	Time        time.Time
+	RecvWindow  *RecvWindow
 }
 
 // StreamState represents a stream.
@@ -75,6 +76,7 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		jobs:        make(chan func(), 128),
 		closeSignal: make(chan struct{}),
 		Time:        time.Now(),
+		RecvWindow:	 NewRecvWindow(network.opts.recvWindowSize),
 	}
 
 	return client, nil
@@ -355,6 +357,6 @@ func (c *PeerClient) IsOutgoingReady() bool {
 	}
 }
 
-func (c *PeerClient)ResetConnectionID(cid []byte) {
+func (c *PeerClient) ResetConnectionID(cid []byte) {
 	c.ID.ConnectionId = cid
 }

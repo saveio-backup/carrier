@@ -9,10 +9,10 @@ import (
 	"net"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/saveio/themis/common/log"
-	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/pkg/errors"
+	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/types/opcode"
+	"github.com/saveio/themis/common/log"
 )
 
 var errEmptyMsg = errors.New("received an empty message from a peer")
@@ -60,7 +60,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 }
 
 // receiveMessage reads, unmarshals and verifies a message from a net.Conn.
-func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
+func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 	var err error
 	var size uint32
 	// Read until all header bytes have been read.
@@ -68,7 +68,7 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 	bytesRead, totalBytesRead := 0, 0
 
 	for totalBytesRead < 4 && err == nil {
-		bytesRead, err = conn.(net.Conn).Read(buffer[totalBytesRead:])
+		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 	}
 	size = binary.BigEndian.Uint32(buffer)
@@ -87,7 +87,7 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 	bytesRead, totalBytesRead = 0, 0
 
 	for totalBytesRead < int(size) && err == nil {
-		bytesRead, err = conn.(net.Conn).Read(buffer[totalBytesRead:])
+		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 
 		//bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
@@ -100,7 +100,7 @@ func (n *Network) receiveMessage(conn interface{}) (*protobuf.Message, error) {
 		return nil, errors.Wrap(err, "failed to unmarshal message")
 	}
 
-	if msg.Opcode == uint32(opcode.ProxyResponseCode) || msg.Opcode == uint32(opcode.KeepaliveResponseCode){
+	if msg.Opcode == uint32(opcode.ProxyResponseCode) || msg.Opcode == uint32(opcode.KeepaliveResponseCode) {
 		return msg, nil
 	}
 

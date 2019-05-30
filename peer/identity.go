@@ -7,8 +7,8 @@ import (
 	"math/bits"
 
 	"github.com/saveio/carrier/crypto/blake2b"
-	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/crypto/ed25519"
+	"github.com/saveio/carrier/internal/protobuf"
 )
 
 // ID is an identity of nodes, using its public key hash and network address.

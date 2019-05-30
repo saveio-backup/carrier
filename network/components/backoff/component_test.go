@@ -6,13 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/basic/messages"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/discovery"
 	"github.com/saveio/carrier/types/opcode"
-	"github.com/pkg/errors"
 )
 
 const (

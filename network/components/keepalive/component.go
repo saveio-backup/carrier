@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
+	"github.com/saveio/themis/common/log"
 	"sync"
 )
 
@@ -30,7 +30,7 @@ type Component struct {
 	// map to save last state for a peer
 	//lastStates map[string]PeerState
 	lastStates *sync.Map
-	net *network.Network
+	net        *network.Network
 }
 
 type PeerState int
@@ -39,7 +39,7 @@ const (
 	PEER_UNKNOWN     PeerState = 0 // peer network unknown
 	PEER_UNREACHABLE PeerState = 1 // peer network unreachable
 	PEER_REACHABLE   PeerState = 2 // peer network reachable
-	PEER_READY		 PeerState = 3 // udp peer ready for write to server. (as for udp is unconnect, we have to need ready state)
+	PEER_READY       PeerState = 3 // udp peer ready for write to server. (as for udp is unconnect, we have to need ready state)
 )
 
 var stateString = []string{
@@ -115,14 +115,14 @@ func (p *Component) Cleanup(net *network.Network) {
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
-	addrInfo, err:=network.ParseAddress(client.Address)
-	if err!=nil{
+	addrInfo, err := network.ParseAddress(client.Address)
+	if err != nil {
 		log.Error("parse address ", client.Address, " error in PeerConnect:", err.Error())
 	}
-	if addrInfo.Protocol == "udp" || addrInfo.Protocol=="kcp"{
+	if addrInfo.Protocol == "udp" || addrInfo.Protocol == "kcp" {
 		p.updateLastStateAndNotify(client, PEER_READY)
 		client.Tell(context.Background(), &protobuf.Keepalive{})
-	} else{
+	} else {
 		p.updateLastStateAndNotify(client, PEER_REACHABLE)
 	}
 }
@@ -154,7 +154,6 @@ func (p *Component) keepaliveService() {
 		select {
 		case <-t.C:
 			// broadcast keepalive msg to all peers
-
 			p.net.Broadcast(context.Background(), &protobuf.Keepalive{})
 			p.timeout()
 		case <-p.stopCh:
@@ -176,7 +175,7 @@ func (p *Component) timeout() {
 }
 
 func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state PeerState) {
-	last, ok:= p.lastStates.Load(client.Address)
+	last, ok := p.lastStates.Load(client.Address)
 	p.lastStates.Store(client.Address, state)
 	// no state change, no need notify
 	if ok && last == state {
@@ -190,10 +189,10 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 	}
 }
 
-func (p *Component)GetPeerStateChan()chan *PeerStateEvent{
+func (p *Component) GetPeerStateChan() chan *PeerStateEvent {
 	return p.peerStateChan
 }
 
-func (p *Component)GetStopChan()chan struct{}{
+func (p *Component) GetStopChan() chan struct{} {
 	return p.stopCh
 }

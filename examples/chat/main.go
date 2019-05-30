@@ -4,16 +4,16 @@ import (
 	"bufio"
 	"context"
 	"flag"
-	"os"
-	"strings"
-	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/chat/messages"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/components/discovery"
-	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/carrier/network/components/keepalive"
 	"github.com/saveio/carrier/network/components/proxy"
+	"github.com/saveio/carrier/types/opcode"
+	"github.com/saveio/themis/common/log"
+	"os"
+	"strings"
 )
 
 type ChatComponent struct{ *network.Component }
@@ -67,10 +67,10 @@ func main() {
 
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
-	if protocol == "udp"{
+	if protocol == "udp" {
 		builder.AddComponent(new(proxy.UDPProxyComponent))
 	}
-	if protocol == "kcp"{
+	if protocol == "kcp" {
 		builder.AddComponent(new(proxy.KCPProxyComponent))
 	}
 
@@ -82,10 +82,10 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	if protocol == "udp"{
+	if protocol == "udp" {
 		networkBuilder.BlockUntilUDPProxyFinish()
 	}
-	if protocol == "kcp"{
+	if protocol == "kcp" {
 		networkBuilder.BlockUntilKCPProxyFinish()
 	}
 

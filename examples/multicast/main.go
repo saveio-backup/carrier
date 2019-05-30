@@ -1,15 +1,15 @@
 /**
  * Description:
  * Author: Yihen.Liu
- * Create: 2019-05-21 
-*/
+ * Create: 2019-05-21
+ */
 package main
 
 import (
-"flag"
-"fmt"
-"net"
-"syscall"
+	"flag"
+	"fmt"
+	"net"
+	"syscall"
 )
 
 var (

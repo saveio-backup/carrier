@@ -8,6 +8,7 @@ import (
 	"github.com/saveio/carrier/peer"
 
 	"github.com/gogo/protobuf/proto"
+	"net"
 )
 
 // NetworkInterface represents a node in the network.
@@ -35,7 +36,7 @@ type NetworkInterface interface {
 	Dial(address string) (interface{}, error)
 
 	// Accept handles peer registration and processes incoming message streams.
-	Accept(conn interface{})
+	Accept(conn net.Conn)
 
 	// Component returns a Components proxy interface should it be registered with the
 	// network. The second returning parameter is false otherwise.

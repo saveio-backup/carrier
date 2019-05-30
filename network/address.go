@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/saveio/carrier/types/lru"
 	"github.com/pkg/errors"
+	"github.com/saveio/carrier/types/lru"
 )
 
 var domainLookupCache = lru.NewCache(1000)

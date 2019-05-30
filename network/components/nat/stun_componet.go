@@ -15,8 +15,8 @@ import (
 	"sync"
 
 	"github.com/gortc/stun"
-	"github.com/saveio/themis/common/log"
 	"github.com/saveio/carrier/network"
+	"github.com/saveio/themis/common/log"
 )
 
 type StunComponent struct {
