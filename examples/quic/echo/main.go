@@ -19,7 +19,7 @@ import (
 quic "github.com/lucas-clemente/quic-go"
 )
 
-const addr = "localhost:4242"
+const addr = "127.0.0.1:4242"
 
 const message = "foobar"
 

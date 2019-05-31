@@ -12,6 +12,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/lucas-clemente/quic-go"
 )
 
 // PeerClient represents a single incoming peers client.
@@ -138,6 +139,9 @@ func (c *PeerClient) Close() error {
 			}
 			if addrInfo.Protocol == "udp" {
 				state.conn.(*net.UDPConn).Close()
+			}
+			if addrInfo.Protocol =="quic" {
+				state.conn.(quic.Stream).Close()
 			}
 		}
 

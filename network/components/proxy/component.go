@@ -31,3 +31,17 @@ func (p *KCPProxyComponent) Receive(ctx *network.ComponentContext) error {
 	KCPComponentReceive(ctx)
 	return nil
 }
+
+type QuicProxyComponent struct {
+	*network.Component
+}
+
+// Startup implements the Component callback
+func (p *QuicProxyComponent) Startup(n *network.Network) {
+	QuicComponentStartup(n)
+}
+
+func (p *QuicProxyComponent) Receive(ctx *network.ComponentContext) error {
+	QuicComponentReceive(ctx)
+	return nil
+}

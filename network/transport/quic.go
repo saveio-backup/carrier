@@ -4,3 +4,76 @@
  * Create: 2019-05-30 
 */
 package transport
+
+import (
+	"crypto/tls"
+	"crypto/rsa"
+	"crypto/rand"
+	"crypto/x509"
+	"math/big"
+	"encoding/pem"
+	"strconv"
+	"github.com/lucas-clemente/quic-go"
+	"strings"
+)
+
+type Quic struct {
+}
+
+// NewQuic instantiates a new instance of the Quic protocol.
+func NewQuic() *Quic {
+	return &Quic{}
+}
+
+func resolveQuicAddr(address string) string{
+	if strings.HasPrefix(address, "quic://"){
+		return address[len("quic://"):]
+	}
+	return address
+}
+
+// Listen listens for incoming Quic connections on a specified port.
+func (t *Quic) Listen(port int) (interface{}, error) {
+	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return interface{}(listener), nil
+}
+
+// Dial dials an address via. the KCP protocol, with optional Reed-Solomon message sharding.
+func (t *Quic) Dial(address string) (interface{}, error) {
+	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true}, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	stream, err := session.OpenStreamSync()
+	if err != nil {
+		return nil, err
+	}
+
+	return interface{}(stream), nil
+}
+
+// Setup a bare-bones TLS config for the server
+func generateTLSConfig() *tls.Config {
+	key, err := rsa.GenerateKey(rand.Reader, 1024)
+	if err != nil {
+		panic(err)
+	}
+	template := x509.Certificate{SerialNumber: big.NewInt(1)}
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
+	if err != nil {
+		panic(err)
+	}
+	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(key)})
+	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
+
+	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		panic(err)
+	}
+	return &tls.Config{Certificates: []tls.Certificate{tlsCert}}
+}

@@ -144,26 +144,8 @@ func NewBuilder() *Builder {
 	builder.RegisterTransportLayer("tcp", transport.NewTCP())
 	builder.RegisterTransportLayer("kcp", transport.NewKCP())
 	builder.RegisterTransportLayer("udp", transport.NewUDP())
+	builder.RegisterTransportLayer("quic", transport.NewQuic())
 
-	return builder
-}
-func NewBuilderWithProtocol(protocol string) *Builder {
-	builder := &Builder{
-		opts:       defaultBuilderOptions,
-		address:    defaultAddress,
-		keys:       ed25519.RandomKeyPair(),
-		transports: new(sync.Map),
-	}
-	switch protocol {
-	case "tcp":
-		builder.RegisterTransportLayer("tcp", transport.NewTCP())
-	case "udp":
-		builder.RegisterTransportLayer("udp", transport.NewUDP())
-	case "kcp":
-		builder.RegisterTransportLayer("kcp", transport.NewKCP())
-	default:
-		NewBuilder()
-	}
 	return builder
 }
 

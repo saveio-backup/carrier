@@ -20,9 +20,10 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
+	"github.com/lucas-clemente/quic-go"
+	"github.com/golang/glog"
 )
 
 type writeMode int
@@ -288,6 +289,9 @@ func (n *Network) Listen() {
 				udpConn, _ := listener.(*net.UDPConn)
 				udpConn.Close()
 			}
+			if addrInfo.Protocol == "quic"{
+				listener.(quic.Listener).Close()
+			}
 		}
 	}()
 
@@ -312,6 +316,28 @@ func (n *Network) Listen() {
 	case "udp":
 		go n.AcceptUdp(listener.(*net.UDPConn))
 		select {}
+	case "quic":
+		for {
+			if session, err := listener.(quic.Listener).Accept(); err == nil {
+				stream, err:= session.AcceptStream()
+				if err != nil{
+					log.Error("Open stream sync in session is err:", err.Error())
+					return
+				}
+				go n.AcceptQuic(stream)
+
+			} else {
+				// if the Shutdown flag is set, no need to continue with the for loop
+				select {
+				case <-n.kill:
+					log.Infof("Shutting down server on %s.", n.Address)
+					return
+				default:
+					log.Error(err)
+				}
+			}
+		}
+
 	default:
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
@@ -388,6 +414,15 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			writerMutex: new(sync.Mutex),
 		})
 	}
+	if addrInfo.Protocol == "quic"{
+		netConn, _ := conn.(quic.Stream)
+		n.connections.Store(address, &ConnState{
+			conn:        conn,
+			writer:      bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
+			writerMutex: new(sync.Mutex),
+		})
+
+	}
 	client.Init()
 
 	client.setIncomingReady()
@@ -422,6 +457,12 @@ func (n *Network) startListening() {
 // BlockUntilListening blocks until this node is listening for new peers.
 func (n *Network) BlockUntilListening() {
 	<-n.listeningCh
+}
+
+func (n *Network) BlockUntilQuicProxyFinish() {
+	if notify, ok := n.proxyFinish.Load("quic"); ok {
+		<-notify.(chan struct{})
+	}
 }
 
 func (n *Network) BlockUntilKCPProxyFinish() {
@@ -499,6 +540,77 @@ func (n *Network) Dial(address string) (interface{}, error) {
 	}
 
 	return conn, nil
+}
+
+// Accept handles peer registration and processes incoming message streams.
+func (n *Network) AcceptQuic(stream quic.Stream) {
+	var client *PeerClient
+	//var clientInit sync.Once
+
+	// Cleanup connections when we are done with them.
+	defer func() {
+		time.Sleep(1 * time.Second)
+
+		if client != nil {
+			client.Close()
+		}
+
+		if stream != nil {
+			stream.Close()
+		}
+	}()
+
+	for {
+		msg, err := n.receiveQuicMessage(stream)
+		if err != nil {
+			log.Error(err)
+			break
+		}
+
+		client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+		if err != nil {
+			return
+		}
+
+		client.ID = (*peer.ID)(msg.Sender)
+
+		if !n.ConnectionStateExists(client.ID.Address) {
+			err = errors.New("network: failed to load session")
+		}
+
+		//client.setIncomingReady() has done in getOrSetPeerClient() function
+		//})
+
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		if msg.Signature != nil && !crypto.Verify(
+			n.opts.signaturePolicy,
+			n.opts.hashPolicy,
+			msg.Sender.NetKey,
+			SerializeMessage(msg.Sender, msg.Message),
+			msg.Signature,
+		) {
+			log.Errorf("received message had an malformed signature")
+			return
+		}
+		// Peer sent message with a completely different ID. Disconnect.
+		if !client.ID.Equals(peer.ID(*msg.Sender)) {
+			log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
+			return
+		}
+
+		client.RecvWindow.Push(msg.MessageNonce, msg)
+		ready := client.RecvWindow.Pop()
+		for _, msg := range ready {
+			msg := msg
+			client.Submit(func() {
+				n.dispatchMessage(client, msg.(*protobuf.Message))
+			})
+		}
+	}
 }
 
 // Accept handles peer registration and processes incoming message streams.
@@ -710,6 +822,15 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		udpConn, _ := state.conn.(*net.UDPConn)
 		udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state, address)
+		if err != nil {
+			return err
+		}
+	}
+
+	if addrInfo.Protocol == "quic"{
+		quicConn, _ := state.conn.(quic.Stream)
+		quicConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+		err = n.sendQuicMessage(state.writer, message, state.writerMutex)
 		if err != nil {
 			return err
 		}
