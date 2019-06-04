@@ -35,11 +35,11 @@ const (
 
 const (
 	defaultConnectionTimeout = 60 * time.Second
-	defaultReceiveWindowSize = 4096
+	defaultReceiveWindowSize = 1024 * 256 * 4
 	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 4096
+	defaultWriteBufferSize   = 1024 * 256 * 4
 	defaultRecvBufferSize    = 4 * 1024 * 1024
-	defaultWriteFlushLatency = 50 * time.Millisecond
+	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
 )
@@ -113,10 +113,12 @@ type options struct {
 
 // ConnState represents a connection.
 type ConnState struct {
-	conn         interface{}
-	writer       *bufio.Writer
-	messageNonce uint64
-	writerMutex  *sync.Mutex
+	conn         	interface{}
+	writer       	*bufio.Writer
+	messageNonce 	uint64
+	writerMutex  	*sync.Mutex
+	DataSignal	 	chan *protobuf.Message
+	ControllSignal 	chan *protobuf.Message
 }
 
 // Init starts all network I/O workers.
@@ -401,9 +403,11 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		netConn, _ := conn.(net.Conn)
 		n.connections.Store(address, &ConnState{
-			conn:        conn,
-			writer:      bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
-			writerMutex: new(sync.Mutex),
+			conn:        	conn,
+			writer:      	bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
+			writerMutex: 	new(sync.Mutex),
+			DataSignal:  	make(chan *protobuf.Message,1),
+			ControllSignal:	make(chan *protobuf.Message,1),
 		})
 	}
 	if addrInfo.Protocol == "udp" {
@@ -795,6 +799,15 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 		msg.Signature = signature
 	}
 	return msg, nil
+}
+
+func(n *Network)writeToDispatchChannel(state *ConnState, message *protobuf.Message){
+	switch message.Opcode{
+	case uint32(opcode.KeepaliveCode):
+		state.ControllSignal<-message
+	default:
+		state.DataSignal<-message
+	}
 }
 
 // Write asynchronously sends a message to a denoted target address.

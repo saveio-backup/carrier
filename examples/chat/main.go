@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"github.com/saveio/carrier/crypto/ed25519"
@@ -14,6 +13,9 @@ import (
 	"github.com/saveio/themis/common/log"
 	"os"
 	"strings"
+	"fmt"
+	"time"
+	"bufio"
 )
 
 type ChatComponent struct{ *network.Component }
@@ -94,18 +96,41 @@ func main() {
 	}
 
 	reader := bufio.NewReader(os.Stdin)
+	input, _ := reader.ReadString('\n')
+	fmt.Println("input:",input)
 	for {
-		input, _ := reader.ReadString('\n')
-		log.Info("We Chat> ")
+		//log.Info("We Chat> ")
 		// skip blank lines
-		if len(strings.TrimSpace(input)) == 0 {
-			continue
-		}
+		//if len(strings.TrimSpace(input)) == 0 {
+		//	continue
+		//}
 
-		log.Infof("<%s> %s", networkBuilder.Address, input)
+		//log.Infof("<%s> %s", networkBuilder.Address, input)
 
+		time.Sleep(time.Second*1)
 		ctx := network.WithSignMessage(context.Background(), true)
-		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: input})
+		fData, _:= readAllIntoMemory("./data")
+		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: fmt.Sprintf("%s",fData)})
 	}
 
+}
+
+func readAllIntoMemory(filename string) (content []byte, err error) {
+	fp, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer fp.Close()
+
+	fileInfo, err := fp.Stat()
+	if err != nil {
+		return nil, err
+	}
+	buffer := make([]byte, fileInfo.Size())
+	fmt.Println("file.size:",fileInfo.Size())
+	_, err = fp.Read(buffer)
+	if err != nil {
+		return nil, err
+	}
+	return buffer, nil
 }
