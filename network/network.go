@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/saveio/carrier/crypto"
@@ -24,6 +23,7 @@ import (
 	"github.com/saveio/themis/common/log"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/golang/glog"
+	"sync/atomic"
 )
 
 type writeMode int
@@ -40,7 +40,7 @@ const (
 	defaultWriteBufferSize   = 1024 * 256 * 4
 	defaultRecvBufferSize    = 4 * 1024 * 1024
 	defaultWriteFlushLatency = 10 * time.Millisecond
-	defaultWriteTimeout      = 3 * time.Second
+	defaultWriteTimeout      = 15 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
 )
 
