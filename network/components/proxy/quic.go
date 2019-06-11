@@ -14,7 +14,11 @@ import (
 
 // Startup implements the Component callback
 func QuicComponentStartup(n *network.Network) {
-	client, _ := n.Client(n.GetProxyServer())
+	client, err := n.Client(n.GetProxyServer())
+	if err!=nil{
+		log.Error("new client err in quic component startup, err:", err.Error())
+		return
+	}
 	client.Tell(context.Background(), &protobuf.ProxyRequest{})
 }
 

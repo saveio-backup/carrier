@@ -75,6 +75,9 @@ func main() {
 	if protocol == "kcp" {
 		builder.AddComponent(new(proxy.KCPProxyComponent))
 	}
+	if protocol == "quic" {
+		builder.AddComponent(new(proxy.QuicProxyComponent))
+	}
 
 	networkBuilder, err := builder.Build()
 	if err != nil {
@@ -89,6 +92,9 @@ func main() {
 	}
 	if protocol == "kcp" {
 		networkBuilder.BlockUntilKCPProxyFinish()
+	}
+	if protocol == "quic" {
+		networkBuilder.BlockUntilQuicProxyFinish()
 	}
 
 	if len(peers) > 0 {

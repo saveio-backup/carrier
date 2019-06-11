@@ -44,7 +44,7 @@ func (t *Quic) Listen(port int) (interface{}, error) {
 
 // Dial dials an address via. the KCP protocol, with optional Reed-Solomon message sharding.
 func (t *Quic) Dial(address string) (interface{}, error) {
-	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true}, nil)
+	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos:[]string{"quic-proxy"}}, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -75,5 +75,5 @@ func generateTLSConfig() *tls.Config {
 	if err != nil {
 		panic(err)
 	}
-	return &tls.Config{Certificates: []tls.Certificate{tlsCert}}
+	return &tls.Config{Certificates: []tls.Certificate{tlsCert}, NextProtos:[]string{"quic-proxy"}}
 }
