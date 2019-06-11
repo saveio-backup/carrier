@@ -19,8 +19,8 @@ func NewKCP() *KCP {
 	return &KCP{
 		DataShards:     0,
 		ParityShards:   0,
-		SendWindowSize: 1024*256*4,
-		RecvWindowSize: 1024*256*4,
+		SendWindowSize: 10000,
+		RecvWindowSize: 10000,
 	}
 }
 

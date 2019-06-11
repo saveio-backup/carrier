@@ -825,6 +825,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	}
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
+		tcpConn.SetWriteDeadline(time.Now().Add(0))
 		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendMessage(state.writer, message, state.writerMutex)
 		if err != nil {
