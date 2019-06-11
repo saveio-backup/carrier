@@ -124,7 +124,7 @@ type ConnState struct {
 // Init starts all network I/O workers.
 func (n *Network) Init() {
 	// Spawn write flusher.
-	go n.flushLoop()
+	//go n.flushLoop()
 	go n.waitExit()
 }
 
@@ -850,7 +850,8 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		}
 	}
 
-	if n.opts.writeMode == WRITE_MODE_DIRECT {
+	//if n.opts.writeMode == WRITE_MODE_DIRECT {
+	if true {
 		state.writerMutex.Lock()
 		if err := state.writer.Flush(); err != nil {
 			log.Warnf(err.Error())
