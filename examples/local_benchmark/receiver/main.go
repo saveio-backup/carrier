@@ -1,4 +1,4 @@
-package main
+package receiver
 
 import _ "net/http/pprof"
 
@@ -33,23 +33,21 @@ func (state *BenchmarkComponent) Receive(ctx *network.ComponentContext) error {
 	return nil
 }
 
-var profile = flag.String("profile", "", "write cpu profile to file")
+var _profile = flag.String("_profile", "", "write cpu _profile to file")
 var Address = map[string]string{
-	"tcp": "tcp://localhost:3001",
-	"udp": "udp://localhost:3001",
-	"kcp": "kcp://localhost:3001",
+	"tcp": "tcp://127.0.0.1:3001",
+	"udp": "udp://127.0.0.1:3001",
+	"kcp": "kcp://127.0.0.1:3001",
+	"quic":"quic://127.0.0.1:3001",
 }
 
-func main() {
+func Run(protocol string) {
 	flag.Set("logtostderr", "true")
 
 	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
+		log.Println(http.ListenAndServe("127.0.0.1:6060", nil))
 	}()
 
-	protocolFlag := flag.String("protocol", "tcp", "protocol to use (kcp/tcp/udp)")
-	flag.Parse()
-	protocol := *protocolFlag
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.BasicMessage{})
 
@@ -62,8 +60,8 @@ func main() {
 		os.Exit(0)
 	}()
 
-	if *profile != "" {
-		f, err := os.Create(*profile)
+	if *_profile != "" {
+		f, err := os.Create(*_profile)
 		if err != nil {
 			log.Fatal(err)
 		}

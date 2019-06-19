@@ -35,12 +35,12 @@ const (
 
 const (
 	defaultConnectionTimeout = 60 * time.Second
-	defaultReceiveWindowSize = 1024 * 256 * 4
-	defaultSendWindowSize    = 1024 * 256 * 4
-	defaultWriteBufferSize   = 1024 * 256 * 4
-	defaultRecvBufferSize    = 4 * 1024 * 1024
+	defaultReceiveWindowSize = 4096
+	defaultSendWindowSize    = 4096
+	defaultWriteBufferSize   = 4096
+	defaultRecvBufferSize    = 4096
 	defaultWriteFlushLatency = 10 * time.Millisecond
-	defaultWriteTimeout      = 15 * time.Second
+	defaultWriteTimeout      = 3 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
 )
 
@@ -124,7 +124,7 @@ type ConnState struct {
 // Init starts all network I/O workers.
 func (n *Network) Init() {
 	// Spawn write flusher.
-	//go n.flushLoop()
+	go n.flushLoop()
 	go n.waitExit()
 }
 
@@ -655,38 +655,37 @@ func (n *Network) Accept(incoming net.Conn) {
 			err = errors.New("network: failed to load session")
 		}
 
-		//client.setIncomingReady() has done in getOrSetPeerClient() function
-		//})
-
 		if err != nil {
 			log.Error(err)
 			return
 		}
+		go func() {
+			msg:=msg
+			if msg.Signature != nil && !crypto.Verify(
+				n.opts.signaturePolicy,
+				n.opts.hashPolicy,
+				msg.Sender.NetKey,
+				SerializeMessage(msg.Sender, msg.Message),
+				msg.Signature,
+			) {
+				log.Errorf("received message had an malformed signature")
+				return
+			}
+			// Peer sent message with a completely different ID. Disconnect.
+			if !client.ID.Equals(peer.ID(*msg.Sender)) {
+				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
+				return
+			}
 
-		if msg.Signature != nil && !crypto.Verify(
-			n.opts.signaturePolicy,
-			n.opts.hashPolicy,
-			msg.Sender.NetKey,
-			SerializeMessage(msg.Sender, msg.Message),
-			msg.Signature,
-		) {
-			log.Errorf("received message had an malformed signature")
-			return
-		}
-		// Peer sent message with a completely different ID. Disconnect.
-		if !client.ID.Equals(peer.ID(*msg.Sender)) {
-			log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
-			return
-		}
-
-		client.RecvWindow.Push(msg.MessageNonce, msg)
-		ready := client.RecvWindow.Pop()
-		for _, msg := range ready {
-			msg := msg
-			client.Submit(func() {
-				n.dispatchMessage(client, msg.(*protobuf.Message))
-			})
-		}
+			client.RecvWindow.Push(msg.MessageNonce, msg)
+			ready := client.RecvWindow.Pop()
+			for _, msg := range ready {
+				msg := msg
+				client.Submit(func() {
+					n.dispatchMessage(client, msg.(*protobuf.Message))
+				})
+			}
+		}()
 	}
 }
 
@@ -716,8 +715,8 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 			}
 			break
 		}
-		//go func() {  msg buffer maybe over write by next package.
-		func() {
+		go func() {
+			msg:=msg
 			if msg.Signature != nil && !crypto.Verify(
 				n.opts.signaturePolicy,
 				n.opts.hashPolicy,
@@ -824,17 +823,16 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		log.Fatal(err)
 	}
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-		tcpConn, _ := state.conn.(net.Conn)
-		tcpConn.SetWriteDeadline(time.Now().Add(0))
-		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+		//tcpConn, _ := state.conn.(net.Conn)
+		//tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendMessage(state.writer, message, state.writerMutex)
 		if err != nil {
 			return err
 		}
 	}
 	if addrInfo.Protocol == "udp" {
-		udpConn, _ := state.conn.(*net.UDPConn)
-		udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+		//udpConn, _ := state.conn.(*net.UDPConn)
+		//udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state, address)
 		if err != nil {
 			return err
@@ -850,8 +848,8 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		}
 	}
 
-	//if n.opts.writeMode == WRITE_MODE_DIRECT {
-	if true {
+	if n.opts.writeMode == WRITE_MODE_DIRECT {
+	//if true {
 		state.writerMutex.Lock()
 		if err := state.writer.Flush(); err != nil {
 			log.Warnf(err.Error())

@@ -14,7 +14,6 @@ import (
 	"os"
 	"strings"
 	"fmt"
-	"time"
 	"bufio"
 )
 
@@ -38,6 +37,7 @@ func main() {
 	protocolFlag := flag.String("protocol", "udp", "protocol to use (kcp/tcp/udp)")
 	peersFlag := flag.String("peers", "", "peers to connect to")
 	proxyFlag := flag.String("proxy", "localhost", "proxy server ip")
+	enableProxy := flag.Bool("enableProxy", false, "enable proxy")
 	flag.Parse()
 
 	port := uint16(*portFlag)
@@ -69,13 +69,13 @@ func main() {
 
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
-	if protocol == "udp" {
+	if protocol == "udp" && *enableProxy == true{
 		builder.AddComponent(new(proxy.UDPProxyComponent))
 	}
-	if protocol == "kcp" {
+	if protocol == "kcp" && *enableProxy == true{
 		builder.AddComponent(new(proxy.KCPProxyComponent))
 	}
-	if protocol == "quic" {
+	if protocol == "quic" && *enableProxy== true{
 		builder.AddComponent(new(proxy.QuicProxyComponent))
 	}
 
@@ -87,13 +87,13 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	if protocol == "udp" {
+	if protocol == "udp" && *enableProxy == true{
 		networkBuilder.BlockUntilUDPProxyFinish()
 	}
-	if protocol == "kcp" {
+	if protocol == "kcp" && *enableProxy == true{
 		networkBuilder.BlockUntilKCPProxyFinish()
 	}
-	if protocol == "quic" {
+	if protocol == "quic" && *enableProxy == true{
 		networkBuilder.BlockUntilQuicProxyFinish()
 	}
 
@@ -102,21 +102,21 @@ func main() {
 	}
 
 	reader := bufio.NewReader(os.Stdin)
-	input, _ := reader.ReadString('\n')
-	fmt.Println("input:",input)
 	for {
-		//log.Info("We Chat> ")
+		input, _ := reader.ReadString('\n')
+		fmt.Println("input:",input)
+		log.Info("We Chat> ")
 		// skip blank lines
-		//if len(strings.TrimSpace(input)) == 0 {
-		//	continue
-		//}
+		if len(strings.TrimSpace(input)) == 0 {
+			continue
+		}
 
-		//log.Infof("<%s> %s", networkBuilder.Address, input)
+		log.Infof("<%s> %s", networkBuilder.Address, input)
 
-		time.Sleep(time.Second*1)
+		//time.Sleep(time.Second*1)
 		ctx := network.WithSignMessage(context.Background(), true)
-		fData, _:= readAllIntoMemory("./data")
-		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: fmt.Sprintf("%s",fData)})
+		//fData, _:= readAllIntoMemory("./data")
+		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: fmt.Sprintf("%s",input)})
 	}
 
 }
