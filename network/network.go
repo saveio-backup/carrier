@@ -24,6 +24,7 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/golang/glog"
 	"sync/atomic"
+	"encoding/hex"
 )
 
 type writeMode int
@@ -37,8 +38,8 @@ const (
 	defaultConnectionTimeout = 60 * time.Second
 	defaultReceiveWindowSize = 4096
 	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 4096
-	defaultRecvBufferSize    = 4096
+	defaultWriteBufferSize   = 1024*1024*100
+	defaultRecvBufferSize    = 1024*1024*100
 	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
@@ -644,6 +645,7 @@ func (n *Network) Accept(incoming net.Conn) {
 			break
 		}
 
+		log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s",msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
 		client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		if err != nil {
 			return
@@ -659,8 +661,7 @@ func (n *Network) Accept(incoming net.Conn) {
 			log.Error(err)
 			return
 		}
-		go func() {
-			msg:=msg
+		func() {
 			if msg.Signature != nil && !crypto.Verify(
 				n.opts.signaturePolicy,
 				n.opts.hashPolicy,
@@ -715,8 +716,8 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 			}
 			break
 		}
-		go func() {
-			msg:=msg
+		log.Infof("(udp) receive from addr:%s,message.opcode:%d, message.sign:%s",msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
+		func() {
 			if msg.Signature != nil && !crypto.Verify(
 				n.opts.signaturePolicy,
 				n.opts.hashPolicy,
@@ -822,6 +823,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Infof("protocol:%s,message.opcode:%d,write-to addr:%s, message.sign:%s",addrInfo.Protocol, message.Opcode,address, hex.EncodeToString(message.Signature))
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		//tcpConn, _ := state.conn.(net.Conn)
 		//tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
