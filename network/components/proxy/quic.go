@@ -1,12 +1,13 @@
 /**
  * Description:
  * Author: Yihen.Liu
- * Create: 2019-05-31 
-*/
+ * Create: 2019-05-31
+ */
 package proxy
 
 import (
 	"context"
+
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
@@ -15,7 +16,7 @@ import (
 // Startup implements the Component callback
 func QuicComponentStartup(n *network.Network) {
 	client, err := n.Client(n.GetProxyServer())
-	if err!=nil{
+	if err != nil {
 		log.Error("new client err in quic component startup, err:", err.Error())
 		return
 	}

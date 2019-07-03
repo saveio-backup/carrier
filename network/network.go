@@ -18,13 +18,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"encoding/hex"
+	"sync/atomic"
+
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/glog"
+	quic "github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
-	"github.com/lucas-clemente/quic-go"
-	"github.com/golang/glog"
-	"sync/atomic"
-	"encoding/hex"
 )
 
 type writeMode int
@@ -38,8 +39,8 @@ const (
 	defaultConnectionTimeout = 60 * time.Second
 	defaultReceiveWindowSize = 4096
 	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 1024*1024*100
-	defaultRecvBufferSize    = 1024*1024*100
+	defaultWriteBufferSize   = 1024 * 1024 * 100
+	defaultRecvBufferSize    = 1024 * 1024 * 100
 	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
@@ -114,12 +115,12 @@ type options struct {
 
 // ConnState represents a connection.
 type ConnState struct {
-	conn         	interface{}
-	writer       	*bufio.Writer
-	messageNonce 	uint64
-	writerMutex  	*sync.Mutex
-	DataSignal	 	chan *protobuf.Message
-	ControllSignal 	chan *protobuf.Message
+	conn           interface{}
+	writer         *bufio.Writer
+	messageNonce   uint64
+	writerMutex    *sync.Mutex
+	DataSignal     chan *protobuf.Message
+	ControllSignal chan *protobuf.Message
 }
 
 // Init starts all network I/O workers.
@@ -292,7 +293,7 @@ func (n *Network) Listen() {
 				udpConn, _ := listener.(*net.UDPConn)
 				udpConn.Close()
 			}
-			if addrInfo.Protocol == "quic"{
+			if addrInfo.Protocol == "quic" {
 				listener.(quic.Listener).Close()
 			}
 		}
@@ -404,11 +405,11 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		netConn, _ := conn.(net.Conn)
 		n.connections.Store(address, &ConnState{
-			conn:        	conn,
-			writer:      	bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
-			writerMutex: 	new(sync.Mutex),
-			DataSignal:  	make(chan *protobuf.Message,1),
-			ControllSignal:	make(chan *protobuf.Message,1),
+			conn:           conn,
+			writer:         bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
+			writerMutex:    new(sync.Mutex),
+			DataSignal:     make(chan *protobuf.Message, 1),
+			ControllSignal: make(chan *protobuf.Message, 1),
 		})
 	}
 	if addrInfo.Protocol == "udp" {
@@ -419,7 +420,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			writerMutex: new(sync.Mutex),
 		})
 	}
-	if addrInfo.Protocol == "quic"{
+	if addrInfo.Protocol == "quic" {
 		netConn, _ := conn.(quic.Stream)
 		n.connections.Store(address, &ConnState{
 			conn:        conn,
@@ -543,7 +544,9 @@ func (n *Network) Dial(address string) (interface{}, error) {
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		go n.Accept(conn.(net.Conn))
 	}
-
+	if addrInfo.Protocol == "quic" {
+		go n.AcceptQuic(conn.(quic.Stream))
+	}
 	return conn, nil
 }
 
@@ -551,7 +554,6 @@ func (n *Network) Dial(address string) (interface{}, error) {
 func (n *Network) AcceptQuic(stream quic.Stream) {
 	var client *PeerClient
 	//var clientInit sync.Once
-
 	// Cleanup connections when we are done with them.
 	defer func() {
 		time.Sleep(1 * time.Second)
@@ -571,7 +573,7 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 			log.Error(err)
 			break
 		}
-
+		//log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
 		client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		if err != nil {
 			return
@@ -645,7 +647,7 @@ func (n *Network) Accept(incoming net.Conn) {
 			break
 		}
 
-		log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s",msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
+		log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
 		client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		if err != nil {
 			return
@@ -716,7 +718,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 			}
 			break
 		}
-		log.Infof("(udp) receive from addr:%s,message.opcode:%d, message.sign:%s",msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
+		//log.Infof("(udp) receive from addr:%s,message.opcode:%d, message.sign:%s",msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
 		func() {
 			if msg.Signature != nil && !crypto.Verify(
 				n.opts.signaturePolicy,
@@ -801,12 +803,12 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 	return msg, nil
 }
 
-func(n *Network)writeToDispatchChannel(state *ConnState, message *protobuf.Message){
-	switch message.Opcode{
+func (n *Network) writeToDispatchChannel(state *ConnState, message *protobuf.Message) {
+	switch message.Opcode {
 	case uint32(opcode.KeepaliveCode):
-		state.ControllSignal<-message
+		state.ControllSignal <- message
 	default:
-		state.DataSignal<-message
+		state.DataSignal <- message
 	}
 }
 
@@ -823,7 +825,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Infof("protocol:%s,message.opcode:%d,write-to addr:%s, message.sign:%s",addrInfo.Protocol, message.Opcode,address, hex.EncodeToString(message.Signature))
+	//log.Infof("protocol:%s,message.opcode:%d,write-to addr:%s, message.sign:%s", addrInfo.Protocol, message.Opcode, address, hex.EncodeToString(message.Signature))
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		//tcpConn, _ := state.conn.(net.Conn)
 		//tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
@@ -841,7 +843,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		}
 	}
 
-	if addrInfo.Protocol == "quic"{
+	if addrInfo.Protocol == "quic" {
 		quicConn, _ := state.conn.(quic.Stream)
 		quicConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendQuicMessage(state.writer, message, state.writerMutex)
@@ -851,7 +853,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	}
 
 	if n.opts.writeMode == WRITE_MODE_DIRECT {
-	//if true {
+		//if true {
 		state.writerMutex.Lock()
 		if err := state.writer.Flush(); err != nil {
 			log.Warnf(err.Error())
