@@ -23,7 +23,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
-	quic "github.com/lucas-clemente/quic-go"
+	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
 )
@@ -570,7 +570,7 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 	for {
 		msg, err := n.receiveQuicMessage(stream)
 		if err != nil {
-			log.Error(err)
+			log.Warn(err)
 			break
 		}
 		//log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
@@ -642,7 +642,7 @@ func (n *Network) Accept(incoming net.Conn) {
 		msg, err := n.receiveMessage(incoming)
 		if err != nil {
 			if err != errEmptyMsg {
-				log.Error(err)
+				log.Warn(err)
 			}
 			break
 		}
@@ -714,7 +714,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 		msg, err := n.receiveUDPMessage(incoming)
 		if err != nil || msg == nil {
 			if err != errEmptyMsg {
-				log.Error(err)
+				log.Warn(err)
 			}
 			break
 		}

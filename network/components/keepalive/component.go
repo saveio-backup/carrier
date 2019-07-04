@@ -129,6 +129,7 @@ func (p *Component) PeerConnect(client *network.PeerClient) {
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
 	p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
+	client.Close()
 }
 
 func (p *Component) Receive(ctx *network.ComponentContext) error {
@@ -169,6 +170,7 @@ func (p *Component) timeout() {
 		// timeout notify state change
 		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
 			p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
+			client.Close()
 		}
 		return true
 	})

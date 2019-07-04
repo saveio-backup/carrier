@@ -155,9 +155,11 @@ func (t *RoutingTable) RemovePeer(target peer.ID) bool {
 func (t *RoutingTable) PeerExists(target peer.ID) bool {
 	bucketID := target.XorID(t.self).PrefixLen()
 	bucket := t.Bucket(bucketID)
+	if nil == bucket{
+		return false
+	}
 
 	bucket.mutex.Lock()
-
 	defer bucket.mutex.Unlock()
 
 	for e := bucket.Front(); e != nil; e = e.Next() {
