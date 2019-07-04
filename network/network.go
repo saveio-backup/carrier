@@ -682,8 +682,9 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 		ready := client.RecvWindow.Pop()
 		for _, msg := range ready {
 			msg := msg
+			cli := client
 			client.Submit(func() {
-				n.dispatchMessage(client, msg.(*protobuf.Message))
+				n.dispatchMessage(cli, msg.(*protobuf.Message))
 			})
 		}
 	}
@@ -758,8 +759,9 @@ func (n *Network) Accept(incoming net.Conn) {
 			ready := client.RecvWindow.Pop()
 			for _, msg := range ready {
 				msg := msg
+				cli := client
 				client.Submit(func() {
-					n.dispatchMessage(client, msg.(*protobuf.Message))
+					n.dispatchMessage(cli, msg.(*protobuf.Message))
 				})
 			}
 		}()
@@ -827,8 +829,9 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
 				return
 			}
+			cli := client
 			client.Submit(func() {
-				n.dispatchMessage(client, msg)
+				n.dispatchMessage(cli, msg)
 			})
 		}()
 	}
