@@ -150,6 +150,10 @@ func (n *Network) flushLoop() {
 			return
 		case <-t.C:
 			n.connections.Range(func(key, value interface{}) bool {
+				if !n.ConnectionStateExists(key.(string)){
+					return false
+				}
+
 				if state, ok := value.(*ConnState); ok {
 					state.writerMutex.Lock()
 					if err := state.writer.Flush(); err != nil {
