@@ -21,3 +21,6 @@ option (gogoproto.testgen_all) = true;
 message ChatMessage {
     string message = 1;
 }
+message ReplyChat{
+    string message = 1;
+}

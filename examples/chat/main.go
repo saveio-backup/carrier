@@ -23,6 +23,12 @@ func (state *ChatComponent) Receive(ctx *network.ComponentContext) error {
 	switch msg := ctx.Message().(type) {
 	case *messages.ChatMessage:
 		log.Infof("<%s> %s", ctx.Client().ID.Address, msg.Message)
+		err := ctx.Reply(context.Background(), &messages.ReplyChat{Message: fmt.Sprintf("receive success:%s",msg.Message)})
+		if err!=nil{
+			log.Error("send reply chat msg err:", err.Error())
+		}
+	case *messages.ReplyChat:
+		log.Infof("<%s> %s", ctx.Client().ID.Address, msg.Message)
 	}
 
 	return nil
@@ -51,6 +57,7 @@ func main() {
 	log.Infof("Public Key: %s", keys.PublicKeyHex())
 
 	opcode.RegisterMessageType(opcode.Opcode(1000), &messages.ChatMessage{})
+	opcode.RegisterMessageType(opcode.Opcode(1001), &messages.ReplyChat{})
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress(protocol, host, port))

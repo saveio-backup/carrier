@@ -158,6 +158,8 @@ func (n *Network) flushLoop() {
 					state.writerMutex.Lock()
 					if err := state.writer.Flush(); err != nil {
 						glog.Warningln(err.Error())
+						state.writerMutex.Unlock()
+						return false
 					}
 					state.writerMutex.Unlock()
 				}
@@ -934,14 +936,34 @@ func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, 
 
 // Close shuts down the entire network.
 func (n *Network) Close() {
-	close(n.kill)
-
 	n.EachPeer(func(client *PeerClient) bool {
 		// tell remote endpoint Disconnect MSG: 'I am going to leave, please release yourself's resource'
-		client.Tell(context.Background(), &protobuf.Disconnect{})
+		err:=client.Tell(context.Background(), &protobuf.Disconnect{})
+		if err!=nil{
+			log.Error("send disconnect err:", err.Error())
+		}
 		client.Close()
 		return true
 	})
+
+	n.connections.Range(func(key, value interface{}) bool {
+				if !n.ConnectionStateExists(key.(string)){
+					return false
+				}
+
+				if state, ok := value.(*ConnState); ok {
+					state.writerMutex.Lock()
+					if err := state.writer.Flush(); err != nil {
+						glog.Warningln(err.Error())
+						state.writerMutex.Unlock()
+						return false
+					}
+					state.writerMutex.Unlock()
+				}
+				return true
+			})
+	time.Sleep(time.Millisecond*500)
+	close(n.kill)
 }
 
 func (n *Network) EachPeer(fn func(client *PeerClient) bool) {
