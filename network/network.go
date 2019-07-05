@@ -22,7 +22,6 @@ import (
 	"sync/atomic"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
@@ -141,30 +140,35 @@ func (n *Network) waitExit() {
 	}
 }
 
+func (n *Network)flushOnce()  {
+	n.connections.Range(func(key, value interface{}) bool {
+		if !n.ConnectionStateExists(key.(string)){
+			return false
+		}
+
+		if state, ok := value.(*ConnState); ok {
+			state.writerMutex.Lock()
+			if err := state.writer.Flush(); err != nil {
+				log.Error("flush error:",err.Error())
+				state.writerMutex.Unlock()
+				return false
+			}
+			state.writerMutex.Unlock()
+		}
+		return true
+	})
+}
+
 func (n *Network) flushLoop() {
 	t := time.NewTicker(n.opts.writeFlushLatency)
 	defer t.Stop()
 	for {
 		select {
 		case <-n.kill:
+			n.flushOnce()
 			return
 		case <-t.C:
-			n.connections.Range(func(key, value interface{}) bool {
-				if !n.ConnectionStateExists(key.(string)){
-					return false
-				}
-
-				if state, ok := value.(*ConnState); ok {
-					state.writerMutex.Lock()
-					if err := state.writer.Flush(); err != nil {
-						glog.Warningln(err.Error())
-						state.writerMutex.Unlock()
-						return false
-					}
-					state.writerMutex.Unlock()
-				}
-				return true
-			})
+			n.flushOnce()
 		}
 	}
 }
@@ -859,7 +863,6 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	}
 
 	if n.opts.writeMode == WRITE_MODE_DIRECT {
-		//if true {
 		state.writerMutex.Lock()
 		if err := state.writer.Flush(); err != nil {
 			log.Warnf(err.Error())
@@ -936,32 +939,8 @@ func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, 
 
 // Close shuts down the entire network.
 func (n *Network) Close() {
-	n.EachPeer(func(client *PeerClient) bool {
-		// tell remote endpoint Disconnect MSG: 'I am going to leave, please release yourself's resource'
-		err:=client.Tell(context.Background(), &protobuf.Disconnect{})
-		if err!=nil{
-			log.Error("send disconnect err:", err.Error())
-		}
-		client.Close()
-		return true
-	})
-
-	n.connections.Range(func(key, value interface{}) bool {
-				if !n.ConnectionStateExists(key.(string)){
-					return false
-				}
-
-				if state, ok := value.(*ConnState); ok {
-					state.writerMutex.Lock()
-					if err := state.writer.Flush(); err != nil {
-						glog.Warningln(err.Error())
-						state.writerMutex.Unlock()
-						return false
-					}
-					state.writerMutex.Unlock()
-				}
-				return true
-			})
+	ctx := WithSignMessage(context.Background(), true)
+	n.Broadcast(ctx, &protobuf.Disconnect{})
 	time.Sleep(time.Millisecond*500)
 	close(n.kill)
 }

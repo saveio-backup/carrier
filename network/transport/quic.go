@@ -34,7 +34,7 @@ func resolveQuicAddr(address string) string{
 
 // Listen listens for incoming Quic connections on a specified port.
 func (t *Quic) Listen(port int) (interface{}, error) {
-	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), nil)
+	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), &quic.Config{KeepAlive:true})
 	if err != nil {
 		return nil, err
 	}
@@ -42,9 +42,8 @@ func (t *Quic) Listen(port int) (interface{}, error) {
 	return interface{}(listener), nil
 }
 
-// Dial dials an address via. the KCP protocol, with optional Reed-Solomon message sharding.
 func (t *Quic) Dial(address string) (interface{}, error) {
-	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos:[]string{"quic-proxy"}}, nil)
+	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos:[]string{"quic-proxy"}}, &quic.Config{KeepAlive:true})
 	if err != nil {
 		return nil, err
 	}

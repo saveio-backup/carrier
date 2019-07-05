@@ -110,22 +110,7 @@ func (c *PeerClient) Submit(job func()) {
 	}
 }
 
-// Close stops all sessions/streams and cleans up the nodes in routing table.
-func (c *PeerClient) Close() error {
-	if atomic.SwapUint32(&c.closed, 1) == 1 {
-		return nil
-	}
-
-	close(c.closeSignal)
-
-	c.stream.Lock()
-	c.stream.isClosed = true
-	c.stream.Unlock()
-
-	c.Network.Components.Each(func(Component ComponentInterface) {
-		Component.PeerDisconnect(c)
-	})
-
+func (c *PeerClient) RemoveEntries() error {
 	// Remove entries from node's network.
 	if c.ID != nil {
 		// close out connections
@@ -148,8 +133,26 @@ func (c *PeerClient) Close() error {
 		c.Network.peers.Delete(c.ID.Address)
 		c.Network.connections.Delete(c.ID.Address)
 	}
-
 	return nil
+}
+
+// Close stops all sessions/streams and cleans up the nodes in routing table.
+func (c *PeerClient) Close() error {
+	if atomic.SwapUint32(&c.closed, 1) == 1 {
+		return nil
+	}
+
+	close(c.closeSignal)
+
+	c.stream.Lock()
+	c.stream.isClosed = true
+	c.stream.Unlock()
+
+	c.Network.Components.Each(func(Component ComponentInterface) {
+		Component.PeerDisconnect(c)
+	})
+	return c.RemoveEntries()
+	//return nil
 }
 
 // Tell will asynchronously emit a message to a given peer.

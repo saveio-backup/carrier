@@ -85,6 +85,7 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 
 		log.Infof("connected peers: %s.", strings.Join(state.Routes.GetPeerAddresses(), ", "))
 	case *protobuf.Disconnect:
+		log.Info("receive disconnect signal from peer")
 		ctx.Disconnect()
 	}
 
@@ -100,7 +101,7 @@ func (state *Component) PeerDisconnect(client *network.PeerClient) {
 	if client.ID != nil {
 		if state.Routes.PeerExists(*client.ID) {
 			state.Routes.RemovePeer(*client.ID)
-
+			client.RemoveEntries()
 			log.Infof("Peer %s has disconnected from %s.", client.ID.Address, client.Network.ID.Address)
 		}
 	}
