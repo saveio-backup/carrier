@@ -149,7 +149,7 @@ func (n *Network)flushOnce()  {
 		if state, ok := value.(*ConnState); ok {
 			state.writerMutex.Lock()
 			if err := state.writer.Flush(); err != nil {
-				log.Error("flush error:",err.Error())
+				log.Error("flush error:",err.Error(),", addr:",key.(string))
 				state.writerMutex.Unlock()
 				return false
 			}
@@ -477,6 +477,12 @@ func (n *Network) BlockUntilListening() {
 
 func (n *Network) BlockUntilQuicProxyFinish() {
 	if notify, ok := n.proxyFinish.Load("quic"); ok {
+		<-notify.(chan struct{})
+	}
+}
+
+func (n *Network) BlockUntilTcpProxyFinish() {
+	if notify, ok := n.proxyFinish.Load("tcp"); ok {
 		<-notify.(chan struct{})
 	}
 }

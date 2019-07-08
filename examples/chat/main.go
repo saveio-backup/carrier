@@ -85,6 +85,9 @@ func main() {
 	if protocol == "quic" && *enableProxy== true{
 		builder.AddComponent(new(proxy.QuicProxyComponent))
 	}
+	if protocol == "tcp" && *enableProxy== true{
+		builder.AddComponent(new(proxy.TcpProxyComponent))
+	}
 
 	networkBuilder, err := builder.Build()
 	if err != nil {
@@ -102,6 +105,9 @@ func main() {
 	}
 	if protocol == "quic" && *enableProxy == true{
 		networkBuilder.BlockUntilQuicProxyFinish()
+	}
+	if protocol == "tcp" && *enableProxy == true{
+		networkBuilder.BlockUntilTcpProxyFinish()
 	}
 
 	if len(peers) > 0 {
