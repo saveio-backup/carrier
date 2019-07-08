@@ -7,12 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	quic "github.com/lucas-clemente/quic-go"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/peer"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"github.com/lucas-clemente/quic-go"
 )
 
 // PeerClient represents a single incoming peers client.
@@ -77,7 +77,7 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		jobs:        make(chan func(), 128),
 		closeSignal: make(chan struct{}),
 		Time:        time.Now(),
-		RecvWindow:	 NewRecvWindow(network.opts.recvWindowSize),
+		RecvWindow:  NewRecvWindow(network.opts.recvWindowSize),
 	}
 
 	return client, nil

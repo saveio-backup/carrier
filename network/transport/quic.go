@@ -1,20 +1,22 @@
 /**
  * Description:
  * Author: Yihen.Liu
- * Create: 2019-05-30 
-*/
+ * Create: 2019-05-30
+ */
 package transport
 
 import (
-	"crypto/tls"
-	"crypto/rsa"
 	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
-	"math/big"
 	"encoding/pem"
+	"math/big"
 	"strconv"
-	"github.com/lucas-clemente/quic-go"
 	"strings"
+	"time"
+
+	quic "github.com/lucas-clemente/quic-go"
 )
 
 type Quic struct {
@@ -25,8 +27,8 @@ func NewQuic() *Quic {
 	return &Quic{}
 }
 
-func resolveQuicAddr(address string) string{
-	if strings.HasPrefix(address, "quic://"){
+func resolveQuicAddr(address string) string {
+	if strings.HasPrefix(address, "quic://") {
 		return address[len("quic://"):]
 	}
 	return address
@@ -34,7 +36,7 @@ func resolveQuicAddr(address string) string{
 
 // Listen listens for incoming Quic connections on a specified port.
 func (t *Quic) Listen(port int) (interface{}, error) {
-	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), &quic.Config{KeepAlive:true})
+	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), &quic.Config{KeepAlive: true, IdleTimeout: time.Second * 3})
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +45,7 @@ func (t *Quic) Listen(port int) (interface{}, error) {
 }
 
 func (t *Quic) Dial(address string) (interface{}, error) {
-	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos:[]string{"quic-proxy"}}, &quic.Config{KeepAlive:true})
+	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: time.Second * 3})
 	if err != nil {
 		return nil, err
 	}
@@ -74,5 +76,5 @@ func generateTLSConfig() *tls.Config {
 	if err != nil {
 		panic(err)
 	}
-	return &tls.Config{Certificates: []tls.Certificate{tlsCert}, NextProtos:[]string{"quic-proxy"}}
+	return &tls.Config{Certificates: []tls.Certificate{tlsCert}, NextProtos: []string{"quic-proxy"}}
 }

@@ -1,8 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/chat/messages"
 	"github.com/saveio/carrier/network"
@@ -11,10 +16,6 @@ import (
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
-	"os"
-	"strings"
-	"fmt"
-	"bufio"
 )
 
 type ChatComponent struct{ *network.Component }
@@ -23,8 +24,8 @@ func (state *ChatComponent) Receive(ctx *network.ComponentContext) error {
 	switch msg := ctx.Message().(type) {
 	case *messages.ChatMessage:
 		log.Infof("<%s> %s", ctx.Client().ID.Address, msg.Message)
-		err := ctx.Reply(context.Background(), &messages.ReplyChat{Message: fmt.Sprintf("receive success:%s",msg.Message)})
-		if err!=nil{
+		err := ctx.Reply(context.Background(), &messages.ReplyChat{Message: fmt.Sprintf("receive success:%s", msg.Message)})
+		if err != nil {
 			log.Error("send reply chat msg err:", err.Error())
 		}
 	case *messages.ReplyChat:
@@ -63,7 +64,7 @@ func main() {
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
 
 	// Add keepalive Component
-	peerStateChan := make(chan *keepalive.PeerStateEvent, 10)
+	peerStateChan := make(chan *keepalive.PeerStateEvent, 100000)
 	options := []keepalive.ComponentOption{
 		keepalive.WithKeepaliveInterval(keepalive.DefaultKeepaliveInterval),
 		keepalive.WithKeepaliveTimeout(keepalive.DefaultKeepaliveTimeout),
@@ -76,16 +77,16 @@ func main() {
 
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
-	if protocol == "udp" && *enableProxy == true{
+	if protocol == "udp" && *enableProxy == true {
 		builder.AddComponent(new(proxy.UDPProxyComponent))
 	}
-	if protocol == "kcp" && *enableProxy == true{
+	if protocol == "kcp" && *enableProxy == true {
 		builder.AddComponent(new(proxy.KCPProxyComponent))
 	}
-	if protocol == "quic" && *enableProxy== true{
+	if protocol == "quic" && *enableProxy == true {
 		builder.AddComponent(new(proxy.QuicProxyComponent))
 	}
-	if protocol == "tcp" && *enableProxy== true{
+	if protocol == "tcp" && *enableProxy == true {
 		builder.AddComponent(new(proxy.TcpProxyComponent))
 	}
 
@@ -97,16 +98,16 @@ func main() {
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
-	if protocol == "udp" && *enableProxy == true{
+	if protocol == "udp" && *enableProxy == true {
 		networkBuilder.BlockUntilUDPProxyFinish()
 	}
-	if protocol == "kcp" && *enableProxy == true{
+	if protocol == "kcp" && *enableProxy == true {
 		networkBuilder.BlockUntilKCPProxyFinish()
 	}
-	if protocol == "quic" && *enableProxy == true{
+	if protocol == "quic" && *enableProxy == true {
 		networkBuilder.BlockUntilQuicProxyFinish()
 	}
-	if protocol == "tcp" && *enableProxy == true{
+	if protocol == "tcp" && *enableProxy == true {
 		networkBuilder.BlockUntilTcpProxyFinish()
 	}
 
@@ -117,7 +118,7 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		input, _ := reader.ReadString('\n')
-		fmt.Println("input:",input)
+		fmt.Println("input:", input)
 		log.Info("We Chat> ")
 		// skip blank lines
 		if len(strings.TrimSpace(input)) == 0 {
@@ -129,7 +130,7 @@ func main() {
 		//time.Sleep(time.Second*1)
 		ctx := network.WithSignMessage(context.Background(), true)
 		//fData, _:= readAllIntoMemory("./data")
-		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: fmt.Sprintf("%s",input)})
+		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: fmt.Sprintf("%s", input)})
 	}
 
 }
@@ -146,7 +147,7 @@ func readAllIntoMemory(filename string) (content []byte, err error) {
 		return nil, err
 	}
 	buffer := make([]byte, fileInfo.Size())
-	fmt.Println("file.size:",fileInfo.Size())
+	fmt.Println("file.size:", fileInfo.Size())
 	_, err = fp.Read(buffer)
 	if err != nil {
 		return nil, err

@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	"sync"
+
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
-	"sync"
 )
 
 const (

@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/lucas-clemente/quic-go"
+	quic "github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
 )
@@ -140,16 +140,18 @@ func (n *Network) waitExit() {
 	}
 }
 
-func (n *Network)flushOnce()  {
+func (n *Network) flushOnce() {
+	var brokenKey []string
 	n.connections.Range(func(key, value interface{}) bool {
-		if !n.ConnectionStateExists(key.(string)){
+		if !n.ConnectionStateExists(key.(string)) {
 			return false
 		}
 
 		if state, ok := value.(*ConnState); ok {
 			state.writerMutex.Lock()
 			if err := state.writer.Flush(); err != nil {
-				log.Error("flush error:",err.Error(),", addr:",key.(string))
+				log.Error("flush error:", err.Error(), ", addr:", key.(string))
+				brokenKey = append(brokenKey, key.(string))
 				state.writerMutex.Unlock()
 				return false
 			}
@@ -157,6 +159,10 @@ func (n *Network)flushOnce()  {
 		}
 		return true
 	})
+	for _, v := range brokenKey {
+		n.peers.Delete(v)
+		n.connections.Delete(v)
+	}
 }
 
 func (n *Network) flushLoop() {
@@ -333,8 +339,8 @@ func (n *Network) Listen() {
 	case "quic":
 		for {
 			if session, err := listener.(quic.Listener).Accept(); err == nil {
-				stream, err:= session.AcceptStream()
-				if err != nil{
+				stream, err := session.AcceptStream()
+				if err != nil {
 					log.Error("Open stream sync in session is err:", err.Error())
 					return
 				}
@@ -582,19 +588,22 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 			stream.Close()
 		}
 	}()
-
+	var address string
 	for {
+
 		msg, err := n.receiveQuicMessage(stream)
 		if err != nil {
-			log.Warn(err)
-			break
-		}
-		//log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
-		client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
-		if err != nil {
+			log.Warnf("receive quic msg from %s err: %s", address, err.Error())
+			log.Warn("quit connect with ", address)
 			return
 		}
 
+		log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
+		client, err = n.getOrSetPeerClient(msg.Sender.Address, stream)
+		if err != nil {
+			return
+		}
+		address = msg.Sender.Address
 		client.ID = (*peer.ID)(msg.Sender)
 
 		if !n.ConnectionStateExists(client.ID.Address) {
@@ -664,8 +673,9 @@ func (n *Network) Accept(incoming net.Conn) {
 		}
 
 		log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
-		client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+		client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
 		if err != nil {
+			log.Error(err)
 			return
 		}
 
@@ -746,7 +756,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 				log.Error("received message had an malformed signature")
 				return
 			}
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
 			if err != nil {
 				log.Error(err)
 				return
@@ -945,9 +955,6 @@ func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, 
 
 // Close shuts down the entire network.
 func (n *Network) Close() {
-	ctx := WithSignMessage(context.Background(), true)
-	n.Broadcast(ctx, &protobuf.Disconnect{})
-	time.Sleep(time.Millisecond*500)
 	close(n.kill)
 }
 

@@ -1,8 +1,8 @@
 /**
  * Description:
  * Author: Yihen.Liu
- * Create: 2019-05-31 
-*/
+ * Create: 2019-05-31
+ */
 package network
 
 import (
@@ -12,11 +12,11 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
+	quic "github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
-	"github.com/lucas-clemente/quic-go"
 )
 
 // sendMessage marshals, signs and sends a message over a stream.
@@ -72,7 +72,9 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 		bytesRead, err = io.ReadFull(stream, buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 	}
-
+	if err != nil {
+		return nil, err
+	}
 	size = binary.BigEndian.Uint32(buffer)
 	if size == 0 {
 		return nil, errEmptyMsg
