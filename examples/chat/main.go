@@ -95,6 +95,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	networkBuilder.EnableProxyMode(*enableProxy)
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()

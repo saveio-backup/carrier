@@ -94,7 +94,7 @@ type Network struct {
 	kill chan struct{}
 
 	proxyServer string
-
+	proxyEnable bool
 	proxyFinish *sync.Map
 }
 
@@ -599,7 +599,12 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 		}
 
 		log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
-		client, err = n.getOrSetPeerClient(msg.Sender.Address, stream)
+		if n.ProxyModeEnable() {
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+		} else {
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, stream)
+		}
+
 		if err != nil {
 			return
 		}
@@ -673,7 +678,11 @@ func (n *Network) Accept(incoming net.Conn) {
 		}
 
 		log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
-		client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+		if n.ProxyModeEnable() {
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+		} else {
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+		}
 		if err != nil {
 			log.Error(err)
 			return
@@ -756,7 +765,12 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 				log.Error("received message had an malformed signature")
 				return
 			}
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+			if n.ProxyModeEnable() {
+				client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+			} else {
+				client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+			}
+
 			if err != nil {
 				log.Error(err)
 				return
@@ -975,6 +989,14 @@ func (n *Network) GetNetworkID() uint32 {
 
 func (n *Network) SetProxyServer(serverIP string) {
 	n.proxyServer = serverIP
+}
+
+func (n *Network) EnableProxyMode(enable bool) {
+	n.proxyEnable = enable
+}
+
+func (n *Network) ProxyModeEnable() bool {
+	return n.proxyEnable
 }
 
 func (n *Network) GetProxyServer() string {
