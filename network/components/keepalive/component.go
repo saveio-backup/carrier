@@ -120,7 +120,7 @@ func (p *Component) PeerConnect(client *network.PeerClient) {
 	if err != nil {
 		log.Error("parse address ", client.Address, " error in PeerConnect:", err.Error())
 	}
-	if addrInfo.Protocol == "udp" || addrInfo.Protocol == "kcp" {
+	if addrInfo.Protocol == "udp" || addrInfo.Protocol == "kcp" || addrInfo.Protocol == "quic"{
 		p.updateLastStateAndNotify(client, PEER_READY)
 		client.Tell(context.Background(), &protobuf.Keepalive{})
 	} else {

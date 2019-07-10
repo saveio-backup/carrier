@@ -128,10 +128,11 @@ func (c *PeerClient) RemoveEntries() error {
 			if addrInfo.Protocol =="quic" {
 				state.conn.(quic.Stream).Close()
 			}
+			state.writerMutex.Lock()
+			c.Network.peers.Delete(c.ID.Address)
+			c.Network.connections.Delete(c.ID.Address)
+			state.writerMutex.Unlock()
 		}
-
-		c.Network.peers.Delete(c.ID.Address)
-		c.Network.connections.Delete(c.ID.Address)
 	}
 	return nil
 }
