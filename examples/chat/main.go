@@ -7,16 +7,17 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/chat/messages"
 	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/discovery"
 	"github.com/saveio/carrier/network/components/keepalive"
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
-	"github.com/saveio/carrier/network/components/backoff"
 )
 
 type ChatComponent struct{ *network.Component }
@@ -75,7 +76,12 @@ func main() {
 
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))
-	builder.AddComponent(new(backoff.Component))
+	backoff_options := []backoff.ComponentOption{
+		backoff.WithInitialDelay(3 * time.Second),
+		backoff.WithMaxAttempts(10),
+		backoff.WithPriority(10),
+	}
+	builder.AddComponent(backoff.New(backoff_options...))
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 	if protocol == "udp" && *enableProxy == true {

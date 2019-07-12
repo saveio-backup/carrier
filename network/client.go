@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/saveio/themis/common/log"
+
 	quic "github.com/lucas-clemente/quic-go"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/peer"
@@ -125,7 +127,7 @@ func (c *PeerClient) RemoveEntries() error {
 			if addrInfo.Protocol == "udp" {
 				state.conn.(*net.UDPConn).Close()
 			}
-			if addrInfo.Protocol =="quic" {
+			if addrInfo.Protocol == "quic" {
 				state.conn.(quic.Stream).Close()
 			}
 			state.writerMutex.Lock()

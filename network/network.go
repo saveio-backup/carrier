@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/lucas-clemente/quic-go"
+	quic "github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
 )
@@ -160,11 +160,14 @@ func (n *Network) flushOnce() {
 		return true
 	})
 	for _, v := range brokenKey {
-		if connState, ok:= n.connections.Load(v);ok{
-			connState.(*ConnState).writerMutex.Lock()
-			n.peers.Delete(v)
-			n.connections.Delete(v)
-			connState.(*ConnState).writerMutex.Unlock()
+		if client, ok := n.peers.Load(v); ok {
+			client.(*PeerClient).Close()
+			if connState, ok := n.connections.Load(v); ok {
+				connState.(*ConnState).writerMutex.Lock()
+				n.peers.Delete(v)
+				n.connections.Delete(v)
+				connState.(*ConnState).writerMutex.Unlock()
+			}
 		}
 	}
 }
@@ -601,7 +604,7 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 			log.Warn("quit connect with ", address)
 			return
 		}
-		log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature),stream)
+		log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature), stream)
 		if n.ProxyModeEnable() {
 			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		} else {
