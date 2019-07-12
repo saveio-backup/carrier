@@ -16,6 +16,7 @@ import (
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
+	"github.com/saveio/carrier/network/components/backoff"
 )
 
 type ChatComponent struct{ *network.Component }
@@ -74,7 +75,7 @@ func main() {
 
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))
-
+	builder.AddComponent(new(backoff.Component))
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 	if protocol == "udp" && *enableProxy == true {
