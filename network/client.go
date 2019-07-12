@@ -7,8 +7,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/saveio/themis/common/log"
-
 	quic "github.com/lucas-clemente/quic-go"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/peer"
