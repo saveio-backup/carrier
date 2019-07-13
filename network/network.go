@@ -529,12 +529,13 @@ func (n *Network) Bootstrap(addresses ...string) {
 		client, err := n.Client(address)
 
 		if err != nil {
-			log.Error(err)
+			log.Error("create client in bootstrap err:",err)
 			continue
 		}
 
 		err = client.Tell(context.Background(), &protobuf.Ping{})
 		if err != nil {
+			log.Error("new client send ping message err:",err)
 			continue
 		}
 	}
