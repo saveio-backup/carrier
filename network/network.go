@@ -396,12 +396,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return nil, err
 	}
 
-	clientNew, err := createPeerClient(n, address)
-	if err != nil {
-		return nil, err
-	}
-
-	c, exists := n.peers.LoadOrStore(address, clientNew)
+	c, exists := n.peers.Load(address)
 	if exists {
 		client := c.(*PeerClient)
 
@@ -410,6 +405,12 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		}
 
 		return client, nil
+	} else {
+		c, err = createPeerClient(n, address)
+		if err != nil {
+			return nil, err
+		}
+		n.peers.Store(address, c)
 	}
 
 	client := c.(*PeerClient)
