@@ -38,8 +38,8 @@ const (
 	defaultConnectionTimeout = 60 * time.Second
 	defaultReceiveWindowSize = 4096
 	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 1024 * 1024 * 100
-	defaultRecvBufferSize    = 1024 * 1024 * 100
+	defaultWriteBufferSize   = 1024 * 128
+	defaultRecvBufferSize    = 1024 * 128
 	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
