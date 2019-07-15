@@ -26,7 +26,7 @@ func QuicComponentStartup(n *network.Network) {
 func QuicComponentReceive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.ProxyResponse:
-		log.Info("Node public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
+		log.Info("Node(quic) public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
 
 		relayIP := "quic://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 

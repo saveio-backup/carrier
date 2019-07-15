@@ -95,7 +95,7 @@ type Network struct {
 
 	proxyServer string
 	proxyEnable bool
-	proxyFinish *sync.Map
+	ProxyFinish *sync.Map
 }
 
 // options for network struct
@@ -490,31 +490,31 @@ func (n *Network) BlockUntilListening() {
 }
 
 func (n *Network) BlockUntilQuicProxyFinish() {
-	if notify, ok := n.proxyFinish.Load("quic"); ok {
+	if notify, ok := n.ProxyFinish.Load("quic"); ok {
 		<-notify.(chan struct{})
 	}
 }
 
 func (n *Network) BlockUntilTcpProxyFinish() {
-	if notify, ok := n.proxyFinish.Load("tcp"); ok {
+	if notify, ok := n.ProxyFinish.Load("tcp"); ok {
 		<-notify.(chan struct{})
 	}
 }
 
 func (n *Network) BlockUntilKCPProxyFinish() {
-	if notify, ok := n.proxyFinish.Load("kcp"); ok {
+	if notify, ok := n.ProxyFinish.Load("kcp"); ok {
 		<-notify.(chan struct{})
 	}
 }
 
 func (n *Network) BlockUntilUDPProxyFinish() {
-	if notify, ok := n.proxyFinish.Load("udp"); ok {
+	if notify, ok := n.ProxyFinish.Load("udp"); ok {
 		<-notify.(chan struct{})
 	}
 }
 
 func (n *Network) BlockUntilProxyFinish() {
-	n.proxyFinish.Range(func(protocol, notify interface{}) bool {
+	n.ProxyFinish.Range(func(protocol, notify interface{}) bool {
 		<-notify.(chan struct{})
 		return true
 	})
@@ -1016,7 +1016,7 @@ func (n *Network) DeletePeerClient(address string) {
 }
 
 func (n *Network) FinishProxyServer(protocol string) {
-	n.proxyFinish.Range(func(p, notify interface{}) bool {
+	n.ProxyFinish.Range(func(p, notify interface{}) bool {
 		if protocol == p.(string) {
 			close(notify.(chan struct{}))
 		}

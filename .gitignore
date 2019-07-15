@@ -26,3 +26,4 @@ _testmain.go
 
 .idea
 examples/demos
+examples/chat/carrier*

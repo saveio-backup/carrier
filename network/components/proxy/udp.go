@@ -50,14 +50,14 @@ func sendUDPProxyRequest(n *network.Network) error {
 // Startup implements the Component callback
 func UDPComponentStartup(n *network.Network) {
 	if err := sendUDPProxyRequest(n); err != nil {
-		log.Error("proxy compnent start-up error:", err.Error())
+		log.Error("udp proxy compnent start-up error:", err.Error())
 	}
 }
 
 func UDPComponentReceive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.ProxyResponse:
-		log.Info("Node public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
+		log.Info("Node(udp) public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
 
 		relayIP := "udp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 

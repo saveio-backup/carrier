@@ -17,7 +17,7 @@ import (
 func TcpComponentStartup(n *network.Network) {
 	client, err := n.Client(n.GetProxyServer())
 	if err != nil {
-		log.Error("new client err in quic component startup, err:", err.Error())
+		log.Error("new client err in tcp component startup, err:", err.Error())
 		return
 	}
 	client.Tell(context.Background(), &protobuf.ProxyRequest{})
@@ -26,7 +26,7 @@ func TcpComponentStartup(n *network.Network) {
 func TcpComponentReceive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.ProxyResponse:
-		log.Info("Node public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
+		log.Info("Node(tcp) public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
 
 		relayIP := "tcp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 

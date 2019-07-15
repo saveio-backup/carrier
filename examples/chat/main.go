@@ -76,12 +76,12 @@ func main() {
 
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))
-	backoff_options := []backoff.ComponentOption{
+	backoffOptions := []backoff.ComponentOption{
 		backoff.WithInitialDelay(3 * time.Second),
 		backoff.WithMaxAttempts(10),
 		backoff.WithPriority(10),
 	}
-	builder.AddComponent(backoff.New(backoff_options...))
+	builder.AddComponent(backoff.New(backoffOptions...))
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
 	if protocol == "udp" && *enableProxy == true {

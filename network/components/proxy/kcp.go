@@ -15,13 +15,15 @@ import (
 // Startup implements the Component callback
 func KCPComponentStartup(n *network.Network) {
 	client, _ := n.Client(n.GetProxyServer())
-	client.Tell(context.Background(), &protobuf.ProxyRequest{})
+	if err := client.Tell(context.Background(), &protobuf.ProxyRequest{}); err!=nil{
+		log.Error("kcp proxy component start err:", err.Error())
+	}
 }
 
 func KCPComponentReceive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.ProxyResponse:
-		log.Info("Node public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
+		log.Info("Node(kcp) public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
 
 		relayIP := "kcp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 

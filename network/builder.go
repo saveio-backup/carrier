@@ -242,11 +242,11 @@ func (builder *Builder) Build() (*Network, error) {
 		peers:       new(sync.Map),
 		connections: new(sync.Map),
 		listeningCh: make(chan struct{}),
-		proxyFinish: new(sync.Map),
+		ProxyFinish: new(sync.Map),
 		kill:        make(chan struct{}),
 	}
 	net.transports.Range(func(protocol, _ interface{}) bool {
-		net.proxyFinish.Store(protocol, make(chan struct{}))
+		net.ProxyFinish.Store(protocol, make(chan struct{}))
 		return true
 	})
 	net.Init()
