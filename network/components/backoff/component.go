@@ -16,7 +16,6 @@ const (
 	defaultComponentInitialDelay    = 5 * time.Second
 	defaultComponentMaxAttempts     = 100
 	defaultComponentPriority        = 100
-	defaultProxyReconnectionTimeout = 3 * time.Second
 )
 
 // Component is the backoff Component
@@ -181,8 +180,8 @@ func (p *Component) startProxyBackoff(addr string) {
 		}
 		// sleep for a bit before connecting
 		d := b.NextDuration()
-		log.Infof("backoff reconnecting to %s in %s iteration %d", addr, d, i+1)
-		time.Sleep(d)
+		log.Infof("backoff reconnecting to %s in %s iteration %d", addr, d/4, i+1)
+		time.Sleep(d/4)
 		if p.net.ConnectionStateExists(addr) {
 			// check that the connection is still empty before dialing
 			log.Info("in proxy backOff, connection state exists, does not need to reconnect again.")

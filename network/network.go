@@ -22,9 +22,10 @@ import (
 	"sync/atomic"
 
 	"github.com/gogo/protobuf/proto"
-	quic "github.com/lucas-clemente/quic-go"
+	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
+	"fmt"
 )
 
 type writeMode int
@@ -38,8 +39,8 @@ const (
 	defaultConnectionTimeout = 60 * time.Second
 	defaultReceiveWindowSize = 4096
 	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 1024 * 128
-	defaultRecvBufferSize    = 1024 * 128
+	defaultWriteBufferSize   = 1024 * 1024 * 100
+	defaultRecvBufferSize    = 1024 * 1024 * 100
 	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
@@ -396,7 +397,12 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return nil, err
 	}
 
-	c, exists := n.peers.Load(address)
+	clientNew, err := createPeerClient(n, address)
+	if err != nil {
+		return nil, err
+	}
+
+	c, exists := n.peers.LoadOrStore(address, clientNew)
 	if exists {
 		client := c.(*PeerClient)
 
@@ -405,12 +411,6 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		}
 
 		return client, nil
-	} else {
-		c, err = createPeerClient(n, address)
-		if err != nil {
-			return nil, err
-		}
-		n.peers.Store(address, c)
 	}
 
 	client := c.(*PeerClient)
@@ -919,6 +919,27 @@ func (n *Network) Broadcast(ctx context.Context, message proto.Message) {
 	}
 
 	n.EachPeer(func(client *PeerClient) bool {
+		err := n.Write(client.Address, signed)
+		if err != nil {
+			log.Warnf("failed to send message to peer %v [err=%s]", client.ID, err)
+		}
+		return true
+	})
+}
+
+// Broadcast asynchronously broadcasts a message to all peer clients.
+func (n *Network) BroadcastToPeers(ctx context.Context, message proto.Message) {
+	signed, err := n.PrepareMessage(ctx, message)
+	if err != nil {
+		log.Errorf("network: failed to broadcast message")
+		return
+	}
+
+	n.EachPeer(func(client *PeerClient) bool {
+		if client.Address == n.GetProxyServer(){
+			return true
+		}
+		fmt.Println("client.Address:",client.Address)
 		err := n.Write(client.Address, signed)
 		if err != nil {
 			log.Warnf("failed to send message to peer %v [err=%s]", client.ID, err)

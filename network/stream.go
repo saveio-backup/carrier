@@ -11,7 +11,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/saveio/carrier/internal/protobuf"
-	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -98,10 +97,6 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 	err = proto.Unmarshal(buffer, msg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal message")
-	}
-
-	if msg.Opcode == uint32(opcode.ProxyResponseCode) || msg.Opcode == uint32(opcode.KeepaliveResponseCode) {
-		return msg, nil
 	}
 
 	// Check if any of the message headers are invalid or null.

@@ -14,11 +14,18 @@ import (
 const (
 	DefaultKeepaliveInterval = 3 * time.Second
 	DefaultKeepaliveTimeout  = 15 * time.Second
+	DefaultProxyKeepaliveInterval = 60 * time.Second
+	DefaultProxyKeepaliveTimeout  = 180 * time.Second
 )
 
 // Component is the keepalive Component
 type Component struct {
 	*network.Component
+
+	// interval to send keepalive msg
+	proxyKeepaliveInterval time.Duration
+	// total keepalive timeout
+	proxyKeepaliveTimeout time.Duration
 
 	// interval to send keepalive msg
 	keepaliveInterval time.Duration
@@ -40,7 +47,6 @@ const (
 	PEER_UNKNOWN     PeerState = 0 // peer network unknown
 	PEER_UNREACHABLE PeerState = 1 // peer network unreachable
 	PEER_REACHABLE   PeerState = 2 // peer network reachable
-	PEER_READY       PeerState = 3 // udp peer ready for write to server. (as for udp is unconnect, we have to need ready state)
 )
 
 var stateString = []string{
@@ -80,6 +86,8 @@ func defaultOptions() ComponentOption {
 	return func(o *Component) {
 		o.keepaliveInterval = DefaultKeepaliveInterval
 		o.keepaliveTimeout = DefaultKeepaliveTimeout
+		o.proxyKeepaliveInterval = DefaultProxyKeepaliveInterval
+		o.proxyKeepaliveTimeout = DefaultProxyKeepaliveTimeout
 	}
 }
 
@@ -109,6 +117,7 @@ func (p *Component) Startup(net *network.Network) {
 
 	// start keepalive service
 	go p.keepaliveService()
+	go p.proxyKeepaliveService()
 }
 
 func (p *Component) Cleanup(net *network.Network) {
@@ -116,16 +125,7 @@ func (p *Component) Cleanup(net *network.Network) {
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
-	addrInfo, err := network.ParseAddress(client.Address)
-	if err != nil {
-		log.Error("parse address ", client.Address, " error in PeerConnect:", err.Error())
-	}
-	if addrInfo.Protocol == "udp" || addrInfo.Protocol == "kcp" || addrInfo.Protocol == "quic"{
-		p.updateLastStateAndNotify(client, PEER_READY)
-		client.Tell(context.Background(), &protobuf.Keepalive{})
-	} else {
-		p.updateLastStateAndNotify(client, PEER_REACHABLE)
-	}
+	p.updateLastStateAndNotify(client, PEER_REACHABLE)
 }
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
@@ -156,8 +156,32 @@ func (p *Component) keepaliveService() {
 		select {
 		case <-t.C:
 			// broadcast keepalive msg to all peers
-			p.net.Broadcast(context.Background(), &protobuf.Keepalive{})
+			p.net.BroadcastToPeers(context.Background(), &protobuf.Keepalive{})
 			p.timeout()
+		case <-p.stopCh:
+			t.Stop()
+			break
+		}
+	}
+}
+
+func (p *Component) proxyKeepaliveService() {
+	t := time.NewTicker(p.proxyKeepaliveInterval)
+
+	for {
+		select {
+		case <-t.C:
+			// broadcast keepalive msg to all peers
+			client := p.net.GetPeerClient(p.net.GetProxyServer())
+			if client == nil{
+				log.Errorf("in proxyKeepliveService, coneection to proxy:%s err",p.net.GetProxyServer())
+				continue
+			}
+			client.Tell(context.Background(), &protobuf.Keepalive{})
+			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
+				p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
+				client.Close()
+			}
 		case <-p.stopCh:
 			t.Stop()
 			break
@@ -168,6 +192,9 @@ func (p *Component) keepaliveService() {
 // check all connetion if keepalive timeout
 func (p *Component) timeout() {
 	p.net.EachPeer(func(client *network.PeerClient) bool {
+		if client.Address == p.net.GetProxyServer(){
+			return true
+		}
 		// timeout notify state change
 		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
 			p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
