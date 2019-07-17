@@ -31,7 +31,7 @@ func QuicComponentReceive(ctx *network.ComponentContext) error {
 		relayIP := "quic://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 
 		if relayIP == ctx.Network().ID.Address {
-			ctx.Network().DeletePeerClient(ctx.Network().GetProxyServer())
+			//ctx.Network().DeletePeerClient(ctx.Network().GetProxyServer())
 		} else {
 			ctx.Network().ID.Address = relayIP
 		}
