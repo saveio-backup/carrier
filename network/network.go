@@ -277,7 +277,8 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 func (n *Network) Listen() {
 	addrInfo, err := ParseAddress(n.Address)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("parse addr:",addrInfo.String(), err)
+		return
 	}
 
 	var listener interface{}
@@ -287,10 +288,12 @@ func (n *Network) Listen() {
 			n.Conn = udpconn
 		}
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("in (carrier) Network.Listen(), listen ip:",addrInfo.String(), err)
+			return
 		}
 	} else {
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
+		return
 	}
 	// Handle 'network starts listening' callback for Components.
 	n.Components.Each(func(Component ComponentInterface) {
@@ -337,6 +340,7 @@ func (n *Network) Listen() {
 					return
 				default:
 					log.Error(err)
+					return
 				}
 			}
 		}
@@ -360,7 +364,8 @@ func (n *Network) Listen() {
 					log.Infof("Shutting down server on %s.", n.Address)
 					return
 				default:
-					log.Error(err)
+					log.Error("quic accept err:", err)
+					return
 				}
 			}
 		}
@@ -368,7 +373,6 @@ func (n *Network) Listen() {
 	default:
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
 	}
-
 }
 
 func (n *Network) GetPeerClient(address string) *PeerClient {
