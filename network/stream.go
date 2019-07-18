@@ -25,6 +25,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 		return errors.Wrap(err, "failed to marshal message")
 	}
 	if len(bytes) == 0{
+		panic("sendMessage receive empty message.")
 		log.Info("stack info:",fmt.Sprintf("%s",debug.Stack()))
 		log.Error("in tcp sendMessage,len(message) == 0, write to remote addr:", w.(net.Conn).RemoteAddr())
 		return errors.New("tcp sendMessage,len(message) is empty")
