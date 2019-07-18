@@ -13,7 +13,6 @@ import (
 	"github.com/saveio/carrier/examples/chat/messages"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/components/backoff"
-	"github.com/saveio/carrier/network/components/discovery"
 	"github.com/saveio/carrier/network/components/keepalive"
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
@@ -75,7 +74,7 @@ func main() {
 	builder.AddComponent(keepalive.New(options...))
 
 	// Register peer discovery Component.
-	builder.AddComponent(new(discovery.Component))
+	//builder.AddComponent(new(discovery.Component))
 	backoffOptions := []backoff.ComponentOption{
 		backoff.WithInitialDelay(3 * time.Second),
 		backoff.WithMaxAttempts(10),

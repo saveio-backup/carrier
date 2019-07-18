@@ -24,6 +24,10 @@ func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writer
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
 	}
+	if len(bytes) == 0{
+		log.Error("in tcp sendMessage,len(message) == 0")
+		return nil
+	}
 
 	// Serialize size.
 	buffer := make([]byte, 4)

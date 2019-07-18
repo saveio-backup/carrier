@@ -25,7 +25,6 @@ import (
 	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
-	"fmt"
 )
 
 type writeMode int
@@ -587,13 +586,14 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 	//var clientInit sync.Once
 	// Cleanup connections when we are done with them.
 	defer func() {
-		time.Sleep(1 * time.Second)
-
+		//time.Sleep(1 * time.Second)
 		if client != nil {
+			log.Infof("in AcceptQuic, client:%s close.", client.Address)
 			client.Close()
 		}
 
 		if stream != nil {
+			log.Infof("in AcceptQuic, stream close.")
 			stream.Close()
 		}
 	}()
@@ -879,6 +879,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		//tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendMessage(state.writer, message, state.writerMutex)
 		if err != nil {
+			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
 			return err
 		}
 	}
@@ -887,6 +888,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		//udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state, address)
 		if err != nil {
+			log.Error("(udp) write to addr:", address, "err:", err.Error())
 			return err
 		}
 	}
@@ -896,6 +898,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		quicConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendQuicMessage(state.writer, message, state.writerMutex)
 		if err != nil {
+			log.Error("(quic) write to addr:", address, "err:", err.Error())
 			return err
 		}
 	}
@@ -939,7 +942,7 @@ func (n *Network) BroadcastToPeers(ctx context.Context, message proto.Message) {
 		if client.Address == n.GetProxyServer(){
 			return true
 		}
-		fmt.Println("client.Address:",client.Address)
+
 		err := n.Write(client.Address, signed)
 		if err != nil {
 			log.Warnf("failed to send message to peer %v [err=%s]", client.ID, err)
