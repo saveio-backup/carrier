@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	DefaultKeepaliveInterval = 3 * time.Second
-	DefaultKeepaliveTimeout  = 15 * time.Second
+	DefaultKeepaliveInterval      = 3 * time.Second
+	DefaultKeepaliveTimeout       = 15 * time.Second
 	DefaultProxyKeepaliveInterval = 60 * time.Second
 	DefaultProxyKeepaliveTimeout  = 180 * time.Second
 )
@@ -172,9 +172,13 @@ func (p *Component) proxyKeepaliveService() {
 		select {
 		case <-t.C:
 			// broadcast keepalive msg to all peers
+			if p.net.ProxyModeEnable() == false {
+				log.Info("proxyModeEnable is false, proxyKeepaliveService groutine exit now")
+				return
+			}
 			client := p.net.GetPeerClient(p.net.GetProxyServer())
-			if client == nil{
-				log.Errorf("in proxyKeepliveService, coneection to proxy:%s err",p.net.GetProxyServer())
+			if client == nil {
+				log.Errorf("in proxyKeepliveService, coneection to proxy:%s err", p.net.GetProxyServer())
 				continue
 			}
 			client.Tell(context.Background(), &protobuf.Keepalive{})
@@ -192,7 +196,7 @@ func (p *Component) proxyKeepaliveService() {
 // check all connetion if keepalive timeout
 func (p *Component) timeout() {
 	p.net.EachPeer(func(client *network.PeerClient) bool {
-		if client.Address == p.net.GetProxyServer(){
+		if client.Address == p.net.GetProxyServer() {
 			return true
 		}
 		// timeout notify state change
