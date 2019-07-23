@@ -11,6 +11,7 @@ import (
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/network/transport"
 	"github.com/saveio/carrier/peer"
+	"github.com/saveio/themis/common/log"
 )
 
 const (
@@ -249,6 +250,7 @@ func (builder *Builder) Build() (*Network, error) {
 		net.ProxyFinish.Store(protocol, make(chan struct{}))
 		return true
 	})
+	log.Info("carrier version:", VERSION)
 	net.Init()
 
 	return net, nil

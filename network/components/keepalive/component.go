@@ -185,6 +185,8 @@ func (p *Component) proxyKeepaliveService() {
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
 				p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
 				client.Close()
+			} else { //this branch is necessary for backoff when it works successed nobody to reset keepalive status.
+				p.updateLastStateAndNotify(client, PEER_REACHABLE)
 			}
 		case <-p.stopCh:
 			t.Stop()
@@ -203,6 +205,8 @@ func (p *Component) timeout() {
 		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
 			p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
 			client.Close()
+		} else { //this branch is necessary for backoff when it works successed nobody to reset keepalive status.
+			p.updateLastStateAndNotify(client, PEER_REACHABLE)
 		}
 		return true
 	})

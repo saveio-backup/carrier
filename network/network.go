@@ -30,6 +30,7 @@ import (
 type writeMode int
 
 const (
+	VERSION                   = "carrier-release-v0.8-uid:1563868520"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
@@ -277,7 +278,7 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 func (n *Network) Listen() {
 	addrInfo, err := ParseAddress(n.Address)
 	if err != nil {
-		log.Fatal("parse addr:",addrInfo.String(), err)
+		log.Fatal("parse addr:", addrInfo.String(), err)
 		return
 	}
 
@@ -288,7 +289,7 @@ func (n *Network) Listen() {
 			n.Conn = udpconn
 		}
 		if err != nil {
-			log.Fatal("in (carrier) Network.Listen(), listen ip:",addrInfo.String(), err)
+			log.Fatal("in (carrier) Network.Listen(), listen ip:", addrInfo.String(), err)
 			return
 		}
 	} else {
@@ -328,50 +329,58 @@ func (n *Network) Listen() {
 	// Handle new clients.
 	switch addrInfo.Protocol {
 	case "tcp", "kcp":
-		for {
-			if conn, err := listener.(net.Listener).Accept(); err == nil {
-				go n.Accept(conn)
-
-			} else {
-				// if the Shutdown flag is set, no need to continue with the for loop
-				select {
-				case <-n.kill:
-					log.Infof("Shutting down server on %s.", n.Address)
-					return
-				default:
-					log.Error(err)
-					return
-				}
-			}
-		}
+		n.netListen(listener)
 	case "udp":
 		go n.AcceptUdp(listener.(*net.UDPConn))
 		select {}
 	case "quic":
-		for {
-			if session, err := listener.(quic.Listener).Accept(); err == nil {
-				stream, err := session.AcceptStream()
-				if err != nil {
-					log.Error("Open stream sync in session is err:", err.Error())
-					return
-				}
-				go n.AcceptQuic(stream)
-
-			} else {
-				// if the Shutdown flag is set, no need to continue with the for loop
-				select {
-				case <-n.kill:
-					log.Infof("Shutting down server on %s.", n.Address)
-					return
-				default:
-					log.Error("quic accept err:", err)
-					return
-				}
-			}
-		}
+		n.quicListen(listener)
 
 	default:
 		log.Fatal("invalid protocol: " + addrInfo.Protocol)
+	}
+}
+
+func (n *Network) netListen(listener interface{}) {
+	for {
+		if conn, err := listener.(net.Listener).Accept(); err == nil {
+			go n.Accept(conn)
+
+		} else {
+			// if the Shutdown flag is set, no need to continue with the for loop
+			select {
+			case <-n.kill:
+				log.Infof("Shutting down server on %s.", n.Address)
+				return
+			default:
+				log.Error(err)
+				return
+			}
+		}
+	}
+}
+
+func (n *Network) quicListen(listener interface{}) {
+	for {
+		if session, err := listener.(quic.Listener).Accept(); err == nil {
+			stream, err := session.AcceptStream()
+			if err != nil {
+				log.Error("Open stream sync in session is err:", err.Error())
+				return
+			}
+			go n.AcceptQuic(stream)
+
+		} else {
+			// if the Shutdown flag is set, no need to continue with the for loop
+			select {
+			case <-n.kill:
+				log.Infof("Shutting down server on %s.", n.Address)
+				return
+			default:
+				log.Error("quic accept err:", err)
+				return
+			}
+		}
 	}
 }
 
@@ -533,13 +542,13 @@ func (n *Network) Bootstrap(addresses ...string) {
 		client, err := n.Client(address)
 
 		if err != nil {
-			log.Error("create client in bootstrap err:",err)
+			log.Error("create client in bootstrap err:", err)
 			continue
 		}
 
 		err = client.Tell(context.Background(), &protobuf.Ping{})
 		if err != nil {
-			log.Error("new client send ping message err:",err)
+			log.Error("new client send ping message err:", err)
 			continue
 		}
 	}
@@ -943,7 +952,7 @@ func (n *Network) BroadcastToPeers(ctx context.Context, message proto.Message) {
 	}
 
 	n.EachPeer(func(client *PeerClient) bool {
-		if client.Address == n.GetProxyServer(){
+		if client.Address == n.GetProxyServer() {
 			return true
 		}
 
