@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	defaultComponentInitialDelay    = 5 * time.Second
-	defaultComponentMaxAttempts     = 100
-	defaultComponentPriority        = 100
+	defaultComponentInitialDelay = 5 * time.Second
+	defaultComponentMaxAttempts  = 100
+	defaultComponentPriority     = 100
 )
 
 // Component is the backoff Component
@@ -91,6 +91,9 @@ func (p *Component) Startup(net *network.Network) {
 
 // PeerDisconnect implements the Component callback
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
+	if client.GetBackoffStatus() == false {
+		return
+	}
 	if client.Address == p.net.GetProxyServer() && p.net.ProxyModeEnable() {
 		go p.startProxyBackoff(client.Address)
 	} else {
@@ -181,7 +184,7 @@ func (p *Component) startProxyBackoff(addr string) {
 		// sleep for a bit before connecting
 		d := b.NextDuration()
 		log.Infof("backoff reconnecting to %s in %s iteration %d", addr, d/4, i+1)
-		time.Sleep(d/4)
+		time.Sleep(d / 4)
 		if p.net.ConnectionStateExists(addr) {
 			// check that the connection is still empty before dialing
 			log.Info("in proxy backOff, connection state exists, does not need to reconnect again.")

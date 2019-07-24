@@ -13,6 +13,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
+	"runtime/debug"
 )
 
 // PeerClient represents a single incoming peers client.
@@ -32,10 +33,11 @@ type PeerClient struct {
 
 	jobs chan func()
 
-	closed      uint32 // for atomic ops
-	closeSignal chan struct{}
-	Time        time.Time
-	RecvWindow  *RecvWindow
+	closed        uint32 // for atomic ops
+	closeSignal   chan struct{}
+	Time          time.Time
+	RecvWindow    *RecvWindow
+	enableBackoff bool
 }
 
 // StreamState represents a stream.
@@ -74,10 +76,11 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 			buffered: make(chan struct{}),
 		},
 
-		jobs:        make(chan func(), 128),
-		closeSignal: make(chan struct{}),
-		Time:        time.Now(),
-		RecvWindow:  NewRecvWindow(network.opts.recvWindowSize),
+		jobs:          make(chan func(), 128),
+		closeSignal:   make(chan struct{}),
+		Time:          time.Now(),
+		RecvWindow:    NewRecvWindow(network.opts.recvWindowSize),
+		enableBackoff: true,
 	}
 
 	return client, nil
@@ -131,6 +134,8 @@ func (c *PeerClient) RemoveEntries() error {
 			state.writerMutex.Lock()
 			c.Network.peers.Delete(c.ID.Address)
 			c.Network.connections.Delete(c.ID.Address)
+			state.conn = nil
+			debug.FreeOSMemory()
 			state.writerMutex.Unlock()
 		}
 	}
@@ -367,4 +372,12 @@ func (c *PeerClient) IsOutgoingReady() bool {
 
 func (c *PeerClient) ResetConnectionID(cid []byte) {
 	c.ID.ConnectionId = cid
+}
+
+func (c *PeerClient) DisableBackoff() {
+	c.enableBackoff = false
+}
+
+func (c *PeerClient) GetBackoffStatus() bool {
+	return c.enableBackoff
 }

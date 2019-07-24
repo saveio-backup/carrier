@@ -404,11 +404,6 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return nil, errors.New("network: peer should not dial itself")
 	}
 
-	addrInfo, err := ParseAddress(address)
-	if err != nil {
-		return nil, err
-	}
-
 	clientNew, err := createPeerClient(n, address)
 	if err != nil {
 		return nil, err
@@ -438,7 +433,20 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			return nil, err
 		}
 	}
-	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+	n.initConnection(address, conn)
+	client.Init()
+
+	client.setIncomingReady()
+	return client, nil
+}
+
+func (n *Network) initConnection(address string, conn interface{}){
+	addrInfo, err := ParseAddress(address)
+	if err != nil {
+		log.Errorf("address:%s,initConnection err:%s", address, err.Error())
+	}
+	switch addrInfo.Protocol {
+	case "tcp", "kcp":
 		netConn, _ := conn.(net.Conn)
 		n.connections.Store(address, &ConnState{
 			conn:           conn,
@@ -447,28 +455,23 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			DataSignal:     make(chan *protobuf.Message, 1),
 			ControllSignal: make(chan *protobuf.Message, 1),
 		})
-	}
-	if addrInfo.Protocol == "udp" {
+	case "udp":
 		udpConn, _ := conn.(*net.UDPConn)
 		n.connections.Store(address, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(udpConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
 		})
-	}
-	if addrInfo.Protocol == "quic" {
+	case "quic":
 		netConn, _ := conn.(quic.Stream)
 		n.connections.Store(address, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
 		})
-
+	default:
+		log.Error("does not support",addrInfo.Protocol, ", pls use kcp/udp/tcp/quic protocol.")
 	}
-	client.Init()
-
-	client.setIncomingReady()
-	return client, nil
 }
 
 // Client either creates or returns a cached peer client given its host address.
@@ -620,6 +623,14 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 			return
 		}
 		log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature), stream)
+		if msg.Opcode == uint32(opcode.PingCode) {
+			oldClient := n.GetPeerClient(msg.Sender.Address)
+			if oldClient != nil {
+				oldClient.DisableBackoff()
+				oldClient.Close()
+				oldClient = nil
+			}
+		}
 		if n.ProxyModeEnable() {
 			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		} else {
