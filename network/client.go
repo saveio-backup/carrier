@@ -14,6 +14,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"runtime/debug"
+	"github.com/saveio/themis/common/log"
 )
 
 // PeerClient represents a single incoming peers client.
@@ -33,11 +34,12 @@ type PeerClient struct {
 
 	jobs chan func()
 
-	closed        uint32 // for atomic ops
-	closeSignal   chan struct{}
-	Time          time.Time
-	RecvWindow    *RecvWindow
-	enableBackoff bool
+	closed         uint32 // for atomic ops
+	closeSignal    chan struct{}
+	Time           time.Time
+	RecvWindow     *RecvWindow
+	enableBackoff  bool
+	ConnStateMutex *sync.Mutex
 }
 
 // StreamState represents a stream.
@@ -76,11 +78,12 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 			buffered: make(chan struct{}),
 		},
 
-		jobs:          make(chan func(), 128),
-		closeSignal:   make(chan struct{}),
-		Time:          time.Now(),
-		RecvWindow:    NewRecvWindow(network.opts.recvWindowSize),
-		enableBackoff: true,
+		jobs:           make(chan func(), 128),
+		closeSignal:    make(chan struct{}),
+		Time:           time.Now(),
+		RecvWindow:     NewRecvWindow(network.opts.recvWindowSize),
+		enableBackoff:  true,
+		ConnStateMutex: new(sync.Mutex),
 	}
 
 	return client, nil
@@ -154,11 +157,14 @@ func (c *PeerClient) Close() error {
 	c.stream.isClosed = true
 	c.stream.Unlock()
 
+	if err:= c.RemoveEntries(); err!=nil{
+		log.Error("in Peer Close(), RemoveEntries err:", err.Error())
+		return err
+	}
 	c.Network.Components.Each(func(Component ComponentInterface) {
 		Component.PeerDisconnect(c)
 	})
-	return c.RemoveEntries()
-	//return nil
+	return nil
 }
 
 // Tell will asynchronously emit a message to a given peer.

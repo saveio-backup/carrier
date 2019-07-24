@@ -440,7 +440,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	return client, nil
 }
 
-func (n *Network) initConnection(address string, conn interface{}){
+func (n *Network) initConnection(address string, conn interface{}) {
 	addrInfo, err := ParseAddress(address)
 	if err != nil {
 		log.Errorf("address:%s,initConnection err:%s", address, err.Error())
@@ -470,7 +470,7 @@ func (n *Network) initConnection(address string, conn interface{}){
 			writerMutex: new(sync.Mutex),
 		})
 	default:
-		log.Error("does not support",addrInfo.Protocol, ", pls use kcp/udp/tcp/quic protocol.")
+		log.Error("does not support", addrInfo.Protocol, ", pls use kcp/udp/tcp/quic protocol.")
 	}
 }
 
@@ -526,13 +526,6 @@ func (n *Network) BlockUntilUDPProxyFinish() {
 	if notify, ok := n.ProxyFinish.Load("udp"); ok {
 		<-notify.(chan struct{})
 	}
-}
-
-func (n *Network) BlockUntilProxyFinish() {
-	n.ProxyFinish.Range(func(protocol, notify interface{}) bool {
-		<-notify.(chan struct{})
-		return true
-	})
 }
 
 // Bootstrap with a number of peers and commence a handshake.

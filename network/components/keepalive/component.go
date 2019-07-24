@@ -130,7 +130,7 @@ func (p *Component) PeerConnect(client *network.PeerClient) {
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
 	p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
-	client.Close()
+	//client.Close()
 }
 
 func (p *Component) Receive(ctx *network.ComponentContext) error {
@@ -143,7 +143,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 			return err
 		}
 	case *protobuf.KeepaliveResponse:
-		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+		//p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 	}
 
 	return nil
@@ -185,8 +185,6 @@ func (p *Component) proxyKeepaliveService() {
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
 				p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
 				client.Close()
-			} else { //this branch is necessary for backoff when it works successed nobody to reset keepalive status.
-				p.updateLastStateAndNotify(client, PEER_REACHABLE)
 			}
 		case <-p.stopCh:
 			t.Stop()
@@ -205,25 +203,30 @@ func (p *Component) timeout() {
 		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
 			p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
 			client.Close()
-		} else { //this branch is necessary for backoff when it works successed nobody to reset keepalive status.
-			p.updateLastStateAndNotify(client, PEER_REACHABLE)
 		}
 		return true
 	})
 }
 
 func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state PeerState) {
+	client.ConnStateMutex.Lock()
+	defer client.ConnStateMutex.Unlock()
+
 	last, ok := p.lastStates.Load(client.Address)
 	p.lastStates.Store(client.Address, state)
+	log.Debugf("[keepalive]address:%s, last status:%d, tobe changed status:%d", client.Address, last, state)
 	// no state change, no need notify
 	if ok && last == state {
 		return
 	}
 
 	if p.peerStateChan != nil {
+		log.Debugf("[keepalive]for client.address:%s, len(peerStateChan):%d", client.Address, len(p.peerStateChan))
 		p.peerStateChan <- &PeerStateEvent{Address: client.Address, State: state}
 
 		log.Infof("[keepalive] peerStateEvent: address %s state %s", client.Address, stateString[state])
+	} else {
+		log.Debug("[keepalive] p.peerStateChan has been release, value is nil.")
 	}
 }
 
