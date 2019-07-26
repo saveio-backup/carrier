@@ -143,7 +143,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 			return err
 		}
 	case *protobuf.KeepaliveResponse:
-		//p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 	}
 
 	return nil
@@ -176,9 +176,9 @@ func (p *Component) proxyKeepaliveService() {
 				log.Info("proxyModeEnable is false, proxyKeepaliveService groutine exit now")
 				return
 			}
-			client := p.net.GetPeerClient(p.net.GetProxyServer())
+			client := p.net.GetPeerClient(p.net.GetWorkingProxyServer())
 			if client == nil {
-				log.Errorf("in proxyKeepliveService, coneection to proxy:%s err", p.net.GetProxyServer())
+				log.Errorf("in proxyKeepliveService, coneection to proxy:%s err", p.net.GetWorkingProxyServer())
 				continue
 			}
 			client.Tell(context.Background(), &protobuf.Keepalive{})
@@ -196,7 +196,7 @@ func (p *Component) proxyKeepaliveService() {
 // check all connetion if keepalive timeout
 func (p *Component) timeout() {
 	p.net.EachPeer(func(client *network.PeerClient) bool {
-		if client.Address == p.net.GetProxyServer() {
+		if client.Address == p.net.GetWorkingProxyServer() {
 			return true
 		}
 		// timeout notify state change
@@ -212,13 +212,10 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 	client.ConnStateMutex.Lock()
 	defer client.ConnStateMutex.Unlock()
 
-	last, ok := p.lastStates.Load(client.Address)
-	p.lastStates.Store(client.Address, state)
-	log.Debugf("[keepalive]address:%s, last status:%d, tobe changed status:%d", client.Address, last, state)
-	// no state change, no need notify
-	if ok && last == state {
-		return
+	if last, ok := p.lastStates.Load(client.Address); ok {
+		log.Debugf("[keepalive]address:%s, last status:%d, tobe changed status:%d", client.Address, last, state)
 	}
+	p.lastStates.Store(client.Address, state)
 
 	if p.peerStateChan != nil {
 		log.Debugf("[keepalive]for client.address:%s, len(peerStateChan):%d", client.Address, len(p.peerStateChan))

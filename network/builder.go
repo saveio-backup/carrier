@@ -240,14 +240,14 @@ func (builder *Builder) Build() (*Network, error) {
 		Components: builder.Components,
 		transports: builder.transports,
 
-		peers:       new(sync.Map),
-		connections: new(sync.Map),
-		listeningCh: make(chan struct{}),
-		ProxyFinish: new(sync.Map),
-		kill:        make(chan struct{}),
+		peers:        new(sync.Map),
+		connections:  new(sync.Map),
+		listeningCh:  make(chan struct{}),
+		ProxyService: Proxy{Finish: new(sync.Map), ConnectionEvent: make([]chan *ProxyEvent, defaultProxyNotifySize), WorkID: 0},
+		kill:         make(chan struct{}),
 	}
 	net.transports.Range(func(protocol, _ interface{}) bool {
-		net.ProxyFinish.Store(protocol, make(chan struct{}))
+		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
 		return true
 	})
 	log.Info("carrier version:", VERSION)

@@ -94,7 +94,7 @@ func (p *Component) PeerDisconnect(client *network.PeerClient) {
 	if client.GetBackoffStatus() == false {
 		return
 	}
-	if client.Address == p.net.GetProxyServer() && p.net.ProxyModeEnable() {
+	if client.Address == p.net.GetWorkingProxyServer() && p.net.ProxyModeEnable() {
 		go p.startProxyBackoff(client.Address)
 	} else {
 		go p.startBackoff(client.Address)
@@ -190,7 +190,7 @@ func (p *Component) startProxyBackoff(addr string) {
 			log.Info("in proxy backOff, connection state exists, does not need to reconnect again.")
 			break
 		}
-		p.net.ProxyFinish.Store(addrInfo.Protocol, make(chan struct{}))
+		p.net.ProxyService.Finish.Store(addrInfo.Protocol, make(chan struct{}))
 		switch addrInfo.Protocol {
 		case "tcp":
 			proxy.TcpComponentStartup(p.net)

@@ -7,11 +7,12 @@ package proxy
 
 import (
 	"context"
+	"net"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
-	"net"
 )
 
 func prepareUDPRawMessage(n *network.Network, message proto.Message) ([]byte, *net.UDPAddr, error) {
@@ -22,7 +23,7 @@ func prepareUDPRawMessage(n *network.Network, message proto.Message) ([]byte, *n
 	}
 
 	buffer := n.BuildRawContent(signed)
-	addrInfo, err := network.ParseAddress(n.GetProxyServer())
+	addrInfo, err := network.ParseAddress(n.GetWorkingProxyServer())
 	if err != nil {
 		log.Error("parse address error in send proxy request:", err.Error())
 		return nil, nil, err
@@ -58,14 +59,7 @@ func UDPComponentReceive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.ProxyResponse:
 		log.Info("Node(udp) public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
-
-		relayIP := "udp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
-
-		if relayIP == ctx.Network().ID.Address {
-			//ctx.Network().DeletePeerClient(ctx.Network().GetProxyServer())
-		} else {
-			ctx.Network().ID.Address = relayIP
-		}
+		ctx.Network().ID.Address = "udp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
 		ctx.Network().FinishProxyServer("udp")
 	}
 

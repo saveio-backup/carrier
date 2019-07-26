@@ -21,6 +21,8 @@ import (
 	"encoding/hex"
 	"sync/atomic"
 
+	"strings"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
@@ -30,7 +32,7 @@ import (
 type writeMode int
 
 const (
-	VERSION                   = "carrier-release-v0.8-uid:1563868520"
+	VERSION                   = "carrier-release-v0.8-uid:1563868521"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
@@ -44,6 +46,7 @@ const (
 	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
 	defaultWriteMode         = WRITE_MODE_LOOP
+	defaultProxyNotifySize   = 256
 )
 
 var contextPool = sync.Pool{
@@ -94,9 +97,20 @@ type Network struct {
 	// <-kill will begin the server shutdown process
 	kill chan struct{}
 
-	proxyServer string
-	proxyEnable bool
-	ProxyFinish *sync.Map
+	ProxyService Proxy
+}
+
+type ProxyEvent struct {
+	Address      string
+	ConnectionID string
+}
+
+type Proxy struct {
+	Enable          bool
+	Finish          *sync.Map
+	Servers         []string
+	WorkID          uint16
+	ConnectionEvent []chan *ProxyEvent
 }
 
 // options for network struct
@@ -505,25 +519,25 @@ func (n *Network) BlockUntilListening() {
 }
 
 func (n *Network) BlockUntilQuicProxyFinish() {
-	if notify, ok := n.ProxyFinish.Load("quic"); ok {
+	if notify, ok := n.ProxyService.Finish.Load("quic"); ok {
 		<-notify.(chan struct{})
 	}
 }
 
 func (n *Network) BlockUntilTcpProxyFinish() {
-	if notify, ok := n.ProxyFinish.Load("tcp"); ok {
+	if notify, ok := n.ProxyService.Finish.Load("tcp"); ok {
 		<-notify.(chan struct{})
 	}
 }
 
 func (n *Network) BlockUntilKCPProxyFinish() {
-	if notify, ok := n.ProxyFinish.Load("kcp"); ok {
+	if notify, ok := n.ProxyService.Finish.Load("kcp"); ok {
 		<-notify.(chan struct{})
 	}
 }
 
 func (n *Network) BlockUntilUDPProxyFinish() {
-	if notify, ok := n.ProxyFinish.Load("udp"); ok {
+	if notify, ok := n.ProxyService.Finish.Load("udp"); ok {
 		<-notify.(chan struct{})
 	}
 }
@@ -956,7 +970,7 @@ func (n *Network) BroadcastToPeers(ctx context.Context, message proto.Message) {
 	}
 
 	n.EachPeer(func(client *PeerClient) bool {
-		if client.Address == n.GetProxyServer() {
+		if client.Address == n.GetWorkingProxyServer() {
 			return true
 		}
 
@@ -1036,20 +1050,20 @@ func (n *Network) GetNetworkID() uint32 {
 	return n.netID
 }
 
-func (n *Network) SetProxyServer(serverIP string) {
-	n.proxyServer = serverIP
+func (n *Network) SetProxyServer(proxies string) {
+	n.ProxyService.Servers = strings.Split(proxies, ",")
 }
 
 func (n *Network) EnableProxyMode(enable bool) {
-	n.proxyEnable = enable
+	n.ProxyService.Enable = enable
 }
 
 func (n *Network) ProxyModeEnable() bool {
-	return n.proxyEnable
+	return n.ProxyService.Enable
 }
 
-func (n *Network) GetProxyServer() string {
-	return n.proxyServer
+func (n *Network) GetWorkingProxyServer() string {
+	return n.ProxyService.Servers[n.ProxyService.WorkID]
 }
 
 func (n *Network) DeletePeerClient(address string) {
@@ -1057,7 +1071,7 @@ func (n *Network) DeletePeerClient(address string) {
 }
 
 func (n *Network) FinishProxyServer(protocol string) {
-	n.ProxyFinish.Range(func(p, notify interface{}) bool {
+	n.ProxyService.Finish.Range(func(p, notify interface{}) bool {
 		if protocol == p.(string) {
 			close(notify.(chan struct{}))
 		}

@@ -11,9 +11,10 @@ import (
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/peer"
 
+	"runtime/debug"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
-	"runtime/debug"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -157,7 +158,7 @@ func (c *PeerClient) Close() error {
 	c.stream.isClosed = true
 	c.stream.Unlock()
 
-	if err:= c.RemoveEntries(); err!=nil{
+	if err := c.RemoveEntries(); err != nil {
 		log.Error("in Peer Close(), RemoveEntries err:", err.Error())
 		return err
 	}
