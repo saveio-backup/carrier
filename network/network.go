@@ -1064,8 +1064,10 @@ func (n *Network) EnableProxyMode(enable bool) {
 func (n *Network) ProxyModeEnable() bool {
 	return n.ProxyService.Enable
 }
-
 func (n *Network) GetWorkingProxyServer() string {
+	if n.ProxyModeEnable() == false {
+		return ""
+	}
 	return n.ProxyService.Servers[n.ProxyService.WorkID]
 }
 
