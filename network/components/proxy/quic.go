@@ -13,6 +13,23 @@ import (
 	"github.com/saveio/themis/common/log"
 )
 
+func QuicComponentRestartUp(n *network.Network) {
+	if n.ProxyModeEnable() == false {
+		log.Error("please enable quic proxy firstly.")
+		return
+	}
+
+	n.ProxyService.Finish.Store("quic", make(chan struct{}))
+	client, err := n.Client(n.GetWorkingProxyServer())
+	if err != nil {
+		log.Error("new client err in quic component restart, err:", err.Error())
+		return
+	}
+	client.Tell(context.Background(), &protobuf.ProxyRequest{})
+
+	n.BlockUntilQuicProxyFinish()
+}
+
 // Startup implements the Component callback
 func QuicComponentStartup(n *network.Network) {
 	client, err := n.Client(n.GetWorkingProxyServer())

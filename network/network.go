@@ -32,7 +32,7 @@ import (
 type writeMode int
 
 const (
-	VERSION                   = "carrier-release-v0.8-uid:1563868521"
+	VERSION                   = "carrier-release-v0.8-uid:1563868522"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
@@ -140,7 +140,7 @@ type ConnState struct {
 // Init starts all network I/O workers.
 func (n *Network) Init() {
 	// Spawn write flusher.
-	go n.flushLoop()
+	//go n.flushLoop()
 	go n.waitExit()
 }
 
@@ -499,8 +499,31 @@ func (n *Network) ConnectionStateExists(address string) bool {
 	return ok
 }
 
+func (n *Network) ProxyConnectionStateExists() (bool, error) {
+	if n.ProxyModeEnable() == true {
+		address := n.GetWorkingProxyServer()
+		_, ok := n.connections.Load(address)
+		return ok, nil
+	} else {
+		return false, errors.New("proxy does not enable")
+	}
+}
+
 // ConnectionState returns a connections state for current address.
 func (n *Network) ConnectionState(address string) (*ConnState, bool) {
+	conn, ok := n.connections.Load(address)
+	if !ok {
+		return nil, false
+	}
+	return conn.(*ConnState), true
+}
+
+// ConnectionState returns a connections state for current address.
+func (n *Network) ProxyConnectionState() (*ConnState, bool) {
+	if n.ProxyModeEnable() == false {
+		return nil, false
+	}
+	address := n.GetWorkingProxyServer()
 	conn, ok := n.connections.Load(address)
 	if !ok {
 		return nil, false
@@ -542,6 +565,25 @@ func (n *Network) BlockUntilUDPProxyFinish() {
 	}
 }
 
+func (n *Network) ConnectPeer(address string) error {
+	if n.ConnectionStateExists(address) {
+		log.Info("in ConnectPeer, connection belong to addr:", address, "has exist, return directly.")
+		return nil
+	}
+	client, err := n.Client(address)
+	if err != nil {
+		log.Error("create client in ConnectPeer err:", err, ";address:", address)
+		return err
+	}
+
+	err = client.Tell(context.Background(), &protobuf.Ping{})
+	if err != nil {
+		log.Error("new client send ping message in ConnectPeer err:", err, ";address:", address)
+		return err
+	}
+	return nil
+}
+
 // Bootstrap with a number of peers and commence a handshake.
 func (n *Network) Bootstrap(addresses ...string) {
 	n.BlockUntilListening()
@@ -552,13 +594,13 @@ func (n *Network) Bootstrap(addresses ...string) {
 		client, err := n.Client(address)
 
 		if err != nil {
-			log.Error("create client in bootstrap err:", err)
+			log.Error("create client in bootstrap err:", err, ";address:", address)
 			continue
 		}
 
 		err = client.Tell(context.Background(), &protobuf.Ping{})
 		if err != nil {
-			log.Error("new client send ping message err:", err)
+			log.Error("new client send ping message err:", err, ";address:", address)
 			continue
 		}
 	}
@@ -907,7 +949,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//log.Infof("protocol:%s,message.opcode:%d,write-to addr:%s, message.sign:%s", addrInfo.Protocol, message.Opcode, address, hex.EncodeToString(message.Signature))
+
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		//tcpConn, _ := state.conn.(net.Conn)
 		//tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
@@ -935,14 +977,6 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 			log.Error("(quic) write to addr:", address, "err:", err.Error())
 			return err
 		}
-	}
-
-	if n.opts.writeMode == WRITE_MODE_DIRECT {
-		state.writerMutex.Lock()
-		if err := state.writer.Flush(); err != nil {
-			log.Warnf(err.Error())
-		}
-		state.writerMutex.Unlock()
 	}
 	return nil
 }

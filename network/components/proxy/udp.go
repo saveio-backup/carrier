@@ -49,6 +49,21 @@ func sendUDPProxyRequest(n *network.Network) error {
 }
 
 // Startup implements the Component callback
+func UDPComponentRestartUp(n *network.Network) {
+	if n.ProxyModeEnable() == false {
+		log.Error("please enable udp proxy firstly.")
+		return
+	}
+	n.ProxyService.Finish.Store("udp", make(chan struct{}))
+
+	if err := sendUDPProxyRequest(n); err != nil {
+		log.Error("udp proxy compnent restart error:", err.Error())
+	}
+
+	n.BlockUntilUDPProxyFinish()
+}
+
+// Startup implements the Component callback
 func UDPComponentStartup(n *network.Network) {
 	if err := sendUDPProxyRequest(n); err != nil {
 		log.Error("udp proxy compnent start-up error:", err.Error())

@@ -6,6 +6,8 @@ import (
 
 	"sync"
 
+	"errors"
+
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
@@ -225,6 +227,15 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 	} else {
 		log.Debug("[keepalive] p.peerStateChan has been release, value is nil.")
 	}
+}
+
+func (p *Component) GetPeerStateByAddress(address string) (PeerState, error) {
+	last, ok := p.lastStates.Load(address)
+	if !ok {
+		log.Debugf("[keepalive] address:%s, last status:%d, tobe changed status:%d", address, last)
+		return PEER_UNKNOWN, errors.New("[keepalive]Does not know peer status")
+	}
+	return last.(PeerState), nil
 }
 
 func (p *Component) GetPeerStateChan() chan *PeerStateEvent {

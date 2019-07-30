@@ -185,6 +185,10 @@ func (builder *Builder) AddComponentWithPriority(priority int, Component Compone
 	return nil
 }
 
+func (builder *Builder) DeleteComponent(Component ComponentInterface) bool {
+	return builder.Components.Delete(Component)
+}
+
 // AddComponent register a new Component onto the network.
 func (builder *Builder) AddComponent(Component ComponentInterface) error {
 	err := builder.AddComponentWithPriority(builder.ComponentCount, Component)

@@ -14,6 +14,29 @@ import (
 )
 
 // Startup implements the Component callback
+func TcpComponentRestartUp(n *network.Network) {
+	if n.ProxyModeEnable() == false {
+		log.Error("please enable tcp proxy firstly.")
+		return
+	}
+
+	n.ProxyService.Finish.Store("tcp", make(chan struct{}))
+
+	client, err := n.Client(n.GetWorkingProxyServer())
+	if err != nil {
+		log.Error("new client err in tcp component startup, err:", err.Error())
+		return
+	}
+	err = client.Tell(context.Background(), &protobuf.ProxyRequest{})
+	if err != nil {
+		log.Error("client send ProxyRequest in tcp component startup, err:", err.Error())
+		return
+	}
+
+	n.BlockUntilTcpProxyFinish()
+}
+
+// Startup implements the Component callback
 func TcpComponentStartup(n *network.Network) {
 	client, err := n.Client(n.GetWorkingProxyServer())
 	if err != nil {

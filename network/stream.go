@@ -1,19 +1,21 @@
 package network
 
 import (
-	"bufio"
 	"encoding/binary"
 	"io"
 	"sync"
 
 	"net"
 
+	"fmt"
+	"runtime/debug"
+
+	"bufio"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/themis/common/log"
-	"runtime/debug"
-	"fmt"
 )
 
 var errEmptyMsg = errors.New("received an empty message from a peer")
@@ -24,10 +26,9 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
 	}
-	if len(bytes) == 0{
-		log.Info("stack info:",fmt.Sprintf("%s",debug.Stack()))
+	if len(bytes) == 0 {
+		log.Info("stack info:", fmt.Sprintf("%s", debug.Stack()))
 		log.Error("in tcp sendMessage,len(message) == 0, write to remote addr:", w.(net.Conn).RemoteAddr())
-		panic("sendMessage receive empty message.")
 		return errors.New("tcp sendMessage,len(message) is empty")
 	}
 
@@ -36,7 +37,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	binary.BigEndian.PutUint32(buffer, uint32(len(bytes)))
 
 	buffer = append(buffer, bytes...)
-	totalSize := len(buffer)
+	//totalSize := len(buffer)
 
 	// Write until all bytes have been written.
 	bytesWritten, totalBytesWritten := 0, 0
@@ -44,12 +45,12 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	writerMutex.Lock()
 	defer writerMutex.Unlock()
 
-	bw, isBuffered := w.(*bufio.Writer)
-	if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
-		if err := bw.Flush(); err != nil {
-			return err
-		}
-	}
+	/*	bw, isBuffered := w.(*bufio.Writer)
+		if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
+			if err := bw.Flush(); err != nil {
+				return err
+			}
+		}*/
 
 	for totalBytesWritten < len(buffer) && err == nil {
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
@@ -61,6 +62,10 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 
 	if err != nil {
 		return errors.Wrap(err, "stream: failed to write to socket")
+	}
+	bw, _ := w.(*bufio.Writer)
+	if err := bw.Flush(); err != nil {
+		return err
 	}
 
 	return nil

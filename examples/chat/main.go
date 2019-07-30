@@ -1,13 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"bufio"
 
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/chat/messages"

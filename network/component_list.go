@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 )
@@ -50,6 +51,19 @@ func (m *ComponentList) Put(priority int, Component ComponentInterface) bool {
 		Priority:  priority,
 		Component: Component,
 	})
+}
+
+func (m *ComponentList) Delete(Component ComponentInterface) bool {
+	ty := reflect.TypeOf(Component)
+	delete(m.keys, ty)
+	for k, v := range m.values {
+		if reflect.TypeOf(v.Component) == ty {
+			fmt.Println("ty:", ty)
+			m.values = append(m.values[0:k], m.values[k+1:]...)
+			break
+		}
+	}
+	return true
 }
 
 // Len returns the number of Components in the Component list.
