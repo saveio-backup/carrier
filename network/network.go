@@ -541,6 +541,22 @@ func (n *Network) BlockUntilListening() {
 	<-n.listeningCh
 }
 
+func (n *Network) BlockUntilProxyFinish(protocol string) {
+	switch protocol {
+	case "tcp":
+		n.BlockUntilTcpProxyFinish()
+	case "udp":
+		n.BlockUntilUDPProxyFinish()
+	case "quic":
+		n.BlockUntilQuicProxyFinish()
+	case "kcp":
+		n.BlockUntilKCPProxyFinish()
+	default:
+		log.Error("proxy backOff blocked only support tcp/udp/kcp/quic.")
+	}
+
+}
+
 func (n *Network) BlockUntilQuicProxyFinish() {
 	if notify, ok := n.ProxyService.Finish.Load("quic"); ok {
 		<-notify.(chan struct{})
@@ -563,6 +579,25 @@ func (n *Network) BlockUntilUDPProxyFinish() {
 	if notify, ok := n.ProxyService.Finish.Load("udp"); ok {
 		<-notify.(chan struct{})
 	}
+}
+
+func (n *Network) ConnectProxyServer(address string) error {
+	if n.ConnectionStateExists(address) {
+		log.Info("in ConnectProxyServer, connection belong to addr:", address, "has exist, return directly.")
+		return nil
+	}
+	client, err := n.Client(address)
+	if err != nil {
+		log.Error("create client in ConnectProxyServer err:", err, ";address:", address)
+		return err
+	}
+
+	err = client.Tell(context.Background(), &protobuf.ProxyRequest{})
+	if err != nil {
+		log.Error("new client send proxy request message in ConnectProxyServer err:", err, ";address:", address)
+		return err
+	}
+	return nil
 }
 
 func (n *Network) ConnectPeer(address string) error {
@@ -1103,6 +1138,11 @@ func (n *Network) GetWorkingProxyServer() string {
 		return ""
 	}
 	return n.ProxyService.Servers[n.ProxyService.WorkID]
+}
+
+func (n *Network) UpdateProxyWorkID() {
+	n.ProxyService.WorkID++
+	n.ProxyService.WorkID = n.ProxyService.WorkID % uint16(len(n.ProxyService.Servers))
 }
 
 func (n *Network) DeletePeerClient(address string) {

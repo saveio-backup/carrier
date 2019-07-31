@@ -170,7 +170,10 @@ func (p *Component) startProxyBackoff(addr string) {
 	// reset the backoff counter
 	p.backoffs.Store(addr, DefaultBackoff())
 	startTime := time.Now()
-	for i := 0; i < p.maxAttempts; i++ {
+	p.net.ProxyService.Finish.Store(addrInfo.Protocol, make(chan struct{}))
+
+	var i int
+	for i = 0; i < p.maxAttempts; i++ {
 		s, active := p.backoffs.Load(addr)
 		if !active {
 			break
@@ -187,42 +190,25 @@ func (p *Component) startProxyBackoff(addr string) {
 		time.Sleep(d / 4)
 		if p.net.ConnectionStateExists(addr) {
 			// check that the connection is still empty before dialing
-			log.Info("in proxy backOff, connection state exists, does not need to reconnect again.")
 			break
 		}
-		p.net.ProxyService.Finish.Store(addrInfo.Protocol, make(chan struct{}))
-		switch addrInfo.Protocol {
-		case "tcp":
-			proxy.TcpComponentStartup(p.net)
-		case "udp":
-			proxy.UDPComponentStartup(p.net)
-		case "quic":
-			proxy.QuicComponentStartup(p.net)
-		case "kcp":
-			proxy.KCPComponentStartup(p.net)
-		default:
-			log.Error("proxy backOff only support tcp/udp/kcp/quic.")
-			break
+		// dial the client and see if it is successful
+		c, err := p.net.Client(addr)
+		if err != nil {
+			continue
 		}
-
 		if !p.net.ConnectionStateExists(addr) {
 			// check if successfully connected
 			continue
 		}
+		if err := c.Tell(context.Background(), &protobuf.ProxyRequest{}); err != nil {
+			// ping failed, not really connected
+			continue
+		}
+		// success
+		p.net.BlockUntilProxyFinish(addrInfo.Protocol)
 		break
 	}
-	switch addrInfo.Protocol {
-	case "tcp":
-		p.net.BlockUntilTcpProxyFinish()
-	case "udp":
-		p.net.BlockUntilUDPProxyFinish()
-	case "quic":
-		p.net.BlockUntilQuicProxyFinish()
-	case "kcp":
-		p.net.BlockUntilKCPProxyFinish()
-	default:
-		log.Error("proxy backOff blocked only support tcp/udp/kcp/quic.")
-	}
-	// clean up this backoff
 	p.backoffs.Delete(addr)
+	proxy.ProxyComponentRestart(addrInfo.Protocol, p.net)
 }

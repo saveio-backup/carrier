@@ -102,6 +102,7 @@ func main() {
 		log.Fatal(err)
 		return
 	}
+	networkBuilder.SetNetworkID(1564141146)
 	networkBuilder.EnableProxyMode(*enableProxy)
 	networkBuilder.SetProxyServer(proxyServer)
 	go networkBuilder.Listen()

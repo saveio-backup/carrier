@@ -6,8 +6,6 @@
 package proxy
 
 import (
-	"context"
-
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
@@ -22,32 +20,39 @@ func TcpComponentRestartUp(n *network.Network) {
 
 	n.ProxyService.Finish.Store("tcp", make(chan struct{}))
 
-	client, err := n.Client(n.GetWorkingProxyServer())
-	if err != nil {
-		log.Error("new client err in tcp component startup, err:", err.Error())
-		return
+	var i int
+	for i = 0; i < len(n.ProxyService.Servers); i++ {
+		if err := n.ConnectProxyServer(n.GetWorkingProxyServer()); err != nil {
+			log.Error("tcp proxy component start err:", err.Error(), "proxy server:", n.GetWorkingProxyServer(), "proxy workID:", n.ProxyService.WorkID)
+			n.UpdateProxyWorkID()
+			continue
+		} else {
+			n.BlockUntilTcpProxyFinish()
+			log.Info("successed restart and connect to proxy server:", n.GetWorkingProxyServer(), "proxy server workID:", n.ProxyService.WorkID)
+			return
+		}
 	}
-	err = client.Tell(context.Background(), &protobuf.ProxyRequest{})
-	if err != nil {
-		log.Error("client send ProxyRequest in tcp component startup, err:", err.Error())
-		return
-	}
-
-	n.BlockUntilTcpProxyFinish()
+	log.Error("in ComponentRestartUp, all backup proxy server IP has been tried again, failed to re-connect to proxy server.")
 }
 
 // Startup implements the Component callback
 func TcpComponentStartup(n *network.Network) {
-	client, err := n.Client(n.GetWorkingProxyServer())
-	if err != nil {
-		log.Error("new client err in tcp component startup, err:", err.Error())
+	if n.ProxyModeEnable() == false {
+		log.Error("please enable tcp proxy firstly.")
 		return
 	}
-	err = client.Tell(context.Background(), &protobuf.ProxyRequest{})
-	if err != nil {
-		log.Error("client send ProxyRequest in tcp component startup, err:", err.Error())
-		return
+
+	for i := 0; i < len(n.ProxyService.Servers); i++ {
+		if err := n.ConnectProxyServer(n.GetWorkingProxyServer()); err != nil {
+			log.Error("tcp proxy component start err:", err.Error(), "proxy server:", n.GetWorkingProxyServer(), "proxy workID:", n.ProxyService.WorkID)
+			n.UpdateProxyWorkID()
+			continue
+		} else {
+			log.Info("successed about dialing to proxy server:", n.GetWorkingProxyServer(), "proxy server workID:", n.ProxyService.WorkID)
+			return
+		}
 	}
+	log.Error("in ComponentStartUp, all backup proxy server IP has been tried again, failed to connect to proxy server.")
 }
 
 func TcpComponentReceive(ctx *network.ComponentContext) error {
