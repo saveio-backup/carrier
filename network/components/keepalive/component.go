@@ -144,6 +144,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		if err != nil {
 			return err
 		}
+		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 	case *protobuf.KeepaliveResponse:
 		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 	}
@@ -219,20 +220,20 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 	}
 	p.lastStates.Store(client.Address, state)
 
-	if p.peerStateChan != nil {
-		log.Debugf("[keepalive]for client.address:%s, len(peerStateChan):%d", client.Address, len(p.peerStateChan))
-		p.peerStateChan <- &PeerStateEvent{Address: client.Address, State: state}
+	/*	if p.peerStateChan != nil {
+			log.Debugf("[keepalive]for client.address:%s, len(peerStateChan):%d", client.Address, len(p.peerStateChan))
+			p.peerStateChan <- &PeerStateEvent{Address: client.Address, State: state}
 
-		log.Infof("[keepalive] peerStateEvent: address %s state %s", client.Address, stateString[state])
-	} else {
-		log.Debug("[keepalive] p.peerStateChan has been release, value is nil.")
-	}
+			log.Infof("[keepalive] peerStateEvent: address %s state %s", client.Address, stateString[state])
+		} else {
+			log.Debug("[keepalive] p.peerStateChan has been release, value is nil.")
+		}*/
 }
 
 func (p *Component) GetPeerStateByAddress(address string) (PeerState, error) {
 	last, ok := p.lastStates.Load(address)
 	if !ok {
-		log.Debugf("[keepalive] address:%s, last status:%d, tobe changed status:%d", address, last)
+		log.Debugf("[keepalive] address:%s, peer status does not exist in p.lastStates Map.", address)
 		return PEER_UNKNOWN, errors.New("[keepalive]Does not know peer status")
 	}
 	return last.(PeerState), nil

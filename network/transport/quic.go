@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"context"
+
 	quic "github.com/lucas-clemente/quic-go"
 )
 
@@ -50,7 +52,7 @@ func (t *Quic) Dial(address string) (interface{}, error) {
 		return nil, err
 	}
 
-	stream, err := session.OpenStreamSync()
+	stream, err := session.OpenStreamSync(context.Background())
 	if err != nil {
 		return nil, err
 	}

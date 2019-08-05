@@ -32,7 +32,7 @@ import (
 type writeMode int
 
 const (
-	VERSION                   = "carrier-release-v0.8-uid:1563868522"
+	VERSION                   = "carrier-release-v0.8-uid:1563868523"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
@@ -376,8 +376,8 @@ func (n *Network) netListen(listener interface{}) {
 
 func (n *Network) quicListen(listener interface{}) {
 	for {
-		if session, err := listener.(quic.Listener).Accept(); err == nil {
-			stream, err := session.AcceptStream()
+		if session, err := listener.(quic.Listener).Accept(context.Background()); err == nil {
+			stream, err := session.AcceptStream(context.Background())
 			if err != nil {
 				log.Error("Open stream sync in session is err:", err.Error())
 				return
@@ -706,7 +706,9 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 			log.Warn("quit connect with ", address)
 			return
 		}
-		log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature), stream)
+		if msg.Opcode < uint32(opcode.ApplicationOpCodeStart) {
+			log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature), stream)
+		}
 		if msg.Opcode == uint32(opcode.PingCode) {
 			oldClient := n.GetPeerClient(msg.Sender.Address)
 			if oldClient != nil {
@@ -794,7 +796,9 @@ func (n *Network) Accept(incoming net.Conn) {
 			break
 		}
 
-		log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
+		if msg.GetOpcode() < uint32(opcode.ApplicationOpCodeStart) {
+			log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
+		}
 		if n.ProxyModeEnable() {
 			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		} else {

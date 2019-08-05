@@ -48,6 +48,7 @@ const (
 	LookupNodeResponseCode Opcode = 0x0000d // 13
 	DisconnectCode         Opcode = 0x0000e // 14
 	ProxyRequestCode       Opcode = 0x0000f // 15
+	ApplicationOpCodeStart Opcode = 1000
 )
 
 var (
@@ -60,7 +61,7 @@ var (
 // RegisterMessageType registers a new proto message to the given opcode
 func RegisterMessageType(opcode Opcode, msg proto.Message) error {
 	// reserve first 1000 opcodes
-	if opcode < 1000 {
+	if opcode < ApplicationOpCodeStart {
 		return errors.New("types: opcode must be 1000 or greater")
 	}
 	raw, err := proto.Marshal(msg)
