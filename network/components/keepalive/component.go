@@ -140,13 +140,17 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 	case *protobuf.Keepalive:
 		// Send keepalive response to peer.
 		err := ctx.Reply(context.Background(), &protobuf.KeepaliveResponse{})
-
 		if err != nil {
 			return err
 		}
 		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 	case *protobuf.KeepaliveResponse:
 		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+	case *protobuf.Ping:
+		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+	case *protobuf.Pong:
+		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+
 	}
 
 	return nil

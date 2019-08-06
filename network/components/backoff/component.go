@@ -95,9 +95,9 @@ func (p *Component) PeerDisconnect(client *network.PeerClient) {
 		return
 	}
 	if client.Address == p.net.GetWorkingProxyServer() && p.net.ProxyModeEnable() {
-		go p.startProxyBackoff(client.Address)
+		p.startProxyBackoff(client.Address)
 	} else {
-		go p.startBackoff(client.Address)
+		p.startBackoff(client.Address)
 	}
 }
 
