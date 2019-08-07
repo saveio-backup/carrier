@@ -33,8 +33,9 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	}
 
 	// Serialize size.
-	buffer := make([]byte, 4)
-	binary.BigEndian.PutUint32(buffer, uint32(len(bytes)))
+	buffer := make([]byte, 8)
+	binary.BigEndian.PutUint32(buffer, n.GetNetworkID())
+	binary.BigEndian.PutUint32(buffer[4:], uint32(len(bytes)))
 
 	buffer = append(buffer, bytes...)
 	//totalSize := len(buffer)
@@ -44,13 +45,6 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 
 	writerMutex.Lock()
 	defer writerMutex.Unlock()
-
-	/*	bw, isBuffered := w.(*bufio.Writer)
-		if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
-			if err := bw.Flush(); err != nil {
-				return err
-			}
-		}*/
 
 	for totalBytesWritten < len(buffer) && err == nil {
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
@@ -76,8 +70,20 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 	var err error
 	var size uint32
 	// Read until all header bytes have been read.
+
 	buffer := make([]byte, 4)
 	bytesRead, totalBytesRead := 0, 0
+
+	for totalBytesRead < 4 && err == nil {
+		bytesRead, err = conn.Read(buffer[totalBytesRead:])
+		totalBytesRead += bytesRead
+	}
+	if binary.BigEndian.Uint32(buffer) != n.GetNetworkID() {
+		return nil, errors.Errorf("receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
+	}
+
+	buffer = make([]byte, 4)
+	bytesRead, totalBytesRead = 0, 0
 
 	for totalBytesRead < 4 && err == nil {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
