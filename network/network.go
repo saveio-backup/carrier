@@ -32,7 +32,7 @@ import (
 type writeMode int
 
 const (
-	VERSION                   = "carrier-release-v0.8-uid:1563868523"
+	VERSION                   = "carrier-release-v0.8-uid:1563868524"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
@@ -581,6 +581,21 @@ func (n *Network) BlockUntilUDPProxyFinish() {
 	}
 }
 
+func (n *Network) ReconnectProxyServer(address string) error {
+	if n.ConnectionStateExists(address) {
+		if client := n.GetPeerClient(address); client != nil {
+			err := client.RemoveEntries()
+			if err != nil {
+				log.Error("ReconnectProxyServer error when RemoveEntries:", err.Error(), ",proxy address:", address)
+				return errors.New("ReconnectProxyServer failed when remove peers&connection resource, proxy addr:" + address)
+			}
+		} else {
+			return errors.New("GetPeerClient error in ReconnectProxyServer, client value is nil. proxy-addr:" + address)
+		}
+	}
+	return n.ConnectProxyServer(address)
+}
+
 func (n *Network) ConnectProxyServer(address string) error {
 	if n.ConnectionStateExists(address) {
 		log.Info("in ConnectProxyServer, connection belong to addr:", address, "has exist, return directly.")
@@ -598,6 +613,21 @@ func (n *Network) ConnectProxyServer(address string) error {
 		return err
 	}
 	return nil
+}
+
+func (n *Network) ReconnectPeer(address string) error {
+	if n.ConnectionStateExists(address) {
+		if client := n.GetPeerClient(address); client != nil {
+			err := client.RemoveEntries()
+			if err != nil {
+				log.Error("ReconnectPeer error when RemoveEntries:", err.Error(), ",address:", address)
+				return errors.New("ReconnectPeer failed when remove peers&connection resource, addr:" + address)
+			}
+		} else {
+			return errors.New("GetPeerClient error in ReconnectPeer, client value is nil. client-addr:" + address)
+		}
+	}
+	return n.ConnectPeer(address)
 }
 
 func (n *Network) ConnectPeer(address string) error {

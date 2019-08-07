@@ -148,6 +148,10 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 	case *protobuf.Ping:
 		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+		err := ctx.Reply(context.Background(), &protobuf.Pong{})
+		if err != nil {
+			return err
+		}
 	case *protobuf.Pong:
 		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
 
