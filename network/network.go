@@ -700,7 +700,7 @@ func (n *Network) Dial(address string) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.Info("in Network.Dial, dial success, dial to addr:", addrInfo.String(), ",local Network.ID.Address:", n.ID.Address)
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		go n.Accept(conn.(net.Conn))
 	}
@@ -816,7 +816,7 @@ func (n *Network) Accept(incoming net.Conn) {
 			incoming.Close()
 		}
 	}()
-
+	log.Info("(tcp/kcp)in Network.Accept, there is a new inbound connection in TCP.Listen,remote addr:", incoming.RemoteAddr().String(), ", local addr:", incoming.LocalAddr().String())
 	for {
 		msg, err := n.receiveMessage(incoming)
 		if err != nil {
@@ -826,9 +826,6 @@ func (n *Network) Accept(incoming net.Conn) {
 			break
 		}
 
-		if msg.GetOpcode() < uint32(opcode.ApplicationOpCodeStart) {
-			log.Infof("(kcp/tcp) receive from addr:%s,message.opcode:%d, message.sign:%s", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature))
-		}
 		if n.ProxyModeEnable() {
 			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		} else {
@@ -1022,7 +1019,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		//tcpConn, _ := state.conn.(net.Conn)
 		//tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
-		err = n.sendMessage(state.writer, message, state.writerMutex)
+		err = n.sendMessage(state.writer, message, state.writerMutex, address)
 		if err != nil {
 			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
 			return err

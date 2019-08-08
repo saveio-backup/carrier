@@ -24,14 +24,15 @@ func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writer
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
 	}
-	if len(bytes) == 0{
+	if len(bytes) == 0 {
 		log.Error("in tcp sendMessage,len(message) == 0")
 		return nil
 	}
 
 	// Serialize size.
-	buffer := make([]byte, 4)
-	binary.BigEndian.PutUint32(buffer, uint32(len(bytes)))
+	buffer := make([]byte, 8)
+	binary.BigEndian.PutUint32(buffer, n.GetNetworkID())
+	binary.BigEndian.PutUint32(buffer[4:], uint32(len(bytes)))
 
 	buffer = append(buffer, bytes...)
 	totalSize := len(buffer)
@@ -70,6 +71,18 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 	// Read until all header bytes have been read.
 	buffer := make([]byte, 4)
 	bytesRead, totalBytesRead := 0, 0
+
+	for totalBytesRead < 4 && err == nil {
+		bytesRead, err = io.ReadFull(stream, buffer[totalBytesRead:])
+		totalBytesRead += bytesRead
+	}
+	if binary.BigEndian.Uint32(buffer) != n.GetNetworkID() {
+		return nil, errors.Errorf("(quic)receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
+	}
+
+	buffer = make([]byte, 4)
+	bytesRead, totalBytesRead = 0, 0
+
 	for totalBytesRead < 4 && err == nil {
 		//bytesRead, err = stream.Read(buffer[totalBytesRead:])
 		bytesRead, err = io.ReadFull(stream, buffer[totalBytesRead:])
@@ -84,7 +97,7 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 	}
 
 	if size > uint32(n.opts.recvBufferSize) {
-		return nil, errors.Errorf("message has length of %d which is either broken or too large(default %d)", size, n.opts.recvBufferSize)
+		return nil, errors.Errorf("(quic)message has length of %d which is either broken or too large(default %d)", size, n.opts.recvBufferSize)
 	}
 
 	// Read until all message bytes have been read.
@@ -108,7 +121,7 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 
 	// Check if any of the message headers are invalid or null.
 	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID != n.GetNetworkID() {
-		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
+		return nil, errors.New("(quic)received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
 
 	return msg, nil

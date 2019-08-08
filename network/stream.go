@@ -21,7 +21,8 @@ import (
 var errEmptyMsg = errors.New("received an empty message from a peer")
 
 // sendMessage marshals, signs and sends a message over a stream.
-func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex) error {
+func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, address string) error {
+	log.Infof("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.ID.Address, address, message.Opcode, message.MessageNonce)
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
@@ -79,7 +80,7 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 		totalBytesRead += bytesRead
 	}
 	if binary.BigEndian.Uint32(buffer) != n.GetNetworkID() {
-		return nil, errors.Errorf("receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
+		return nil, errors.Errorf("(tcp)receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
 	}
 
 	buffer = make([]byte, 4)
@@ -96,7 +97,7 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 	}
 
 	if size > uint32(n.opts.recvBufferSize) {
-		return nil, errors.Errorf("message has length of %d which is either broken or too large(default %d)", size, n.opts.recvBufferSize)
+		return nil, errors.Errorf("(tcp)message has length of %d which is either broken or too large(default %d)", size, n.opts.recvBufferSize)
 	}
 
 	// Read until all message bytes have been read.
@@ -120,8 +121,10 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 
 	// Check if any of the message headers are invalid or null.
 	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID != n.GetNetworkID() {
-		return nil, errors.New("received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
+		return nil, errors.New("(tcp)received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
+
+	log.Infof("(kcp/tcp)in Network.receiveMessage, receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce)
 
 	return msg, nil
 }
