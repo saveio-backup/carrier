@@ -493,6 +493,11 @@ func (n *Network) Client(address string) (*PeerClient, error) {
 	return n.getOrSetPeerClient(address, nil)
 }
 
+func (n *Network) ClientExist(address string) bool {
+	_, ok := n.peers.Load(address)
+	return ok
+}
+
 // ConnectionStateExists returns true if network has a connection on a given address.
 func (n *Network) ConnectionStateExists(address string) bool {
 	_, ok := n.connections.Load(address)
@@ -820,9 +825,7 @@ func (n *Network) Accept(incoming net.Conn) {
 	for {
 		msg, err := n.receiveMessage(incoming)
 		if err != nil {
-			if err != errEmptyMsg {
-				log.Warn(err)
-			}
+			log.Error(err)
 			break
 		}
 
@@ -1006,7 +1009,15 @@ func (n *Network) writeToDispatchChannel(state *ConnState, message *protobuf.Mes
 func (n *Network) Write(address string, message *protobuf.Message) error {
 	state, ok := n.ConnectionState(address)
 	if !ok {
-		return errors.New("network: connection does not exist")
+		if n.ClientExist(address) {
+			n.peers.Delete(address)
+		}
+		return errors.New("Network.write: connection does not exist")
+	}
+
+	if n.ClientExist(address) == false {
+		n.peers.Delete(address)
+		return errors.New("Network.write: client does not exist")
 	}
 
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
@@ -1014,6 +1025,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	addrInfo, err := ParseAddress(n.Address)
 	if err != nil {
 		log.Fatal(err)
+		return errors.Errorf("Network.Write parse address,%s", err.Error())
 	}
 
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
@@ -1022,7 +1034,6 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		err = n.sendMessage(state.writer, message, state.writerMutex, address)
 		if err != nil {
 			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
-			return err
 		}
 	}
 	if addrInfo.Protocol == "udp" {
@@ -1031,7 +1042,6 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state, address)
 		if err != nil {
 			log.Error("(udp) write to addr:", address, "err:", err.Error())
-			return err
 		}
 	}
 
@@ -1041,10 +1051,23 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		err = n.sendQuicMessage(state.writer, message, state.writerMutex)
 		if err != nil {
 			log.Error("(quic) write to addr:", address, "err:", err.Error())
-			return err
 		}
 	}
-	return nil
+
+	if err != nil {
+		log.Errorf("Network.Wirte error, begin to delete client and connection resource from sync.Maps")
+		state.writerMutex.Lock()
+		defer state.writerMutex.Unlock()
+		if n.ConnectionStateExists(address) {
+			n.connections.Delete(address)
+			log.Errorf("Network.Wirte error, delete connection resource from sync.Maps")
+		}
+		if n.ClientExist(address) {
+			n.peers.Delete(address)
+			log.Errorf("Network.Wirte error, delete client resource from sync.Maps")
+		}
+	}
+	return err
 }
 
 // Broadcast asynchronously broadcasts a message to all peer clients.
@@ -1079,7 +1102,7 @@ func (n *Network) BroadcastToPeers(ctx context.Context, message proto.Message) {
 
 		err := n.Write(client.Address, signed)
 		if err != nil {
-			log.Warnf("failed to send message to peer %v [err=%s]", client.ID, err)
+			log.Warnf("in BroadcastToPeers failed to send message to peer,peer addr:%s, peer.ID:%v, err:%s", client.Address, client.ID, err)
 		}
 		return true
 	})
