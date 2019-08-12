@@ -881,10 +881,8 @@ func (n *Network) Accept(incoming net.Conn) {
 					n.dispatchMessage(cli, msg.(*protobuf.Message))
 				})
 			}
-			log.Infof("in the function end,msg.Sender.Address:%s,client:%p, client value:%v", msg.Sender.Address, client, client)
 		}()
 	}
-	log.Infof("in the function end,msg.Sender.Address,client:%p, client value:%v", client, client)
 }
 
 // Accept handles peer registration and processes incoming message streams.
