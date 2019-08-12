@@ -110,8 +110,8 @@ func (p *Component) Startup(net *network.Network) {
 	p.net = net
 
 	// start keepalive service
-	go p.keepaliveService()
-	go p.proxyKeepaliveService()
+	go p.keepaliveService()      //TODO: if re-connection success, need to quit old goroutine
+	go p.proxyKeepaliveService() //TODO: if re-connection success, need to quit old goroutine
 }
 
 func (p *Component) Cleanup(net *network.Network) {
@@ -181,7 +181,7 @@ func (p *Component) proxyKeepaliveService() {
 			}
 			client := p.net.GetPeerClient(p.net.GetWorkingProxyServer())
 			if client == nil {
-				log.Errorf("in proxyKeepliveService, coneection to proxy:%s err", p.net.GetWorkingProxyServer())
+				log.Errorf("in proxyKeepliveService, connection to proxy:%s err", p.net.GetWorkingProxyServer())
 				continue
 			}
 			client.Tell(context.Background(), &protobuf.Keepalive{})
@@ -220,14 +220,6 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state n
 	}
 	p.lastStates.Store(client.Address, state)
 	p.net.UpdateConnState(client.Address, state)
-	/*	if p.peerStateChan != nil {
-			log.Debugf("[keepalive]for client.address:%s, len(peerStateChan):%d", client.Address, len(p.peerStateChan))
-			p.peerStateChan <- &PeerStateEvent{Address: client.Address, State: state}
-
-			log.Infof("[keepalive] peerStateEvent: address %s state %s", client.Address, stateString[state])
-		} else {
-			log.Debug("[keepalive] p.peerStateChan has been release, value is nil.")
-		}*/
 }
 
 func (p *Component) GetPeerStateByAddress_TODO_Delete(address string) (network.PeerState, error) {

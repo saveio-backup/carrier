@@ -7,8 +7,9 @@ import (
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/peer"
 
-	"github.com/gogo/protobuf/proto"
 	"net"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 // NetworkInterface represents a node in the network.
@@ -33,10 +34,10 @@ type NetworkInterface interface {
 	Bootstrap(addresses ...string)
 
 	// Dial establishes a bidirectional connection to an address, and additionally handshakes with said address.
-	Dial(address string) (interface{}, error)
+	Dial(address string, client *PeerClient) (interface{}, error)
 
 	// Accept handles peer registration and processes incoming message streams.
-	Accept(conn net.Conn)
+	Accept(conn net.Conn, client *PeerClient)
 
 	// Component returns a Components proxy interface should it be registered with the
 	// network. The second returning parameter is false otherwise.

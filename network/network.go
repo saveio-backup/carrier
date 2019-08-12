@@ -367,7 +367,7 @@ func (n *Network) Listen() {
 func (n *Network) netListen(listener interface{}) {
 	for {
 		if conn, err := listener.(net.Listener).Accept(); err == nil {
-			go n.Accept(conn)
+			go n.Accept(conn, nil)
 
 		} else {
 			// if the Shutdown flag is set, no need to continue with the for loop
@@ -391,7 +391,7 @@ func (n *Network) quicListen(listener interface{}) {
 				log.Error("Open stream sync in session is err:", err.Error())
 				return
 			}
-			go n.AcceptQuic(stream)
+			go n.AcceptQuic(stream, nil)
 
 		} else {
 			// if the Shutdown flag is set, no need to continue with the for loop
@@ -449,7 +449,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	}()
 
 	if conn == nil {
-		conn, err = n.Dial(address)
+		conn, err = n.Dial(address, client)
 
 		if err != nil {
 			n.peers.Delete(address)
@@ -607,6 +607,7 @@ func (n *Network) ReconnectProxyServer(address string) error {
 			return errors.New("GetPeerClient error in ReconnectProxyServer, client value is nil. proxy-addr:" + address)
 		}
 	}
+	log.Infof("in carrier.Network,Reconnect Proxy Server start, proxy addr:%s", address)
 	return n.ConnectProxyServer(address)
 }
 
@@ -641,6 +642,7 @@ func (n *Network) ReconnectPeer(address string) error {
 			return errors.New("GetPeerClient error in ReconnectPeer, client value is nil. client-addr:" + address)
 		}
 	}
+	log.Infof("in carrier.Network,Reconnect Peer start, peer addr:%s", address)
 	return n.ConnectPeer(address)
 }
 
@@ -686,7 +688,7 @@ func (n *Network) Bootstrap(addresses ...string) {
 }
 
 // Dial establishes a bidirectional connection to an address, and additionally handshakes with said address.
-func (n *Network) Dial(address string) (interface{}, error) {
+func (n *Network) Dial(address string, client *PeerClient) (interface{}, error) {
 	addrInfo, err := ParseAddress(address)
 	if err != nil {
 		return nil, err
@@ -716,24 +718,25 @@ func (n *Network) Dial(address string) (interface{}, error) {
 	}
 	log.Info("in Network.Dial, dial success, dial to addr:", addrInfo.String(), ",local Network.ID.Address:", n.ID.Address)
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-		go n.Accept(conn.(net.Conn))
+		go n.Accept(conn.(net.Conn), client)
 	}
 	if addrInfo.Protocol == "quic" {
-		go n.AcceptQuic(conn.(quic.Stream))
+		go n.AcceptQuic(conn.(quic.Stream), client)
 	}
 	return conn, nil
 }
 
-// Accept handles peer registration and processes incoming message streams.
-func (n *Network) AcceptQuic(stream quic.Stream) {
-	var client *PeerClient
-	//var clientInit sync.Once
+// AcceptQuic handles peer registration and processes incoming message streams.
+// Notice: when Network.AcceptQuic is called by Listen goroutine, cli is nil;
+// Notice: when Network.AcceptQuic is called by Dial handle-flow, we have to set client
+// Notice: be relvant to the inbound connection
+func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 	// Cleanup connections when we are done with them.
 	defer func() {
 		//time.Sleep(1 * time.Second)
-		if client != nil {
-			log.Infof("in AcceptQuic, client:%s close.", client.Address)
-			client.Close()
+		if cli != nil {
+			log.Infof("in AcceptQuic, client:%s close.", cli.Address)
+			cli.Close()
 		}
 
 		if stream != nil {
@@ -743,7 +746,7 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 	}()
 	var address string
 	for {
-
+		var client *PeerClient
 		msg, err := n.receiveQuicMessage(stream)
 		if err != nil {
 			log.Warnf("receive quic msg from %s err: %s", address, err.Error())
@@ -814,24 +817,25 @@ func (n *Network) AcceptQuic(stream quic.Stream) {
 }
 
 // Accept handles peer registration and processes incoming message streams.
-func (n *Network) Accept(incoming net.Conn) {
-	var client *PeerClient
-	//var clientInit sync.Once
-
+// Notice: when Network.Accept is called by Listen goroutine, cli is nil;
+// Notice: when Network.Accept is called by Dial handle-flow, we have to set client
+// Notice: be relvant to the inbound connection
+func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 	// Cleanup connections when we are done with them.
 	defer func() {
-		time.Sleep(1 * time.Second)
-
-		if client != nil {
-			client.Close()
+		if cli != nil {
+			log.Info("(tcp/kcp) Accept quit, client close now.")
+			cli.Close()
 		}
 
 		if incoming != nil {
+			log.Info("(tcp/kcp) Accept quit, inbound connection close now.")
 			incoming.Close()
 		}
 	}()
-	log.Info("(tcp/kcp)in Network.Accept, there is a new inbound connection in TCP.Listen,remote addr:", incoming.RemoteAddr().String(), ", local addr:", incoming.LocalAddr().String())
+	log.Info("(tcp/kcp)in Network.Accept, there is a new inbound connection in TCP.Listen,remote addr:", incoming.RemoteAddr().String(), ", local addr:", n.ID.Address)
 	for {
+		var client *PeerClient
 		msg, err := n.receiveMessage(incoming)
 		if err != nil {
 			log.Error(err)
@@ -855,33 +859,31 @@ func (n *Network) Accept(incoming net.Conn) {
 			return
 		}
 
-		func() {
-			if msg.Signature != nil && !crypto.Verify(
-				n.opts.signaturePolicy,
-				n.opts.hashPolicy,
-				msg.Sender.NetKey,
-				SerializeMessage(msg.Sender, msg.Message),
-				msg.Signature,
-			) {
-				log.Errorf("received message had an malformed signature")
-				return
-			}
-			// Peer sent message with a completely different ID. Disconnect.
-			if !client.ID.Equals(peer.ID(*msg.Sender)) {
-				log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
-				return
-			}
+		if msg.Signature != nil && !crypto.Verify(
+			n.opts.signaturePolicy,
+			n.opts.hashPolicy,
+			msg.Sender.NetKey,
+			SerializeMessage(msg.Sender, msg.Message),
+			msg.Signature,
+		) {
+			log.Errorf("received message had an malformed signature")
+			return
+		}
+		// Peer sent message with a completely different ID. Disconnect.
+		if !client.ID.Equals(peer.ID(*msg.Sender)) {
+			log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
+			return
+		}
 
-			client.RecvWindow.Push(msg.MessageNonce, msg)
-			ready := client.RecvWindow.Pop()
-			for _, msg := range ready {
-				msg := msg
-				cli := client
-				client.Submit(func() {
-					n.dispatchMessage(cli, msg.(*protobuf.Message))
-				})
-			}
-		}()
+		client.RecvWindow.Push(msg.MessageNonce, msg)
+		ready := client.RecvWindow.Pop()
+		for _, msg := range ready {
+			msg := msg
+			cli := client
+			client.Submit(func() {
+				n.dispatchMessage(cli, msg.(*protobuf.Message))
+			})
+		}
 	}
 }
 

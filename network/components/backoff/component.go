@@ -158,7 +158,7 @@ func (p *Component) startProxyBackoff(addr string) {
 
 	if _, exists := p.backoffs.Load(addr); exists {
 		// don't activate if backoff is already active
-		log.Infof("backoff skipped for addr %s, already active", addr)
+		log.Infof("proxy backoff skipped for addr %s, already active", addr)
 		return
 	}
 
@@ -181,12 +181,12 @@ func (p *Component) startProxyBackoff(addr string) {
 		b := s.(*Backoff)
 		if b.TimeoutExceeded() {
 			// check if the backoff expired
-			log.Infof("backoff ended for addr %s, timed out after %s", addr, time.Now().Sub(startTime))
+			log.Infof("proxy backoff ended for addr %s, timed out after %s", addr, time.Now().Sub(startTime))
 			break
 		}
 		// sleep for a bit before connecting
 		d := b.NextDuration()
-		log.Infof("backoff reconnecting to %s in %s iteration %d", addr, d/4, i+1)
+		log.Infof("proxy backoff reconnecting to %s in %s iteration %d", addr, d/4, i+1)
 		time.Sleep(d / 4)
 		if p.net.ConnectionStateExists(addr) {
 			// check that the connection is still empty before dialing
