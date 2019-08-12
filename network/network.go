@@ -37,6 +37,14 @@ const (
 	WRITE_MODE_DIRECT
 )
 
+type PeerState int
+
+const (
+	PEER_UNKNOWN     PeerState = 0 // peer network unknown
+	PEER_UNREACHABLE PeerState = 1 // peer network unreachable
+	PEER_REACHABLE   PeerState = 2 // peer network reachable
+)
+
 const (
 	defaultConnectionTimeout = 60 * time.Second
 	defaultReceiveWindowSize = 4096
@@ -87,6 +95,7 @@ type Network struct {
 	// Map of connection addresses (string) <-> *ConnState
 	connections *sync.Map
 	Conn        *net.UDPConn
+	connStates  *sync.Map
 
 	// Map of protocol addresses (string) <-> *transport.Layer
 	transports *sync.Map
@@ -842,13 +851,10 @@ func (n *Network) Accept(incoming net.Conn) {
 		client.ID = (*peer.ID)(msg.Sender)
 
 		if !n.ConnectionStateExists(client.ID.Address) {
-			err = errors.New("network: failed to load session")
-		}
-
-		if err != nil {
-			log.Error(err)
+			log.Error("network: failed to load session")
 			return
 		}
+
 		func() {
 			if msg.Signature != nil && !crypto.Verify(
 				n.opts.signaturePolicy,
@@ -875,8 +881,10 @@ func (n *Network) Accept(incoming net.Conn) {
 					n.dispatchMessage(cli, msg.(*protobuf.Message))
 				})
 			}
+			log.Infof("in the function end,msg.Sender.Address:%s,client:%p, client value:%v", msg.Sender.Address, client, client)
 		}()
 	}
+	log.Infof("in the function end,msg.Sender.Address,client:%p, client value:%v", client, client)
 }
 
 // Accept handles peer registration and processes incoming message streams.
@@ -1012,11 +1020,13 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		if n.ClientExist(address) {
 			n.peers.Delete(address)
 		}
+		n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.write: connection does not exist")
 	}
 
 	if n.ClientExist(address) == false {
 		n.peers.Delete(address)
+		n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.write: client does not exist")
 	}
 
@@ -1060,10 +1070,12 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		defer state.writerMutex.Unlock()
 		if n.ConnectionStateExists(address) {
 			n.connections.Delete(address)
+			n.UpdateConnState(address, PEER_UNREACHABLE)
 			log.Errorf("Network.Wirte error, delete connection resource from sync.Maps")
 		}
 		if n.ClientExist(address) {
 			n.peers.Delete(address)
+			n.UpdateConnState(address, PEER_UNREACHABLE)
 			log.Errorf("Network.Wirte error, delete client resource from sync.Maps")
 		}
 	}
@@ -1214,4 +1226,30 @@ func (n *Network) FinishProxyServer(protocol string) {
 
 func (n *Network) Transports() *sync.Map {
 	return n.transports
+}
+
+func (n *Network) UpdateConnState(address string, state PeerState) {
+	n.connStates.Store(address, state)
+}
+
+func (n *Network) GetRealConnState(address string) (PeerState, error) {
+	state, ok := n.connStates.Load(address)
+	if !ok {
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, addr:%s", address)
+	}
+
+	_, ok = n.peers.Load(address)
+	if !ok {
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, addr:%s", address)
+	}
+
+	_, ok = n.connections.Load(address)
+	if !ok {
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, addr:%s", address)
+	}
+
+	if state == PEER_REACHABLE {
+		return PEER_REACHABLE, nil
+	}
+	return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, addr:%s", address)
 }

@@ -43,14 +43,6 @@ type Component struct {
 	net        *network.Network
 }
 
-type PeerState int
-
-const (
-	PEER_UNKNOWN     PeerState = 0 // peer network unknown
-	PEER_UNREACHABLE PeerState = 1 // peer network unreachable
-	PEER_REACHABLE   PeerState = 2 // peer network reachable
-)
-
 var stateString = []string{
 	"unknown",
 	"unreachable",
@@ -60,7 +52,7 @@ var stateString = []string{
 
 type PeerStateEvent struct {
 	Address string
-	State   PeerState
+	State   network.PeerState
 }
 
 // ComponentOption are configurable options for the keepalive Component
@@ -127,11 +119,11 @@ func (p *Component) Cleanup(net *network.Network) {
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
-	p.updateLastStateAndNotify(client, PEER_REACHABLE)
+	p.updateLastStateAndNotify(client, network.PEER_REACHABLE)
 }
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
-	p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
+	p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
 	//client.Close()
 }
 
@@ -143,17 +135,17 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		if err != nil {
 			return err
 		}
-		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 	case *protobuf.KeepaliveResponse:
-		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 	case *protobuf.Ping:
-		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 		err := ctx.Reply(context.Background(), &protobuf.Pong{})
 		if err != nil {
 			return err
 		}
 	case *protobuf.Pong:
-		p.updateLastStateAndNotify(ctx.Client(), PEER_REACHABLE)
+		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 
 	}
 
@@ -194,7 +186,7 @@ func (p *Component) proxyKeepaliveService() {
 			}
 			client.Tell(context.Background(), &protobuf.Keepalive{})
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
-				p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
+				p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
 				client.Close()
 			}
 		case <-p.stopCh:
@@ -212,14 +204,14 @@ func (p *Component) timeout() {
 		}
 		// timeout notify state change
 		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
-			p.updateLastStateAndNotify(client, PEER_UNREACHABLE)
+			p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
 			client.Close()
 		}
 		return true
 	})
 }
 
-func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state PeerState) {
+func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state network.PeerState) {
 	client.ConnStateMutex.Lock()
 	defer client.ConnStateMutex.Unlock()
 
@@ -227,7 +219,7 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 		log.Debugf("[keepalive]address:%s, last status:%d, tobe changed status:%d", client.Address, last, state)
 	}
 	p.lastStates.Store(client.Address, state)
-
+	p.net.UpdateConnState(client.Address, state)
 	/*	if p.peerStateChan != nil {
 			log.Debugf("[keepalive]for client.address:%s, len(peerStateChan):%d", client.Address, len(p.peerStateChan))
 			p.peerStateChan <- &PeerStateEvent{Address: client.Address, State: state}
@@ -238,13 +230,13 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state P
 		}*/
 }
 
-func (p *Component) GetPeerStateByAddress(address string) (PeerState, error) {
+func (p *Component) GetPeerStateByAddress_TODO_Delete(address string) (network.PeerState, error) {
 	last, ok := p.lastStates.Load(address)
 	if !ok {
 		log.Debugf("[keepalive] address:%s, peer status does not exist in p.lastStates Map.", address)
-		return PEER_UNKNOWN, errors.New("[keepalive]Does not know peer status")
+		return network.PEER_UNKNOWN, errors.New("[keepalive]Does not know peer status")
 	}
-	return last.(PeerState), nil
+	return last.(network.PeerState), nil
 }
 
 func (p *Component) GetPeerStateChan() chan *PeerStateEvent {

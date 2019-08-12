@@ -138,6 +138,7 @@ func (c *PeerClient) RemoveEntries() error {
 			state.writerMutex.Lock()
 			c.Network.peers.Delete(c.ID.Address)
 			c.Network.connections.Delete(c.ID.Address)
+			c.Network.UpdateConnState(c.ID.Address, PEER_UNREACHABLE)
 			state.conn = nil
 			debug.FreeOSMemory()
 			state.writerMutex.Unlock()

@@ -246,6 +246,7 @@ func (builder *Builder) Build() (*Network, error) {
 
 		peers:        new(sync.Map),
 		connections:  new(sync.Map),
+		connStates:   new(sync.Map),
 		listeningCh:  make(chan struct{}),
 		ProxyService: Proxy{Finish: new(sync.Map), ConnectionEvent: make([]chan *ProxyEvent, defaultProxyNotifySize), WorkID: 0},
 		kill:         make(chan struct{}),
