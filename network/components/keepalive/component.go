@@ -16,7 +16,7 @@ import (
 const (
 	DefaultKeepaliveInterval      = 3 * time.Second
 	DefaultKeepaliveTimeout       = 15 * time.Second
-	DefaultProxyKeepaliveInterval = 60 * time.Second
+	DefaultProxyKeepaliveInterval = 3 * time.Second
 	DefaultProxyKeepaliveTimeout  = 180 * time.Second
 )
 
