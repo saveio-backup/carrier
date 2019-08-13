@@ -43,9 +43,9 @@ func (t *TCP) Dial(address string) (interface{}, error) {
 		return nil, err
 	}
 
-	conn.SetWriteBuffer(t.WriteBufferSize)
-	conn.SetReadBuffer(t.ReadBufferSize)
-	conn.SetNoDelay(t.NoDelay)
+	//conn.SetWriteBuffer(t.WriteBufferSize)
+	//conn.SetReadBuffer(t.ReadBufferSize)
+	//conn.SetNoDelay(t.NoDelay) NOTICE: DON'T ENABLE Nagle's Algorithm
 
 	return interface{}(conn), nil
 }
