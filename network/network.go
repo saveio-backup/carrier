@@ -607,6 +607,13 @@ func (n *Network) ReconnectProxyServer(address string) error {
 			return errors.New("GetPeerClient error in ReconnectProxyServer, client value is nil. proxy-addr:" + address)
 		}
 	}
+
+	addrInfo, err := ParseAddress(address)
+	if err != nil {
+		log.Errorf("address:%s,reconnect proxy server parse address err:%s", address, err.Error())
+	}
+	n.ProxyService.Finish.Store(addrInfo.Protocol, make(chan struct{}))
+
 	log.Infof("in carrier.Network,Reconnect Proxy Server start, proxy addr:%s", address)
 	return n.ConnectProxyServer(address)
 }
