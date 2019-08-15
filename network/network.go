@@ -23,6 +23,8 @@ import (
 
 	"strings"
 
+	"reflect"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
@@ -260,11 +262,14 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 			log.Error(err)
 			return
 		}
+	} else {
+		log.Warn("in dispatch, msg.Message length is zero. maybe this swith is ERROR, pls CHECK.")
 	}
 
 	client.Time = time.Now()
 
 	if msg.RequestNonce > 0 && msg.ReplyFlag {
+		log.Infof("in Netowrk.dispatch, msg.RequestNonce:%d, msg.ReplyFlag:%d, msg.MessageNonce:%d", msg.RequestNonce, msg.ReplyFlag, msg.MessageNonce)
 		if _state, exists := client.Requests.Load(msg.RequestNonce); exists {
 			state := _state.(*RequestState)
 			select {
@@ -287,8 +292,11 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 		go func() {
 			// Execute 'on receive message' callback for all Components.
 			n.Components.Each(func(Component ComponentInterface) {
+				if msg.Opcode >= 1000 {
+					log.Infof("in Network Component.Receive handle, recv msg.opcode:%d, msg.Nonce:%d, component name:%s", msg.Opcode, msg.MessageNonce, reflect.TypeOf(Component))
+				}
 				if err := Component.Receive(ctx); err != nil {
-					log.Errorf("%+v", err)
+					log.Errorf("in network Component.Receive err:%+v, component name:%s", err, reflect.TypeOf(Component))
 				}
 			})
 

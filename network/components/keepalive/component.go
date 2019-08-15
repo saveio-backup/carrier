@@ -110,8 +110,8 @@ func (p *Component) Startup(net *network.Network) {
 	p.net = net
 
 	// start keepalive service
-	go p.keepaliveService()      //TODO: if re-connection success, need to quit old goroutine
-	go p.proxyKeepaliveService() //TODO: if re-connection success, need to quit old goroutine
+	go p.keepaliveService()
+	go p.proxyKeepaliveService()
 }
 
 func (p *Component) Cleanup(net *network.Network) {
@@ -137,9 +137,9 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		}
 		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 	case *protobuf.KeepaliveResponse:
-		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
+		//p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 	case *protobuf.Ping:
-		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
+		//p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 		err := ctx.Reply(context.Background(), &protobuf.Pong{})
 		if err != nil {
 			return err
@@ -184,7 +184,10 @@ func (p *Component) proxyKeepaliveService() {
 				log.Errorf("in proxyKeepliveService, connection to proxy:%s err", p.net.GetWorkingProxyServer())
 				continue
 			}
-			client.Tell(context.Background(), &protobuf.Keepalive{})
+			err := client.Tell(context.Background(), &protobuf.Keepalive{})
+			if err != nil {
+				log.Error("in proxyKeepaliveServer, send Keepalive msg ERROR:", err.Error(), ",working proxy addr:", p.net.GetWorkingProxyServer())
+			}
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
 				p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
 				client.Close()
