@@ -263,7 +263,9 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 			return
 		}
 	} else {
-		log.Warn("in dispatch, msg.Message length is zero. maybe this swith is ERROR, pls CHECK.")
+		if msg.MessageNonce >= 1000 {
+			log.Warn("in dispatch, msg.Message length is zero. maybe this swith is ERROR, pls CHECK.")
+		}
 	}
 
 	client.Time = time.Now()
