@@ -162,6 +162,8 @@ func (p *Component) keepaliveService() {
 		case <-p.stopCh:
 			t.Stop()
 			break
+		case <-p.net.Kill:
+			break
 		}
 	}
 }
@@ -192,6 +194,8 @@ func (p *Component) proxyKeepaliveService() {
 			}
 		case <-p.stopCh:
 			t.Stop()
+			break
+		case <-p.net.Kill:
 			break
 		}
 	}

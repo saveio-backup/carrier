@@ -106,7 +106,7 @@ type Network struct {
 	listeningCh chan struct{}
 
 	// <-kill will begin the server shutdown process
-	kill chan struct{}
+	Kill chan struct{}
 
 	ProxyService Proxy
 
@@ -205,7 +205,7 @@ func (n *Network) flushLoop() {
 	defer t.Stop()
 	for {
 		select {
-		case <-n.kill:
+		case <-n.Kill:
 			n.flushOnce()
 			return
 		case <-t.C:
@@ -346,7 +346,7 @@ func (n *Network) Listen() {
 	// handle server shutdowns
 	go func() {
 		select {
-		case <-n.kill:
+		case <-n.Kill:
 			// cause listener.Accept() to stop blocking so it can continue the loop
 			if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 				listener.(net.Listener).Close()
@@ -384,7 +384,7 @@ func (n *Network) netListen(listener interface{}) {
 		} else {
 			// if the Shutdown flag is set, no need to continue with the for loop
 			select {
-			case <-n.kill:
+			case <-n.Kill:
 				log.Infof("Shutting down server on %s.", n.Address)
 				return
 			default:
@@ -408,7 +408,7 @@ func (n *Network) quicListen(listener interface{}) {
 		} else {
 			// if the Shutdown flag is set, no need to continue with the for loop
 			select {
-			case <-n.kill:
+			case <-n.Kill:
 				log.Infof("Shutting down server on %s.", n.Address)
 				return
 			default:
@@ -1204,7 +1204,7 @@ func (n *Network) Close() {
 		peer.(*PeerClient).Close()
 		return true
 	})
-	close(n.kill)
+	close(n.Kill)
 }
 
 func (n *Network) PeersNum() int {
