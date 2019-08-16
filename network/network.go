@@ -1047,7 +1047,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	}
 
 	if n.ClientExist(address) == false {
-		n.peers.Delete(address)
+		n.connections.Delete(address)
 		n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.write: client does not exist")
 	}
