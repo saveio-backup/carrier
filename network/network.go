@@ -614,7 +614,12 @@ func (n *Network) ReconnectProxyServer(address string) error {
 				return errors.New("ReconnectProxyServer failed when remove peers&connection resource, proxy addr:" + address)
 			}
 		} else {
-			return errors.New("GetPeerClient error in ReconnectProxyServer, client value is nil. proxy-addr:" + address)
+			n.connections.Delete(address)
+			log.Warn("GetPeerClient error in ReconnectProxyServer, client value is nil. proxy-addr:", address)
+		}
+	} else {
+		if true == n.ClientExist(address) {
+			n.peers.Delete(address)
 		}
 	}
 
