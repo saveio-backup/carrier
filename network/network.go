@@ -264,14 +264,14 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 		}
 	} else {
 		if msg.MessageNonce >= 1000 {
-			log.Warn("in dispatch, msg.Message length is zero. maybe this swith is ERROR, pls CHECK.")
+			log.Warn("in dispatch, msg.Message length is zero. maybe this swith is ERROR, pls CHECK. msg.Nonce:", msg.MessageNonce, ",msg.Sender:", msg.Sender.Address, ",msg.Opcode:", msg.Opcode)
 		}
 	}
 
 	client.Time = time.Now()
 
 	if msg.RequestNonce > 0 && msg.ReplyFlag {
-		log.Infof("in Netowrk.dispatch, msg.RequestNonce:%d, msg.ReplyFlag:%d, msg.MessageNonce:%d", msg.RequestNonce, msg.ReplyFlag, msg.MessageNonce)
+		log.Infof("in Netowrk.dispatch, msg.RequestNonce:%d, msg.ReplyFlag:%d, msg.MessageNonce:%d,msg.Sender:%s", msg.RequestNonce, msg.ReplyFlag, msg.MessageNonce, msg.Sender.Address)
 		if _state, exists := client.Requests.Load(msg.RequestNonce); exists {
 			state := _state.(*RequestState)
 			select {
@@ -295,10 +295,10 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 			// Execute 'on receive message' callback for all Components.
 			n.Components.Each(func(Component ComponentInterface) {
 				if msg.Opcode >= 1000 {
-					log.Infof("in Network Component.Receive handle, recv msg.opcode:%d, msg.Nonce:%d, component name:%s", msg.Opcode, msg.MessageNonce, reflect.TypeOf(Component))
+					log.Infof("in Network Component.Receive handle, recv msg.opcode:%d, msg.Nonce:%d, component name:%s,msg.Sender:%s", msg.Opcode, msg.MessageNonce, reflect.TypeOf(Component), msg.Sender.Address)
 				}
 				if err := Component.Receive(ctx); err != nil {
-					log.Errorf("in network Component.Receive err:%+v, component name:%s", err, reflect.TypeOf(Component))
+					log.Errorf("in network Component.Receive err:%+v, component name:%s,msg.opcode:%d, msg.Nonce:%d, msg.Sender:%s", err, reflect.TypeOf(Component), msg.Opcode, msg.MessageNonce, msg.Sender.Address)
 				}
 			})
 
