@@ -34,7 +34,7 @@ import (
 type writeMode int
 
 const (
-	VERSION                   = "carrier-release-v0.8-uid:1563868524"
+	VERSION                   = "carrier-release-v0.8-uid:1563868525"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
@@ -109,6 +109,8 @@ type Network struct {
 	kill chan struct{}
 
 	ProxyService Proxy
+
+	dialTimeout time.Duration
 }
 
 type ProxyEvent struct {
@@ -734,7 +736,7 @@ func (n *Network) Dial(address string, client *PeerClient) (interface{}, error) 
 	}
 
 	var conn interface{}
-	conn, err = t.(transport.Layer).Dial(addrInfo.HostPort())
+	conn, err = t.(transport.Layer).Dial(addrInfo.HostPort(), n.dialTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -1274,4 +1276,8 @@ func (n *Network) GetRealConnState(address string) (PeerState, error) {
 		return PEER_REACHABLE, nil
 	}
 	return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, addr:%s", address)
+}
+
+func (n *Network) SetDialTimeout(timeout time.Duration) {
+	n.dialTimeout = timeout
 }

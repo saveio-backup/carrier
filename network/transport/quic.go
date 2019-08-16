@@ -46,7 +46,7 @@ func (t *Quic) Listen(port int) (interface{}, error) {
 	return interface{}(listener), nil
 }
 
-func (t *Quic) Dial(address string) (interface{}, error) {
+func (t *Quic) Dial(address string, timeout time.Duration) (interface{}, error) {
 	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: time.Second * 15})
 	if err != nil {
 		return nil, err

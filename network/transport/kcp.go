@@ -3,6 +3,8 @@ package transport
 import (
 	"strconv"
 
+	"time"
+
 	"github.com/xtaci/kcp-go"
 )
 
@@ -36,7 +38,7 @@ func (t *KCP) Listen(port int) (interface{}, error) {
 }
 
 // Dial dials an address via. the KCP protocol, with optional Reed-Solomon message sharding.
-func (t *KCP) Dial(address string) (interface{}, error) {
+func (t *KCP) Dial(address string, timeout time.Duration) (interface{}, error) {
 	conn, err := kcp.DialWithOptions(address, nil, t.DataShards, t.ParityShards)
 
 	if err != nil {

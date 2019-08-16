@@ -6,8 +6,6 @@ import (
 
 	"sync"
 
-	"errors"
-
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
@@ -223,15 +221,6 @@ func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state n
 	}
 	p.lastStates.Store(client.Address, state)
 	p.net.UpdateConnState(client.Address, state)
-}
-
-func (p *Component) GetPeerStateByAddress_TODO_Delete(address string) (network.PeerState, error) {
-	last, ok := p.lastStates.Load(address)
-	if !ok {
-		log.Debugf("[keepalive] address:%s, peer status does not exist in p.lastStates Map.", address)
-		return network.PEER_UNKNOWN, errors.New("[keepalive]Does not know peer status")
-	}
-	return last.(network.PeerState), nil
 }
 
 func (p *Component) GetPeerStateChan() chan *PeerStateEvent {

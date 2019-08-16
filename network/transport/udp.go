@@ -9,6 +9,7 @@ package transport
 import (
 	"net"
 	"strconv"
+	"time"
 )
 
 // UDP represents the UDP transport protocol alongside its respective configurable options.
@@ -41,7 +42,7 @@ func (t *UDP) Listen(port int) (interface{}, error) {
 }
 
 // Dial dials an address via. the UDP protocol.
-func (t *UDP) Dial(address string) (interface{}, error) {
+func (t *UDP) Dial(address string, timeout time.Duration) (interface{}, error) {
 	resolved, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
 		return nil, err
@@ -52,7 +53,5 @@ func (t *UDP) Dial(address string) (interface{}, error) {
 		return nil, err
 	}
 
-	//conn.SetWriteBuffer(t.WriteBufferSize)
-	//conn.SetReadBuffer(t.ReadBufferSize)
 	return interface{}(conn), nil
 }

@@ -3,6 +3,8 @@ package transport
 import (
 	"net"
 	"strconv"
+	"strings"
+	"time"
 )
 
 // TCP represents the TCP transport protocol alongside its respective configurable options.
@@ -21,6 +23,13 @@ func NewTCP() *TCP {
 	}
 }
 
+func resolveTcpAddr(address string) string {
+	if strings.HasPrefix(address, "tcp://") {
+		return address[len("tcp://"):]
+	}
+	return address
+}
+
 // Listen listens for incoming TCP connections on a specified port.
 func (t *TCP) Listen(port int) (interface{}, error) {
 	listener, err := net.Listen("tcp", ":"+strconv.Itoa(port))
@@ -32,20 +41,10 @@ func (t *TCP) Listen(port int) (interface{}, error) {
 }
 
 // Dial dials an address via. the TCP protocol.
-func (t *TCP) Dial(address string) (interface{}, error) {
-	resolved, err := net.ResolveTCPAddr("tcp", address)
+func (t *TCP) Dial(address string, timeout time.Duration) (interface{}, error) {
+	conn, err := net.DialTimeout("tcp", resolveTcpAddr(address), timeout)
 	if err != nil {
 		return nil, err
 	}
-
-	conn, err := net.DialTCP("tcp", nil, resolved)
-	if err != nil {
-		return nil, err
-	}
-
-	//conn.SetWriteBuffer(t.WriteBufferSize)
-	//conn.SetReadBuffer(t.ReadBufferSize)
-	//conn.SetNoDelay(t.NoDelay) NOTICE: DON'T ENABLE Nagle's Algorithm
-
 	return interface{}(conn), nil
 }
