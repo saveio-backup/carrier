@@ -249,7 +249,7 @@ func (builder *Builder) Build() (*Network, error) {
 		connStates:   new(sync.Map),
 		listeningCh:  make(chan struct{}),
 		ProxyService: Proxy{Finish: new(sync.Map), ConnectionEvent: make([]chan *ProxyEvent, defaultProxyNotifySize), WorkID: 0},
-		kill:         make(chan struct{}),
+		Kill:         make(chan struct{}),
 	}
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
