@@ -848,12 +848,12 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 	// Cleanup connections when we are done with them.
 	defer func() {
 		if cli != nil {
-			log.Info("(tcp/kcp) Accept quit, client close now.")
+			log.Info("(tcp/kcp) Accept quit, client close now. client.addr:", cli.Address)
 			cli.Close()
 		}
 
 		if incoming != nil {
-			log.Info("(tcp/kcp) Accept quit, inbound connection close now.")
+			log.Infof("(tcp/kcp) Accept quit, inbound connection close now. conn.Local-Addr:%s, conn.Remote-Addr:%s", incoming.LocalAddr().String(), incoming.RemoteAddr().String())
 			incoming.Close()
 		}
 	}()
@@ -1194,7 +1194,35 @@ func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, 
 
 // Close shuts down the entire network.
 func (n *Network) Close() {
+	log.Info("begin to release all resource about Network abstract")
+	time.Sleep(1 * time.Second) // to avoid other goroutine is using the peer and connection resource
+
+	log.Info("delete all installed component, reset network.Components is NewComponentList")
+	n.Components = NewComponentList() //delete installed components
+	log.Infof("delete all relevant connections&peers resource, client.len:%d, connection.len:%d", n.PeersNum(), n.ConnsNum())
+	n.peers.Range(func(key, peer interface{}) bool {
+		peer.(*PeerClient).Close()
+		return true
+	})
 	close(n.kill)
+}
+
+func (n *Network) PeersNum() int {
+	count := 0
+	n.peers.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+	return count
+}
+
+func (n *Network) ConnsNum() int {
+	count := 0
+	n.connections.Range(func(key, value interface{}) bool {
+		count++
+		return true
+	})
+	return count
 }
 
 func (n *Network) EachPeer(fn func(client *PeerClient) bool) {
