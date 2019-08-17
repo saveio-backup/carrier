@@ -163,7 +163,7 @@ func (p *Component) keepaliveService() {
 			t.Stop()
 			break
 		case <-p.net.Kill:
-			break
+			return
 		}
 	}
 }
@@ -196,7 +196,7 @@ func (p *Component) proxyKeepaliveService() {
 			t.Stop()
 			break
 		case <-p.net.Kill:
-			break
+			return
 		}
 	}
 }
