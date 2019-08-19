@@ -899,7 +899,7 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 			return
 		}
 
-		client.RecvWindow.Push(msg.MessageNonce, msg)
+		/*client.RecvWindow.Push(msg.MessageNonce, msg)
 		ready := client.RecvWindow.Pop()
 		for _, msg := range ready {
 			msg := msg
@@ -907,7 +907,8 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 			client.Submit(func() {
 				n.dispatchMessage(cli, msg.(*protobuf.Message))
 			})
-		}
+		}*/
+		n.dispatchMessage(client, msg)
 	}
 }
 

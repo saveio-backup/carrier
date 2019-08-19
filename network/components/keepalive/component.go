@@ -129,7 +129,8 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.Keepalive:
 		// Send keepalive response to peer.
-		err := ctx.Reply(context.Background(), &protobuf.KeepaliveResponse{})
+		//err := ctx.Reply(context.Background(), &protobuf.KeepaliveResponse{})
+		err := ctx.Client().Tell(context.Background(), &protobuf.KeepaliveResponse{})
 		if err != nil {
 			return err
 		}
@@ -161,7 +162,7 @@ func (p *Component) keepaliveService() {
 			p.timeout()
 		case <-p.stopCh:
 			t.Stop()
-			break
+			return
 		case <-p.net.Kill:
 			return
 		}
@@ -194,7 +195,7 @@ func (p *Component) proxyKeepaliveService() {
 			}
 		case <-p.stopCh:
 			t.Stop()
-			break
+			return
 		case <-p.net.Kill:
 			return
 		}
