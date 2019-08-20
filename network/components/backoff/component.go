@@ -135,6 +135,7 @@ func (p *Component) startBackoff(addr string) {
 		// dial the client and see if it is successful
 		c, err := p.net.Client(addr)
 		if err != nil {
+			log.Errorf("create Client and Connection is ERROR:%s, dial to addr:%s", err.Error(), addr)
 			continue
 		}
 		if !p.net.ConnectionStateExists(addr) {

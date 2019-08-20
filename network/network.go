@@ -18,7 +18,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"encoding/hex"
 	"sync/atomic"
 
 	"strings"
@@ -34,7 +33,7 @@ import (
 type writeMode int
 
 const (
-	VERSION                   = "carrier-release-v0.8-uid:1563868525"
+	VERSION                   = "carrier-release-v0.8-uid:1563868526"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
@@ -444,7 +443,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return nil, err
 	}
 
-	c, exists := n.peers.LoadOrStore(address, clientNew)
+	c, exists := n.peers.Load(address)
 	if exists {
 		client := c.(*PeerClient)
 
@@ -455,7 +454,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return client, nil
 	}
 
-	client := c.(*PeerClient)
+	client := clientNew
 	defer func() {
 		client.setOutgoingReady()
 	}()
@@ -469,6 +468,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		}
 	}
 	n.initConnection(address, conn)
+	n.peers.Store(address, client)
 	client.Init()
 
 	client.setIncomingReady()
@@ -769,6 +769,7 @@ func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 		}
 	}()
 	var address string
+	log.Info("(quic)in Network.Accept, there is a new inbound connection in Quic.Listen,streamID:", stream.StreamID(), ", local addr:", n.ID.Address)
 	for {
 		var client *PeerClient
 		msg, err := n.receiveQuicMessage(stream)
@@ -777,17 +778,17 @@ func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 			log.Warn("quit connect with ", address)
 			return
 		}
-		if msg.Opcode < uint32(opcode.ApplicationOpCodeStart) {
-			log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature), stream)
-		}
-		if msg.Opcode == uint32(opcode.PingCode) {
-			oldClient := n.GetPeerClient(msg.Sender.Address)
-			if oldClient != nil {
-				oldClient.DisableBackoff()
-				oldClient.Close()
-				oldClient = nil
-			}
-		}
+		/*		if msg.Opcode < uint32(opcode.ApplicationOpCodeStart) {
+					log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature), stream)
+				}
+				if msg.Opcode == uint32(opcode.PingCode) {
+					oldClient := n.GetPeerClient(msg.Sender.Address)
+					if oldClient != nil {
+						oldClient.DisableBackoff()
+						oldClient.Close()
+						oldClient = nil
+					}
+				}*/
 		if n.ProxyModeEnable() {
 			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		} else {
@@ -828,15 +829,16 @@ func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 			return
 		}
 
-		client.RecvWindow.Push(msg.MessageNonce, msg)
-		ready := client.RecvWindow.Pop()
-		for _, msg := range ready {
-			msg := msg
-			cli := client
-			client.Submit(func() {
-				n.dispatchMessage(cli, msg.(*protobuf.Message))
-			})
-		}
+		/*		client.RecvWindow.Push(msg.MessageNonce, msg)
+				ready := client.RecvWindow.Pop()
+				for _, msg := range ready {
+					msg := msg
+					cli := client
+					client.Submit(func() {
+						n.dispatchMessage(cli, msg.(*protobuf.Message))
+					})
+				}*/
+		n.dispatchMessage(client, msg)
 	}
 }
 

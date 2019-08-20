@@ -35,7 +35,7 @@ func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writer
 	binary.BigEndian.PutUint32(buffer[4:], uint32(len(bytes)))
 
 	buffer = append(buffer, bytes...)
-	totalSize := len(buffer)
+	//totalSize := len(buffer)
 
 	// Write until all bytes have been written.
 	bytesWritten, totalBytesWritten := 0, 0
@@ -43,12 +43,12 @@ func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writer
 	writerMutex.Lock()
 	defer writerMutex.Unlock()
 
-	bw, isBuffered := w.(*bufio.Writer)
-	if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
-		if err := bw.Flush(); err != nil {
-			return err
-		}
-	}
+	/*	bw, isBuffered := w.(*bufio.Writer)
+		if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
+			if err := bw.Flush(); err != nil {
+				return err
+			}
+		}*/
 
 	for totalBytesWritten < len(buffer) && err == nil {
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
@@ -60,6 +60,10 @@ func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writer
 
 	if err != nil {
 		return errors.Wrap(err, "stream: failed to write to socket")
+	}
+	bw, _ := w.(*bufio.Writer)
+	if err := bw.Flush(); err != nil {
+		return err
 	}
 	return nil
 }
@@ -123,6 +127,6 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 	if msg.Opcode == 0 || msg.Sender == nil || msg.Sender.NetKey == nil || len(msg.Sender.Address) == 0 || msg.NetID != n.GetNetworkID() {
 		return nil, errors.New("(quic)received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
-
+	log.Infof("(quic)in Network.receiveMessage, receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce)
 	return msg, nil
 }

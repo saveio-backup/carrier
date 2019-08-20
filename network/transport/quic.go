@@ -18,7 +18,7 @@ import (
 
 	"context"
 
-	quic "github.com/lucas-clemente/quic-go"
+	"github.com/lucas-clemente/quic-go"
 )
 
 type Quic struct {
@@ -47,7 +47,7 @@ func (t *Quic) Listen(port int) (interface{}, error) {
 }
 
 func (t *Quic) Dial(address string, timeout time.Duration) (interface{}, error) {
-	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: time.Second * 15})
+	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: time.Second * 15, HandshakeTimeout: time.Millisecond * 100})
 	if err != nil {
 		return nil, err
 	}
