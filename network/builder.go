@@ -255,7 +255,7 @@ func (builder *Builder) Build() (*Network, error) {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
 		return true
 	})
-	log.Info("carrier version:", VERSION)
+	log.Info("carrier version:", Version)
 	net.Init()
 
 	return net, nil

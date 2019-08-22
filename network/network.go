@@ -32,8 +32,9 @@ import (
 
 type writeMode int
 
+var Version string
+
 const (
-	VERSION                   = "carrier-release-v0.8-uid:1563868526"
 	WRITE_MODE_LOOP writeMode = iota
 	WRITE_MODE_DIRECT
 )
