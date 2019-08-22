@@ -33,6 +33,8 @@ const (
 	maxInt64 = float64(math.MaxInt64 - 512)
 )
 
+type BackoffOption func(*Backoff)
+
 // DefaultBackoff creates a default configuration for Backoff.
 func DefaultBackoff() *Backoff {
 	return &Backoff{
@@ -41,6 +43,33 @@ func DefaultBackoff() *Backoff {
 		Jitter:          defaultJitter,
 		MinInterval:     defaultMinInterval,
 		MaxInterval:     defaultMaxInterval,
+	}
+}
+
+func defaultBackoffOptions() BackoffOption {
+	return func(b *Backoff) {
+		b.MaxAttempts = defaultMaxAttempts
+		b.BackoffInterval = defaultBackoffInterval
+		b.Jitter = defaultJitter
+		b.MinInterval = defaultMinInterval
+		b.MaxInterval = defaultMaxInterval
+	}
+}
+
+func NewBackoff(opts ...BackoffOption) *Backoff {
+	b := new(Backoff)
+	defaultBackoffOptions()(b)
+
+	for _, opt := range opts {
+		opt(b)
+	}
+
+	return b
+}
+
+func WithBackoffInterval(s time.Duration) BackoffOption {
+	return func(o *Backoff) {
+		o.MaxInterval = s
 	}
 }
 

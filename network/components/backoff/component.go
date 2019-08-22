@@ -30,6 +30,8 @@ type Component struct {
 	// priority specifies Component priority
 	priority int
 
+	maxInterval time.Duration
+
 	net      *network.Network
 	backoffs sync.Map
 }
@@ -41,6 +43,12 @@ type ComponentOption func(*Component)
 func WithInitialDelay(d time.Duration) ComponentOption {
 	return func(o *Component) {
 		o.initialDelay = d
+	}
+}
+
+func WithMaxInterval(s time.Duration) ComponentOption {
+	return func(o *Component) {
+		o.maxInterval = s
 	}
 }
 
@@ -63,6 +71,7 @@ func defaultOptions() ComponentOption {
 		o.initialDelay = defaultComponentInitialDelay
 		o.maxAttempts = defaultComponentMaxAttempts
 		o.priority = defaultComponentPriority
+		o.maxInterval = defaultMaxInterval
 	}
 }
 
@@ -111,7 +120,7 @@ func (p *Component) startBackoff(addr string) {
 		return
 	}
 	// reset the backoff counter
-	p.backoffs.Store(addr, DefaultBackoff())
+	p.backoffs.Store(addr, NewBackoff(WithBackoffInterval(p.maxInterval)))
 	startTime := time.Now()
 	for i := 0; i < p.maxAttempts; i++ {
 		s, active := p.backoffs.Load(addr)

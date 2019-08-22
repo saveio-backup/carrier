@@ -21,6 +21,11 @@ import (
 	"github.com/lucas-clemente/quic-go"
 )
 
+const (
+	defaultHandshakeTimeout = time.Millisecond * 100
+	defaultIdleTimeout      = time.Second * 15
+)
+
 type Quic struct {
 }
 
@@ -38,7 +43,7 @@ func resolveQuicAddr(address string) string {
 
 // Listen listens for incoming Quic connections on a specified port.
 func (t *Quic) Listen(port int) (interface{}, error) {
-	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), &quic.Config{KeepAlive: true, IdleTimeout: time.Second * 15})
+	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +52,7 @@ func (t *Quic) Listen(port int) (interface{}, error) {
 }
 
 func (t *Quic) Dial(address string, timeout time.Duration) (interface{}, error) {
-	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: time.Second * 15, HandshakeTimeout: time.Millisecond * 100})
+	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
 	if err != nil {
 		return nil, err
 	}

@@ -664,8 +664,10 @@ func (n *Network) ReconnectPeer(address string) error {
 				return errors.New("ReconnectPeer failed when remove peers&connection resource, addr:" + address)
 			}
 		} else {
-			return errors.New("GetPeerClient error in ReconnectPeer, client value is nil. client-addr:" + address)
+			n.connections.Delete(address)
 		}
+	} else if n.ClientExist(address) {
+		n.peers.Delete(address)
 	}
 	log.Infof("in carrier.Network,Reconnect Peer start, peer addr:%s", address)
 	return n.ConnectPeer(address)
@@ -674,6 +676,11 @@ func (n *Network) ReconnectPeer(address string) error {
 func (n *Network) ConnectPeer(address string) error {
 	if n.ConnectionStateExists(address) {
 		log.Info("in ConnectPeer, connection belong to addr:", address, "has exist, return directly.")
+		return nil
+	}
+
+	if n.ClientExist(address) {
+		log.Info("in ConnectPeer, client belong to addr:", address, "has exist, return directly.")
 		return nil
 	}
 	client, err := n.Client(address)

@@ -27,6 +27,10 @@ func NewComponentList() *ComponentList {
 	}
 }
 
+func (m *ComponentList) GetInstallComponents() []*ComponentInfo {
+	return m.values
+}
+
 // SortByPriority sorts the Components list by each Components priority.
 func (m *ComponentList) SortByPriority() {
 	sort.SliceStable(m.values, func(i, j int) bool {
