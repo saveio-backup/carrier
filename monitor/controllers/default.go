@@ -41,7 +41,7 @@ func getProxyConnState() string {
 func (c *MainController) Get() {
 	c.Data["Network"] = Network
 	c.Data["NetworkID"] = Network.GetNetworkID()
-	c.Data["Version"] = network.VERSION
+	c.Data["Version"] = network.Version
 	c.Data["Proxy"] = &Proxy{
 		Enable:          Network.ProxyModeEnable(),
 		WorkingServer:   Network.GetWorkingProxyServer(),

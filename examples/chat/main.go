@@ -12,7 +12,6 @@ import (
 
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/chat/messages"
-	"github.com/saveio/carrier/monitor"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/keepalive"
@@ -126,7 +125,7 @@ func main() {
 	}
 
 	reader := bufio.NewReader(os.Stdin)
-	monitor.Run(networkBuilder)
+	//monitor.Run(networkBuilder)
 	for {
 		input, _ := reader.ReadString('\n')
 		fmt.Println("input:", input)
