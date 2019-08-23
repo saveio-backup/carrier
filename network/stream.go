@@ -79,6 +79,9 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 	}
+	if err != nil {
+		return nil, errors.Errorf("tcp receive networkID ahead bytes err:%s", err.Error())
+	}
 	if binary.BigEndian.Uint32(buffer) != n.GetNetworkID() {
 		return nil, errors.Errorf("(tcp)receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
 	}
@@ -90,6 +93,11 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 	}
+
+	if err != nil {
+		return nil, errors.Errorf("tcp receive invalid message size bytes err:%s", err.Error())
+	}
+
 	size = binary.BigEndian.Uint32(buffer)
 
 	if size == 0 {
@@ -110,6 +118,10 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 
 		//bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
+	}
+
+	if err != nil {
+		return nil, errors.Errorf("tcp receive invalid message body bytes err:%s, total to be read:%d, has read:%d", err.Error(), size, totalBytesRead)
 	}
 
 	// Deserialize message.

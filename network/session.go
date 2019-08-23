@@ -35,20 +35,12 @@ func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writer
 	binary.BigEndian.PutUint32(buffer[4:], uint32(len(bytes)))
 
 	buffer = append(buffer, bytes...)
-	//totalSize := len(buffer)
 
 	// Write until all bytes have been written.
 	bytesWritten, totalBytesWritten := 0, 0
 
 	writerMutex.Lock()
 	defer writerMutex.Unlock()
-
-	/*	bw, isBuffered := w.(*bufio.Writer)
-		if isBuffered && (bw.Buffered() > 0) && (bw.Available() < totalSize) {
-			if err := bw.Flush(); err != nil {
-				return err
-			}
-		}*/
 
 	for totalBytesWritten < len(buffer) && err == nil {
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
@@ -80,6 +72,9 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 		bytesRead, err = io.ReadFull(stream, buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 	}
+	if err != nil {
+		return nil, errors.Errorf("quic receive networkID bytes err:%s", err.Error())
+	}
 	if binary.BigEndian.Uint32(buffer) != n.GetNetworkID() {
 		return nil, errors.Errorf("(quic)receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
 	}
@@ -93,7 +88,7 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 		totalBytesRead += bytesRead
 	}
 	if err != nil {
-		return nil, err
+		return nil, errors.Errorf("quic receive invalid message size bytes err:%s", err.Error())
 	}
 	size = binary.BigEndian.Uint32(buffer)
 	if size == 0 {
@@ -116,11 +111,14 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 		totalBytesRead += bytesRead
 	}
 
+	if err != nil {
+		return nil, errors.Errorf("quic receive invalid message body bytes err:%s, total to be read:%d, has read:%d", err.Error(), size, totalBytesRead)
+	}
 	// Deserialize message.
 	msg := new(protobuf.Message)
 	err = proto.Unmarshal(buffer, msg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal message")
+		return nil, errors.Wrap(err, "quic failed to unmarshal message")
 	}
 
 	// Check if any of the message headers are invalid or null.
