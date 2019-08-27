@@ -112,7 +112,7 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 	}
 
 	if size > uint32(n.opts.recvBufferSize) {
-		return nil, errors.Errorf("(tcp)message has length of %d which is either broken or too large(default %d)", size, n.opts.recvBufferSize)
+		log.Warnf("(tcp)message has length of %d which is either broken or too large(default %d), please check.", size, n.opts.recvBufferSize)
 	}
 
 	// Read until all message bytes have been read.
@@ -122,8 +122,6 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 
 	for totalBytesRead < int(size) && err == nil {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
-
-		//bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 	}
 

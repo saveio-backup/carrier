@@ -1311,3 +1311,11 @@ func (n *Network) GetRealConnState(address string) (PeerState, error) {
 func (n *Network) SetDialTimeout(timeout time.Duration) {
 	n.dialTimeout = timeout
 }
+
+func (n *Network) SetWrittenBufferSize(bytes int) {
+	n.opts.writeBufferSize = bytes
+}
+
+func (n *Network) SetReadBufferSize(bytes int) {
+	n.opts.recvBufferSize = bytes
+}

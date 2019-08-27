@@ -103,7 +103,7 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 	}
 
 	if size > uint32(n.opts.recvBufferSize) {
-		return nil, errors.Errorf("(quic)message has length of %d which is either broken or too large(default %d)", size, n.opts.recvBufferSize)
+		log.Warnf("(quic)message has length of %d which is either broken or too large(default %d), please check.", size, n.opts.recvBufferSize)
 	}
 
 	// Read until all message bytes have been read.
@@ -113,8 +113,6 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 
 	for totalBytesRead < int(size) && err == nil {
 		bytesRead, err = io.ReadFull(stream, buffer[totalBytesRead:])
-		//bytesRead, err = stream.Read(buffer[totalBytesRead:])
-
 		totalBytesRead += bytesRead
 	}
 
