@@ -35,10 +35,10 @@ func (state *BenchmarkComponent) Receive(ctx *network.ComponentContext) error {
 
 var _profile = flag.String("_profile", "", "write cpu _profile to file")
 var Address = map[string]string{
-	"tcp": "tcp://127.0.0.1:3001",
-	"udp": "udp://127.0.0.1:3001",
-	"kcp": "kcp://127.0.0.1:3001",
-	"quic":"quic://127.0.0.1:3001",
+	"tcp":  "tcp://127.0.0.1:3001",
+	"udp":  "udp://127.0.0.1:3001",
+	"kcp":  "kcp://127.0.0.1:3001",
+	"quic": "quic://127.0.0.1:3001",
 }
 
 func Run(protocol string) {

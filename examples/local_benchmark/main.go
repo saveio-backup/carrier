@@ -8,8 +8,8 @@ package main
 import (
 	"flag"
 
-	"github.com/saveio/carrier/examples/local_benchmark/sender"
 	"github.com/saveio/carrier/examples/local_benchmark/receiver"
+	"github.com/saveio/carrier/examples/local_benchmark/sender"
 )
 
 func main() {

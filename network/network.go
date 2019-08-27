@@ -30,14 +30,7 @@ import (
 	"github.com/saveio/themis/common/log"
 )
 
-type writeMode int
-
 var Version string
-
-const (
-	WRITE_MODE_LOOP writeMode = iota
-	WRITE_MODE_DIRECT
-)
 
 type PeerState int
 
@@ -51,11 +44,10 @@ const (
 	defaultConnectionTimeout = 60 * time.Second
 	defaultReceiveWindowSize = 4096
 	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 1024 * 1024 * 100
-	defaultRecvBufferSize    = 1024 * 1024 * 100
+	defaultWriteBufferSize   = 1024 * 512
+	defaultRecvBufferSize    = 1024 * 512
 	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
-	defaultWriteMode         = WRITE_MODE_LOOP
 	defaultProxyNotifySize   = 256
 )
 
@@ -137,7 +129,6 @@ type options struct {
 	recvBufferSize    int
 	writeFlushLatency time.Duration
 	writeTimeout      time.Duration
-	writeMode         writeMode
 }
 
 // ConnState represents a connection.

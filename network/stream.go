@@ -47,18 +47,25 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	writerMutex.Lock()
 	defer writerMutex.Unlock()
 
+	bw, _ := w.(*bufio.Writer)
 	for totalBytesWritten < len(buffer) && err == nil {
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
 		if err != nil {
 			log.Errorf("stream: failed to write entire buffer, err: %+v", err)
+			break
 		}
 		totalBytesWritten += bytesWritten
+		if bw.Available() <= 0 {
+			if err = bw.Flush(); err != nil {
+				log.Error("stream flush err in buffer immediately written:", err.Error())
+				break
+			}
+		}
 	}
 
 	if err != nil {
 		return errors.Wrap(err, "stream: failed to write to socket")
 	}
-	bw, _ := w.(*bufio.Writer)
 	if err := bw.Flush(); err != nil {
 		return err
 	}

@@ -25,10 +25,10 @@ import (
 var profile = flag.String("profile", "", "write cpu profile to file")
 var port = flag.Uint("port", 3002, "port to listen on")
 var receiver = map[string]string{
-	"udp": "udp://127.0.0.1:3001",
-	"tcp": "tcp://127.0.0.1:3001",
-	"kcp": "kcp://127.0.0.1:3001",
-	"quic":"quic://127.0.0.1:3001",
+	"udp":  "udp://127.0.0.1:3001",
+	"tcp":  "tcp://127.0.0.1:3001",
+	"kcp":  "kcp://127.0.0.1:3001",
+	"quic": "quic://127.0.0.1:3001",
 }
 
 func Run(protocol string) {

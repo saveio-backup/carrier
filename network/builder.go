@@ -118,12 +118,6 @@ func WriteFlushLatency(d time.Duration) BuilderOption {
 	}
 }
 
-func WriteMode(m writeMode) BuilderOption {
-	return func(o *options) {
-		o.writeMode = m
-	}
-}
-
 // WriteTimeout returns a BuilderOption that sets the write timeout
 // (default: 4096).
 func WriteTimeout(d time.Duration) BuilderOption {
