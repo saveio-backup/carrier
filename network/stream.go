@@ -54,12 +54,16 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 			log.Errorf("stream: failed to write entire buffer, err: %+v", err)
 			break
 		}
+		log.Infof("(kcp/tcp)in Network.sendMessage, once write buffer successed; send from addr:%s, send to:%s, "+
+			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, address, message.Opcode, message.MessageNonce, bytesWritten)
 		totalBytesWritten += bytesWritten
 		if bw.Available() <= 0 {
 			if err = bw.Flush(); err != nil {
 				log.Error("stream flush err in buffer immediately written:", err.Error())
 				break
 			}
+			log.Infof("(kcp/tcp)in Network.sendMessage, immediately flush successed; send from addr:%s, send to:%s, "+
+				"message.opcode:%d, msg.nonce:%d, flush buffer size:%d", n.ID.Address, address, message.Opcode, message.MessageNonce, bw.Size())
 		}
 	}
 
@@ -69,7 +73,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	if err := bw.Flush(); err != nil {
 		return err
 	}
-
+	log.Infof("(kcp/tcp)in Network.sendMessage, successed finished; send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.ID.Address, address, message.Opcode, message.MessageNonce)
 	return nil
 }
 
