@@ -126,6 +126,7 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	//monitor.Run(networkBuilder)
+	networkBuilder.SetCompressFileSize(140)
 	for {
 		input, _ := reader.ReadString('\n')
 		fmt.Println("input:", input)

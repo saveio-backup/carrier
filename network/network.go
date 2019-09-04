@@ -49,6 +49,7 @@ const (
 	defaultWriteFlushLatency = 10 * time.Millisecond
 	defaultWriteTimeout      = 3 * time.Second
 	defaultProxyNotifySize   = 256
+	defaultCompressFileSize  = 4 * 1024 * 1024
 )
 
 var contextPool = sync.Pool{
@@ -103,6 +104,10 @@ type Network struct {
 	ProxyService Proxy
 
 	dialTimeout time.Duration
+
+	compressEnable    bool
+	compressAlgo      AlgoType
+	CompressCondition CompressCondition
 }
 
 type ProxyEvent struct {
@@ -777,17 +782,7 @@ func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 			log.Warn("quit connect with ", address)
 			return
 		}
-		/*		if msg.Opcode < uint32(opcode.ApplicationOpCodeStart) {
-					log.Infof("(quic) receive from addr:%s,message.opcode:%d, message.sign:%s, stream:%p", msg.Sender.Address, msg.Opcode, hex.EncodeToString(msg.Signature), stream)
-				}
-				if msg.Opcode == uint32(opcode.PingCode) {
-					oldClient := n.GetPeerClient(msg.Sender.Address)
-					if oldClient != nil {
-						oldClient.DisableBackoff()
-						oldClient.Close()
-						oldClient = nil
-					}
-				}*/
+
 		if n.ProxyModeEnable() {
 			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
 		} else {
@@ -1318,4 +1313,20 @@ func (n *Network) SetWrittenBufferSize(bytes int) {
 
 func (n *Network) SetReadBufferSize(bytes int) {
 	n.opts.recvBufferSize = bytes
+}
+
+func (n *Network) EnableCompress() {
+	n.compressEnable = true
+}
+
+func (n *Network) DisableCompress() {
+	n.compressEnable = false
+}
+
+func (n *Network) SetCompressAlgo(algo AlgoType) {
+	n.compressAlgo = algo
+}
+
+func (n *Network) SetCompressFileSize(bytes int) {
+	n.CompressCondition.Size = bytes
 }

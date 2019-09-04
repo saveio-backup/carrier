@@ -27,16 +27,25 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
 	}
-	if len(bytes) == 0 {
+	msgOriginSize := len(bytes)
+	if msgOriginSize == 0 {
 		log.Info("stack info:", fmt.Sprintf("%s", debug.Stack()))
 		log.Error("in tcp sendMessage,len(message) == 0, write to remote addr:", w.(net.Conn).RemoteAddr())
 		return errors.New("tcp sendMessage,len(message) is empty")
 	}
 
+	if n.compressEnable && msgOriginSize >= n.CompressCondition.Size {
+		bytes, err = n.Compress(bytes)
+		if err != nil {
+			log.Error("compress enable, however, compress false, algo:", n.compressAlgo, ",err:", err.Error())
+			return errors.Errorf("compress err:%s, algo:%d", err.Error(), n.compressAlgo)
+		}
+	}
 	// Serialize size.
-	buffer := make([]byte, 8)
+	buffer := make([]byte, 10)
 	binary.BigEndian.PutUint32(buffer, n.GetNetworkID())
-	binary.BigEndian.PutUint32(buffer[4:], uint32(len(bytes)))
+	binary.BigEndian.PutUint16(buffer[4:], uint16(n.GenCompressInfo(msgOriginSize)))
+	binary.BigEndian.PutUint32(buffer[6:], uint32(len(bytes)))
 
 	buffer = append(buffer, bytes...)
 	//totalSize := len(buffer)
@@ -97,6 +106,21 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 		return nil, errors.Errorf("(tcp)receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
 	}
 
+	buffer = make([]byte, 2)
+	bytesRead, totalBytesRead = 0, 0
+
+	for totalBytesRead < 2 && err == nil {
+		bytesRead, err = conn.Read(buffer[totalBytesRead:])
+		totalBytesRead += bytesRead
+	}
+
+	if err != nil {
+		return nil, errors.Errorf("tcp receive invalid message size bytes err:%s", err.Error())
+	}
+
+	compressInfo := binary.BigEndian.Uint16(buffer)
+	algo, compEnable := n.GetCompressInfo(compressInfo)
+
 	buffer = make([]byte, 4)
 	bytesRead, totalBytesRead = 0, 0
 
@@ -115,10 +139,6 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 		return nil, errEmptyMsg
 	}
 
-	if size > uint32(n.opts.recvBufferSize) {
-		log.Warnf("(tcp)message has length of %d which is either broken or too large(default %d), please check.", size, n.opts.recvBufferSize)
-	}
-
 	// Read until all message bytes have been read.
 	buffer = make([]byte, size)
 
@@ -133,6 +153,13 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 		return nil, errors.Errorf("tcp receive invalid message body bytes err:%s, total to be read:%d, has read:%d", err.Error(), size, totalBytesRead)
 	}
 
+	if compEnable {
+		buffer, err = n.Uncompress(buffer, AlgoType(algo))
+		if err != nil {
+			log.Error("uncompress buffer msg err, err:", err.Error(), ",algo type:", algo)
+			return nil, errors.Errorf("uncompress err:%s,algo:%d", err.Error(), algo)
+		}
+	}
 	// Deserialize message.
 	msg := new(protobuf.Message)
 	err = proto.Unmarshal(buffer, msg)

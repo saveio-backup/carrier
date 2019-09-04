@@ -238,12 +238,15 @@ func (builder *Builder) Build() (*Network, error) {
 		Components: builder.Components,
 		transports: builder.transports,
 
-		peers:        new(sync.Map),
-		connections:  new(sync.Map),
-		connStates:   new(sync.Map),
-		listeningCh:  make(chan struct{}),
-		ProxyService: Proxy{Finish: new(sync.Map), ConnectionEvent: make([]chan *ProxyEvent, defaultProxyNotifySize), WorkID: 0},
-		Kill:         make(chan struct{}),
+		peers:             new(sync.Map),
+		connections:       new(sync.Map),
+		connStates:        new(sync.Map),
+		listeningCh:       make(chan struct{}),
+		ProxyService:      Proxy{Finish: new(sync.Map), ConnectionEvent: make([]chan *ProxyEvent, defaultProxyNotifySize), WorkID: 0},
+		Kill:              make(chan struct{}),
+		compressEnable:    true,
+		compressAlgo:      GZIP,
+		CompressCondition: CompressCondition{Size: defaultCompressFileSize},
 	}
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
