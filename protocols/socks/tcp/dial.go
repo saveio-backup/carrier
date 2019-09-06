@@ -24,6 +24,7 @@ import (
 	"net"
 	"strconv"
 	"time"
+
 	"github.com/saveio/carrier/protocols/socks/common"
 )
 
@@ -259,8 +260,8 @@ func (p *Proxy) dial(network, addr string, timeout time.Duration) (net.Conn, err
 	paddr.Port = int(buf[0])<<8 | int(buf[1])
 
 	return &common.ProxiedConn{
-		Conn:       conn,
-		BoundAddr:  paddr,
+		Conn:          conn,
+		BoundAddr:     paddr,
 		RemoteAddress: &common.ProxiedAddr{network, host, port},
 	}, nil
 }

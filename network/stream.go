@@ -77,7 +77,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "stream: failed to write to socket")
+		return errors.Errorf("stream: failed to write to socket, has written byte:%d, total need to be writed:%d, err:%s", totalBytesWritten, len(buffer), err.Error())
 	}
 	if err := bw.Flush(); err != nil {
 		return err

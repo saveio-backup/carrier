@@ -6,6 +6,7 @@ import (
 
 	"sync"
 
+	"github.com/pkg/errors"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
@@ -132,7 +133,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		//err := ctx.Reply(context.Background(), &protobuf.KeepaliveResponse{})
 		err := ctx.Client().Tell(context.Background(), &protobuf.KeepaliveResponse{})
 		if err != nil {
-			return err
+			return errors.Errorf("in keepalive component send keepalive rsponse err, client.addr:%s", ctx.Client().ID.Address)
 		}
 		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 	case *protobuf.KeepaliveResponse:

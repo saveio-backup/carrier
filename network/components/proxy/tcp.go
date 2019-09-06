@@ -59,8 +59,11 @@ func TcpComponentReceive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.ProxyResponse:
 		log.Info("Node(tcp) public ip is:", ctx.Message().(*protobuf.ProxyResponse).ProxyAddress)
-		ctx.Network().ID.Address = "tcp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
-		ctx.Network().FinishProxyServer("tcp")
+		proxyIP := "tcp://" + ctx.Message().(*protobuf.ProxyResponse).ProxyAddress
+		if proxyIP != ctx.Network().ID.Address {
+			ctx.Network().ID.Address = proxyIP
+			ctx.Network().FinishProxyServer("tcp")
+		}
 	}
 
 	return nil

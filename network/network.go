@@ -1089,16 +1089,9 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		log.Errorf("Network.Wirte error, begin to delete client and connection resource from sync.Maps")
 		state.writerMutex.Lock()
 		defer state.writerMutex.Unlock()
-		if n.ConnectionStateExists(address) {
-			n.connections.Delete(address)
-			n.UpdateConnState(address, PEER_UNREACHABLE)
-			log.Errorf("Network.Wirte error, delete connection resource from sync.Maps")
-		}
-		if n.ClientExist(address) {
-			n.peers.Delete(address)
-			n.UpdateConnState(address, PEER_UNREACHABLE)
-			log.Errorf("Network.Wirte error, delete client resource from sync.Maps")
-		}
+		n.connections.Delete(address)
+		n.peers.Delete(address)
+		n.UpdateConnState(address, PEER_UNREACHABLE)
 	}
 	return err
 }

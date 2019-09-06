@@ -22,19 +22,19 @@ import (
 func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex) error {
 	bytes, err := proto.Marshal(message)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal message")
+		return errors.Wrap(err, "failed to marshal quic message")
 	}
 	msgOriginSize := len(bytes)
 	if msgOriginSize == 0 {
-		log.Error("in tcp sendMessage,len(message) == 0")
+		log.Error("in quic sendMessage,len(message) == 0")
 		return nil
 	}
 
 	if n.compressEnable && msgOriginSize >= n.CompressCondition.Size {
 		bytes, err = n.Compress(bytes)
 		if err != nil {
-			log.Error("compress enable, however, compress false, algo:", n.compressAlgo, ",err:", err.Error())
-			return errors.Errorf("compress err:%s, algo:%d", err.Error(), n.compressAlgo)
+			log.Error("quic compress enable, however, compress false, algo:", n.compressAlgo, ",err:", err.Error())
+			return errors.Errorf("quic compress err:%s, algo:%d", err.Error(), n.compressAlgo)
 		}
 	}
 	// Serialize size.
@@ -55,20 +55,20 @@ func (n *Network) sendQuicMessage(w io.Writer, message *protobuf.Message, writer
 	for totalBytesWritten < len(buffer) && err == nil {
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
 		if err != nil {
-			log.Errorf("stream: failed to write entire buffer, err: %+v", err)
+			log.Errorf("quic stream: failed to write entire buffer, err: %+v", err)
 			break
 		}
 		totalBytesWritten += bytesWritten
 		if bw.Available() <= 0 {
 			if err = bw.Flush(); err != nil {
-				log.Error("stream flush err in buffer immediately written:", err.Error())
+				log.Error("quic stream flush err in buffer immediately written:", err.Error())
 				break
 			}
 		}
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "stream: failed to write to socket")
+		return errors.Errorf("quic stream: failed to write to socket, has written byte:%d, total need to be writed:%d, err:%s", totalBytesWritten, len(buffer), err.Error())
 	}
 	if err := bw.Flush(); err != nil {
 		return err
@@ -104,7 +104,7 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 	}
 
 	if err != nil {
-		return nil, errors.Errorf("tcp receive invalid message size bytes err:%s", err.Error())
+		return nil, errors.Errorf("quic receive invalid message size bytes err:%s", err.Error())
 	}
 
 	compressInfo := binary.BigEndian.Uint16(buffer)
@@ -143,8 +143,8 @@ func (n *Network) receiveQuicMessage(stream quic.Stream) (*protobuf.Message, err
 	if compEnable {
 		buffer, err = n.Uncompress(buffer, AlgoType(algo))
 		if err != nil {
-			log.Error("uncompress buffer msg err, err:", err.Error(), ",algo type:", algo)
-			return nil, errors.Errorf("uncompress err:%s,algo:%d", err.Error(), algo)
+			log.Error("quic uncompress buffer msg err, err:", err.Error(), ",algo type:", algo)
+			return nil, errors.Errorf("quic uncompress err:%s,algo:%d", err.Error(), algo)
 		}
 	}
 
