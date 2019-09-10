@@ -605,21 +605,9 @@ func (n *Network) BlockUntilUDPProxyFinish() {
 }
 
 func (n *Network) ReconnectProxyServer(address string) error {
-	if n.ConnectionStateExists(address) {
-		if client := n.GetPeerClient(address); client != nil {
-			err := client.RemoveEntries()
-			if err != nil {
-				log.Error("ReconnectProxyServer error when RemoveEntries:", err.Error(), ",proxy address:", address)
-				return errors.New("ReconnectProxyServer failed when remove peers&connection resource, proxy addr:" + address)
-			}
-		} else {
-			n.connections.Delete(address)
-			log.Warn("GetPeerClient error in ReconnectProxyServer, client value is nil. proxy-addr:", address)
-		}
-	} else {
-		if true == n.ClientExist(address) {
-			n.peers.Delete(address)
-		}
+	if client := n.GetPeerClient(address); client != nil {
+		client.DisableBackoff()
+		client.Close()
 	}
 
 	addrInfo, err := ParseAddress(address)
@@ -1060,8 +1048,8 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	}
 
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-		//tcpConn, _ := state.conn.(net.Conn)
-		//tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+		tcpConn, _ := state.conn.(net.Conn)
+		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendMessage(state.writer, message, state.writerMutex, address)
 		if err != nil {
 			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
@@ -1086,12 +1074,17 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	}
 
 	if err != nil {
-		log.Errorf("Network.Wirte error, begin to delete client and connection resource from sync.Maps")
-		state.writerMutex.Lock()
-		defer state.writerMutex.Unlock()
-		n.connections.Delete(address)
-		n.peers.Delete(address)
-		n.UpdateConnState(address, PEER_UNREACHABLE)
+		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), address)
+		if client, err := n.Client(address); err == nil {
+			client.Close()
+		} else {
+			log.Errorf("get client entry err in Writer:%s", err.Error())
+		}
+		/*		state.writerMutex.Lock()
+				defer state.writerMutex.Unlock()
+				n.connections.Delete(address)
+				n.peers.Delete(address)
+				n.UpdateConnState(address, PEER_UNREACHABLE)*/
 	}
 	return err
 }
