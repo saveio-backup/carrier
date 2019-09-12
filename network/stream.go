@@ -22,11 +22,14 @@ var errEmptyMsg = errors.New("received an empty message from a peer")
 
 // sendMessage marshals, signs and sends a message over a stream.
 func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, address string) error {
-	log.Infof("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.ID.Address, address, message.Opcode, message.MessageNonce)
+	log.Infof("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d",
+		n.ID.Address, address, message.Opcode, message.MessageNonce)
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
 	}
+	log.Infof("(kcp/tcp)in Network.sendMessage, marshal message finished, send to:%s, message.opcode:%d, msg.nonce:%d",
+		address, message.Opcode, message.MessageNonce)
 	msgOriginSize := len(bytes)
 	if msgOriginSize == 0 {
 		log.Info("stack info:", fmt.Sprintf("%s", debug.Stack()))
@@ -38,9 +41,12 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 		bytes, err = n.Compress(bytes)
 		if err != nil {
 			log.Error("compress enable, however, compress false, algo:", n.compressAlgo, ",err:", err.Error())
-			return errors.Errorf("compress err:%s, algo:%d", err.Error(), n.compressAlgo)
+			return errors.Errorf("compress err:%s, algo:%s", err.Error(), AlgoName[n.compressAlgo])
 		}
 	}
+	log.Infof("(kcp/tcp)in Network.sendMessage, compress successed. compress enable:%d, compress condition size:%d, "+
+		"compress algo:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.compressEnable, n.CompressCondition.Size, AlgoName[n.compressAlgo],
+		address, message.Opcode, message.MessageNonce)
 	// Serialize size.
 	buffer := make([]byte, 10)
 	binary.BigEndian.PutUint32(buffer, n.GetNetworkID())
@@ -58,6 +64,8 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 
 	bw, _ := w.(*bufio.Writer)
 	for totalBytesWritten < len(buffer) && err == nil {
+		log.Infof("(kcp/tcp)in Network.sendMessage, begin to write socket buffer, send from addr:%s, send to:%s, "+
+			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, address, message.Opcode, message.MessageNonce, bytesWritten)
 		bytesWritten, err = w.Write(buffer[totalBytesWritten:])
 		if err != nil {
 			log.Errorf("stream: failed to write entire buffer, err: %+v", err)

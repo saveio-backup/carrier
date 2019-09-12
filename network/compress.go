@@ -26,6 +26,14 @@ const (
 	FLAT  = AlgoType(5)
 )
 
+var AlgoName = map[AlgoType]string{
+	NONE:  "unused algo",
+	BZIP2: "BZIP2",
+	GZIP:  "GZIP",
+	ZLIB:  "ZLIB",
+	LZW:   "LZW",
+	FLAT:  "FLAT"}
+
 type CompressCondition struct {
 	Size int
 }
