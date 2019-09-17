@@ -1049,8 +1049,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
-		tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
-		err = n.sendMessage(state.writer, message, state.writerMutex, address)
+		err = n.sendMessage(tcpConn, state.writer, message, state.writerMutex, address)
 		if err != nil {
 			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
 		}

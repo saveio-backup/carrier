@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"io"
 	"sync"
+	"time"
 
 	"net"
 
@@ -21,7 +22,7 @@ import (
 var errEmptyMsg = errors.New("received an empty message from a peer")
 
 // sendMessage marshals, signs and sends a message over a stream.
-func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, address string) error {
+func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, address string) error {
 	log.Infof("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d",
 		n.ID.Address, address, message.Opcode, message.MessageNonce)
 	bytes, err := proto.Marshal(message)
@@ -61,7 +62,7 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 
 	writerMutex.Lock()
 	defer writerMutex.Unlock()
-
+	tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 	bw, _ := w.(*bufio.Writer)
 	for totalBytesWritten < len(buffer) && err == nil {
 		log.Infof("(kcp/tcp)in Network.sendMessage, begin to write socket buffer, send from addr:%s, send to:%s, "+
@@ -85,7 +86,8 @@ func (n *Network) sendMessage(w io.Writer, message *protobuf.Message, writerMute
 	}
 
 	if err != nil {
-		return errors.Errorf("stream: failed to write to socket, has written byte:%d, total need to be writed:%d, err:%s", totalBytesWritten, len(buffer), err.Error())
+		return errors.Errorf("stream: failed to write to socket, send from addr:%s, send to:%s, "+
+			"message.opcode:%d, msg.nonce:%d, send has written byte:%d, total need to be written:%d, err:%s", n.ID.Address, address, message.Opcode, message.MessageNonce, totalBytesWritten, len(buffer), err.Error())
 	}
 	if err := bw.Flush(); err != nil {
 		return err
