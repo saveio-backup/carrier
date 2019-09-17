@@ -97,7 +97,7 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 }
 
 // receiveMessage reads, unmarshals and verifies a message from a net.Conn.
-func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
+func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.Message, error) {
 	var err error
 	var size uint32
 	// Read until all header bytes have been read.
@@ -156,6 +156,9 @@ func (n *Network) receiveMessage(conn net.Conn) (*protobuf.Message, error) {
 
 	for totalBytesRead < int(size) && err == nil {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
+		if err == nil && client != nil {
+			client.Time = time.Now()
+		}
 		totalBytesRead += bytesRead
 	}
 

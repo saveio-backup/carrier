@@ -827,7 +827,7 @@ func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 // Accept handles peer registration and processes incoming message streams.
 // Notice: when Network.Accept is called by Listen goroutine, cli is nil;
 // Notice: when Network.Accept is called by Dial handle-flow, we have to set client
-// Notice: be relvant to the inbound connection
+// Notice: be relevant to the inbound connection
 func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 	// Cleanup connections when we are done with them.
 	defer func() {
@@ -842,9 +842,14 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 		}
 	}()
 	log.Info("(tcp/kcp)in Network.Accept, there is a new inbound connection in TCP.Listen,remote addr:", incoming.RemoteAddr().String(), ", local addr:", n.ID.Address)
+	var client *PeerClient
 	for {
-		var client *PeerClient
-		msg, err := n.receiveMessage(incoming)
+		if client == nil {
+			log.Debugf("receive msg from client.remoteAddr: ", incoming.RemoteAddr().String())
+		} else {
+			log.Debugf("receive msg from client.addr: ", client.Address)
+		}
+		msg, err := n.receiveMessage(client, incoming)
 		if err != nil {
 			log.Error(err)
 			break
