@@ -1087,7 +1087,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 
 	if err != nil {
 		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), address)
-		if client, err := n.Client(address); err == nil {
+		if client := n.GetPeerClient(address); client != nil {
 			client.Close()
 		} else {
 			log.Errorf("get client entry err in Writer:%s", err.Error())
