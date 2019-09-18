@@ -386,6 +386,10 @@ func (c *PeerClient) DisableBackoff() {
 	c.enableBackoff = false
 }
 
+func (c *PeerClient) EnableBackoff() {
+	c.enableBackoff = true
+}
+
 func (c *PeerClient) GetBackoffStatus() bool {
 	return c.enableBackoff
 }
