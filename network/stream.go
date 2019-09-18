@@ -62,7 +62,11 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 
 	writerMutex.Lock()
 	defer writerMutex.Unlock()
-	tcpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+	var blocks int
+	if blocks = len(buffer) / PER_SEND_BLOCK_SIZE; blocks == 0 {
+		blocks = 1
+	}
+	tcpConn.SetWriteDeadline(time.Now().Add(time.Duration(n.opts.perBlockWriteTimeout*blocks) * time.Second))
 	bw, _ := w.(*bufio.Writer)
 	for totalBytesWritten < len(buffer) && err == nil {
 		log.Infof("(kcp/tcp)in Network.sendMessage, begin to write socket buffer, send from addr:%s, send to:%s, "+

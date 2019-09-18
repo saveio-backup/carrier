@@ -42,15 +42,15 @@ type Builder struct {
 }
 
 var defaultBuilderOptions = options{
-	connectionTimeout: defaultConnectionTimeout,
-	signaturePolicy:   ed25519.New(),
-	hashPolicy:        blake2b.New(),
-	recvWindowSize:    defaultReceiveWindowSize,
-	sendWindowSize:    defaultSendWindowSize,
-	recvBufferSize:    defaultRecvBufferSize,
-	writeBufferSize:   defaultWriteBufferSize,
-	writeFlushLatency: defaultWriteFlushLatency,
-	writeTimeout:      defaultWriteTimeout,
+	connectionTimeout:    defaultConnectionTimeout,
+	signaturePolicy:      ed25519.New(),
+	hashPolicy:           blake2b.New(),
+	recvWindowSize:       defaultReceiveWindowSize,
+	sendWindowSize:       defaultSendWindowSize,
+	recvBufferSize:       defaultRecvBufferSize,
+	writeBufferSize:      defaultWriteBufferSize,
+	writeFlushLatency:    defaultWriteFlushLatency,
+	perBlockWriteTimeout: defaultWriteTimeout,
 }
 
 // A BuilderOption sets options such as connection timeout and cryptographic // policies for the network
@@ -120,9 +120,9 @@ func WriteFlushLatency(d time.Duration) BuilderOption {
 
 // WriteTimeout returns a BuilderOption that sets the write timeout
 // (default: 4096).
-func WriteTimeout(d time.Duration) BuilderOption {
+func WriteTimeout(d int) BuilderOption {
 	return func(o *options) {
-		o.writeTimeout = d
+		o.perBlockWriteTimeout = d
 	}
 }
 
@@ -247,6 +247,7 @@ func (builder *Builder) Build() (*Network, error) {
 		compressEnable:    true,
 		compressAlgo:      GZIP,
 		CompressCondition: CompressCondition{Size: defaultCompressFileSize},
+		createClientMutex: new(sync.Mutex),
 	}
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))

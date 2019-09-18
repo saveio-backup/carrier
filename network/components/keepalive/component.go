@@ -183,8 +183,8 @@ func (p *Component) proxyKeepaliveService() {
 			}
 			client := p.net.GetPeerClient(p.net.GetWorkingProxyServer())
 			if client == nil {
-				log.Errorf("in proxyKeepliveService, connection to proxy:%s err", p.net.GetWorkingProxyServer())
-				continue
+				log.Errorf("in proxyKeepliveService, connection to proxy:%s err, client is nil", p.net.GetWorkingProxyServer())
+				return
 			}
 			err := client.Tell(context.Background(), &protobuf.Keepalive{})
 			if err != nil {
@@ -193,6 +193,7 @@ func (p *Component) proxyKeepaliveService() {
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
 				p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
 				client.Close()
+				return
 			}
 		case <-p.stopCh:
 			t.Stop()

@@ -44,12 +44,16 @@ const (
 	defaultConnectionTimeout = 60 * time.Second
 	defaultReceiveWindowSize = 4096
 	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 1024 * 512
-	defaultRecvBufferSize    = 1024 * 512
+	defaultWriteBufferSize   = 1024 * 1024 * 8
+	defaultRecvBufferSize    = 1024 * 1024 * 8
 	defaultWriteFlushLatency = 10 * time.Millisecond
-	defaultWriteTimeout      = 3 * time.Second
+	defaultWriteTimeout      = 3
 	defaultProxyNotifySize   = 256
 	defaultCompressFileSize  = 4 * 1024 * 1024
+)
+
+const (
+	PER_SEND_BLOCK_SIZE = 1024 * 128
 )
 
 var contextPool = sync.Pool{
@@ -108,6 +112,8 @@ type Network struct {
 	compressEnable    bool
 	compressAlgo      AlgoType
 	CompressCondition CompressCondition
+
+	createClientMutex *sync.Mutex
 }
 
 type ProxyEvent struct {
@@ -125,15 +131,15 @@ type Proxy struct {
 
 // options for network struct
 type options struct {
-	connectionTimeout time.Duration
-	signaturePolicy   crypto.SignaturePolicy
-	hashPolicy        crypto.HashPolicy
-	recvWindowSize    int
-	sendWindowSize    int
-	writeBufferSize   int
-	recvBufferSize    int
-	writeFlushLatency time.Duration
-	writeTimeout      time.Duration
+	connectionTimeout    time.Duration
+	signaturePolicy      crypto.SignaturePolicy
+	hashPolicy           crypto.HashPolicy
+	recvWindowSize       int
+	sendWindowSize       int
+	writeBufferSize      int
+	recvBufferSize       int
+	writeFlushLatency    time.Duration
+	perBlockWriteTimeout int
 }
 
 // ConnState represents a connection.
@@ -426,6 +432,8 @@ func (n *Network) GetPeerClient(address string) *PeerClient {
 // getOrSetPeerClient either returns a cached peer client or creates a new one given a net.Conn
 // or dials the client if no net.Conn is provided.
 func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerClient, error) {
+	n.createClientMutex.Lock()
+	defer n.createClientMutex.Unlock()
 	address, err := ToUnifiedAddress(address)
 	if err != nil {
 		return nil, err
@@ -1069,8 +1077,8 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	}
 
 	if addrInfo.Protocol == "quic" {
-		quicConn, _ := state.conn.(quic.Stream)
-		quicConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
+		//quicConn, _ := state.conn.(quic.Stream)
+		//quicConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendQuicMessage(state.writer, message, state.writerMutex)
 		if err != nil {
 			log.Error("(quic) write to addr:", address, "err:", err.Error())
@@ -1274,23 +1282,23 @@ func (n *Network) UpdateConnState(address string, state PeerState) {
 func (n *Network) GetRealConnState(address string) (PeerState, error) {
 	state, ok := n.connStates.Load(address)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, addr:%s", address)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, client addr:%s", address)
 	}
 
 	_, ok = n.peers.Load(address)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, addr:%s", address)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, client addr:%s", address)
 	}
 
 	_, ok = n.connections.Load(address)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, addr:%s", address)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, client addr:%s", address)
 	}
 
 	if state == PEER_REACHABLE {
 		return PEER_REACHABLE, nil
 	}
-	return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, addr:%s", address)
+	return PEER_UNREACHABLE, errors.Errorf("in Network.GetRealConnState, conn&peer exist but state is UNREACHABLE ,client addr:%s", address)
 }
 
 func (n *Network) SetDialTimeout(timeout time.Duration) {
