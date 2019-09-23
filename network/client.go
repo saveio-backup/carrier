@@ -137,14 +137,15 @@ func (c *PeerClient) RemoveEntries() error {
 			if addrInfo.Protocol == "quic" {
 				state.conn.(quic.Stream).Close()
 			}
-			state.writerMutex.Lock()
+			log.Debugf("remove entries of address: %s", c.ID.Address)
 			c.Network.peers.Delete(c.ID.Address)
 			c.Network.connections.Delete(c.ID.Address)
 			c.Network.UpdateConnState(c.ID.Address, PEER_UNREACHABLE)
 			state.conn = nil
 			debug.FreeOSMemory()
-			state.writerMutex.Unlock()
 		}
+	} else {
+		log.Debugf("client id is nil, address: %s", c.Address)
 	}
 	return nil
 }
@@ -154,6 +155,7 @@ func (c *PeerClient) Close() error {
 	if atomic.SwapUint32(&c.closed, 1) == 1 {
 		return nil
 	}
+	log.Debugf("close peer: %s", c.Address)
 
 	close(c.CloseSignal)
 

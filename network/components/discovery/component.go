@@ -101,7 +101,6 @@ func (state *Component) PeerDisconnect(client *network.PeerClient) {
 	if client.ID != nil {
 		if state.Routes.PeerExists(*client.ID) {
 			state.Routes.RemovePeer(*client.ID)
-			client.RemoveEntries()
 			log.Infof("Peer %s has disconnected from %s.", client.ID.Address, client.Network.ID.Address)
 		}
 	}

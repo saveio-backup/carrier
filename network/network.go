@@ -807,9 +807,9 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 	var client *PeerClient
 	for {
 		if client == nil {
-			log.Debugf("receive msg from client.remoteAddr: ", incoming.RemoteAddr().String())
+			log.Debugf("receive msg from client.remoteAddr: %s", incoming.RemoteAddr().String())
 		} else {
-			log.Debugf("receive msg from client.addr: ", client.Address)
+			log.Debugf("receive msg from client.addr: %s", client.Address)
 		}
 		msg, err := n.receiveMessage(client, incoming)
 		if err != nil {
@@ -996,9 +996,12 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.write: connection does not exist")
 	}
-
 	state.writerMutex.Lock()
-	defer state.writerMutex.Unlock()
+	log.Debugf("Network.Write write msg to %s", address)
+	defer func() {
+		state.writerMutex.Unlock()
+		log.Debugf("Network.Write write msg to %s done", address)
+	}()
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
 	addrInfo, err := ParseAddress(n.Address)
@@ -1009,6 +1012,9 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
+		if tcpConn == nil {
+			return errors.Errorf("Network.Write connection is nil address,%s", address)
+		}
 		err = n.sendMessage(tcpConn, state.writer, message, state.writerMutex, address)
 		if err != nil {
 			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
@@ -1039,11 +1045,6 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		} else {
 			log.Errorf("get client entry err in Writer:%s", err.Error())
 		}
-		/*		state.writerMutex.Lock()
-				defer state.writerMutex.Unlock()
-				n.connections.Delete(address)
-				n.peers.Delete(address)
-				n.UpdateConnState(address, PEER_UNREACHABLE)*/
 	}
 	return err
 }

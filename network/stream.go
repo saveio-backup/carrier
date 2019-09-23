@@ -64,6 +64,9 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 	//defer writerMutex.Unlock()
 	var blocks int
 	blocks = len(buffer)/PER_SEND_BLOCK_SIZE + 1
+	if tcpConn == nil || n == nil {
+		log.Errorf("unexpected err %v %v", tcpConn, n)
+	}
 	tcpConn.SetWriteDeadline(time.Now().Add(time.Duration(n.opts.perBlockWriteTimeout*blocks) * time.Second))
 	bw, _ := w.(*bufio.Writer)
 	for totalBytesWritten < len(buffer) && err == nil {
@@ -94,7 +97,7 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 	if err := bw.Flush(); err != nil {
 		return err
 	}
-	log.Infof("(kcp/tcp)in Network.sendMessage, successed finished; send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.ID.Address, address, message.Opcode, message.MessageNonce)
+	log.Infof("(kcp/tcp)in Network.sendMessage, successed finished; send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, totalWrited: %d", n.ID.Address, address, message.Opcode, message.MessageNonce, totalBytesWritten)
 	return nil
 }
 
@@ -112,7 +115,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 		totalBytesRead += bytesRead
 	}
 	if err != nil {
-		return nil, errors.Errorf("tcp receive networkID ahead bytes err:%s", err.Error())
+		return nil, errors.Errorf("tcp receive networkID ahead bytes err:%s, buffer: %v", err.Error(), buffer)
 	}
 	if binary.BigEndian.Uint32(buffer) != n.GetNetworkID() {
 		return nil, errors.Errorf("(tcp)receive an invalid message with wrong networkID:%d, expect networkID is:%d", binary.BigEndian.Uint32(buffer), n.GetNetworkID())
