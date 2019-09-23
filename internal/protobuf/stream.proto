@@ -89,3 +89,13 @@ message ProxyResponse {
     string origin_address = 1;
     string proxy_address = 2;
 }
+
+message MetricRequest{
+    int64 send_timestamp = 1;
+    bytes raw_data = 2;
+}
+
+message MetricResponse{
+    int64 send_timestamp = 1;
+    bytes raw_data = 2;
+}

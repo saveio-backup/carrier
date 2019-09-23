@@ -36,7 +36,7 @@ type PeerClient struct {
 	jobs chan func()
 
 	closed         uint32 // for atomic ops
-	closeSignal    chan struct{}
+	CloseSignal    chan struct{}
 	Time           time.Time
 	RecvWindow     *RecvWindow
 	enableBackoff  bool
@@ -80,7 +80,7 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		},
 
 		jobs:           make(chan func(), 128),
-		closeSignal:    make(chan struct{}),
+		CloseSignal:    make(chan struct{}),
 		Time:           time.Now(),
 		RecvWindow:     NewRecvWindow(network.opts.recvWindowSize),
 		enableBackoff:  true,
@@ -103,7 +103,7 @@ func (c *PeerClient) executeJobs() {
 		select {
 		case job := <-c.jobs:
 			job()
-		case <-c.closeSignal:
+		case <-c.CloseSignal:
 			return
 		}
 	}
@@ -113,7 +113,7 @@ func (c *PeerClient) executeJobs() {
 func (c *PeerClient) Submit(job func()) {
 	select {
 	case c.jobs <- job:
-	case <-c.closeSignal:
+	case <-c.CloseSignal:
 	}
 }
 
@@ -153,7 +153,7 @@ func (c *PeerClient) Close() error {
 		return nil
 	}
 
-	close(c.closeSignal)
+	close(c.CloseSignal)
 
 	c.stream.Lock()
 	c.stream.isClosed = true

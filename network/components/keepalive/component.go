@@ -133,7 +133,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		//err := ctx.Reply(context.Background(), &protobuf.KeepaliveResponse{})
 		err := ctx.Client().Tell(context.Background(), &protobuf.KeepaliveResponse{})
 		if err != nil {
-			return errors.Errorf("in keepalive component send keepalive rsponse err, client.addr:%s", ctx.Client().ID.Address)
+			return errors.New("in keepalive component send keepalive rsponse err, client.addr:" + ctx.Client().ID.Address)
 		}
 		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
 	case *protobuf.KeepaliveResponse:

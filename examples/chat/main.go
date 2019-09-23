@@ -15,6 +15,7 @@ import (
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/keepalive"
+	"github.com/saveio/carrier/network/components/metric"
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
@@ -81,6 +82,14 @@ func main() {
 		backoff.WithMaxAttempts(10),
 		backoff.WithPriority(10),
 	}
+
+	metricOption := []metric.ComponentOption{
+		metric.WithSampleInterval(1 * time.Second),
+		metric.WithSampleSize(10),
+		metric.WithPackageSize(1024 * 512),
+	}
+	builder.AddComponent(metric.New(metricOption...))
+
 	builder.AddComponent(backoff.New(backoffOptions...))
 	// Add custom chat Component.
 	builder.AddComponent(new(ChatComponent))
@@ -105,6 +114,7 @@ func main() {
 	networkBuilder.SetNetworkID(1564141146)
 	networkBuilder.EnableProxyMode(*enableProxy)
 	networkBuilder.SetProxyServer(proxyServer)
+	networkBuilder.DisableCompress()
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
 	if protocol == "udp" && *enableProxy == true {

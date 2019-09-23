@@ -248,6 +248,8 @@ func (builder *Builder) Build() (*Network, error) {
 		compressAlgo:      GZIP,
 		CompressCondition: CompressCondition{Size: defaultCompressFileSize},
 		createClientMutex: new(sync.Mutex),
+		metric:            initMetric(),
+		NetDistanceMetric: new(sync.Map),
 	}
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))

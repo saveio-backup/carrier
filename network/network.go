@@ -76,7 +76,7 @@ type Network struct {
 	keys *crypto.KeyPair
 
 	// Full address to listen on. `protocol://host:port`
-	Address, ExternalAddr string
+	Address string
 
 	// Map of Components registered to the network.
 	// map[string]Component
@@ -114,6 +114,14 @@ type Network struct {
 	CompressCondition CompressCondition
 
 	createClientMutex *sync.Mutex
+	NetDistanceMetric *sync.Map
+	metric            Metric
+}
+
+type NetDistanceMetric struct {
+	StartTime      int64
+	PackageCounter uint64
+	TimeCounter    uint64
 }
 
 type ProxyEvent struct {
@@ -167,52 +175,6 @@ func (n *Network) waitExit() {
 		log.Infof("Network received exit signal:%v.", sig.String())
 		n.Close()
 		os.Exit(0)
-	}
-}
-
-func (n *Network) flushOnce() {
-	var brokenKey []string
-	n.connections.Range(func(key, value interface{}) bool {
-		if !n.ConnectionStateExists(key.(string)) {
-			return false
-		}
-
-		if state, ok := value.(*ConnState); ok {
-			state.writerMutex.Lock()
-			if err := state.writer.Flush(); err != nil {
-				log.Error("flush error:", err.Error(), ", addr:", key.(string))
-				brokenKey = append(brokenKey, key.(string))
-				state.writerMutex.Unlock()
-				return false
-			}
-			state.writerMutex.Unlock()
-		}
-		return true
-	})
-	for _, v := range brokenKey {
-		if client, ok := n.peers.Load(v); ok {
-			client.(*PeerClient).Close()
-			if connState, ok := n.connections.Load(v); ok {
-				connState.(*ConnState).writerMutex.Lock()
-				n.peers.Delete(v)
-				n.connections.Delete(v)
-				connState.(*ConnState).writerMutex.Unlock()
-			}
-		}
-	}
-}
-
-func (n *Network) flushLoop() {
-	t := time.NewTicker(n.opts.writeFlushLatency)
-	defer t.Stop()
-	for {
-		select {
-		case <-n.Kill:
-			n.flushOnce()
-			return
-		case <-t.C:
-			n.flushOnce()
-		}
 	}
 }
 
@@ -648,19 +610,11 @@ func (n *Network) ConnectProxyServer(address string) error {
 }
 
 func (n *Network) ReconnectPeer(address string) error {
-	if n.ConnectionStateExists(address) {
-		if client := n.GetPeerClient(address); client != nil {
-			err := client.RemoveEntries()
-			if err != nil {
-				log.Error("ReconnectPeer error when RemoveEntries:", err.Error(), ",address:", address)
-				return errors.New("ReconnectPeer failed when remove peers&connection resource, addr:" + address)
-			}
-		} else {
-			n.connections.Delete(address)
-		}
-	} else if n.ClientExist(address) {
-		n.peers.Delete(address)
+	if client := n.GetPeerClient(address); client != nil {
+		client.DisableBackoff()
+		client.Close()
 	}
+
 	log.Infof("in carrier.Network,Reconnect Peer start, peer addr:%s", address)
 	return n.ConnectPeer(address)
 }
@@ -1039,19 +993,12 @@ func (n *Network) writeToDispatchChannel(state *ConnState, message *protobuf.Mes
 func (n *Network) Write(address string, message *protobuf.Message) error {
 	state, ok := n.ConnectionState(address)
 	if !ok {
-		if n.ClientExist(address) {
-			n.peers.Delete(address)
-		}
 		n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.write: connection does not exist")
 	}
 
-	if n.ClientExist(address) == false {
-		n.connections.Delete(address)
-		n.UpdateConnState(address, PEER_UNREACHABLE)
-		return errors.New("Network.write: client does not exist")
-	}
-
+	state.writerMutex.Lock()
+	defer state.writerMutex.Unlock()
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
 	addrInfo, err := ParseAddress(n.Address)
@@ -1258,9 +1205,9 @@ func (n *Network) UpdateProxyWorkID() {
 	n.ProxyService.WorkID = n.ProxyService.WorkID % uint16(len(n.ProxyService.Servers))
 }
 
-func (n *Network) DeletePeerClient(address string) {
+/*func (n *Network) DeletePeerClient(address string) {
 	n.peers.Delete(address)
-}
+}*/
 
 func (n *Network) FinishProxyServer(protocol string) {
 	n.ProxyService.Finish.Range(func(p, notify interface{}) bool {

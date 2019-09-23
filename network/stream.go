@@ -45,8 +45,8 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 			return errors.Errorf("compress err:%s, algo:%s", err.Error(), AlgoName[n.compressAlgo])
 		}
 	}
-	log.Infof("(kcp/tcp)in Network.sendMessage, compress successed. compress enable:%d, compress condition size:%d, "+
-		"compress algo:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.compressEnable, n.CompressCondition.Size, AlgoName[n.compressAlgo],
+	log.Infof("(kcp/tcp)in Network.sendMessage, compress successed. compress enable:%d, compress condition size:%d, origin size:%d, after compress size:%d, "+
+		"compress algo:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.compressEnable, n.CompressCondition.Size, msgOriginSize, len(bytes), AlgoName[n.compressAlgo],
 		address, message.Opcode, message.MessageNonce)
 	// Serialize size.
 	buffer := make([]byte, 10)
@@ -60,12 +60,10 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 	// Write until all bytes have been written.
 	bytesWritten, totalBytesWritten := 0, 0
 
-	writerMutex.Lock()
-	defer writerMutex.Unlock()
+	//writerMutex.Lock()
+	//defer writerMutex.Unlock()
 	var blocks int
-	if blocks = len(buffer) / PER_SEND_BLOCK_SIZE; blocks == 0 {
-		blocks = 1
-	}
+	blocks = len(buffer)/PER_SEND_BLOCK_SIZE + 1
 	tcpConn.SetWriteDeadline(time.Now().Add(time.Duration(n.opts.perBlockWriteTimeout*blocks) * time.Second))
 	bw, _ := w.(*bufio.Writer)
 	for totalBytesWritten < len(buffer) && err == nil {
