@@ -205,7 +205,6 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message, timeout tim
 
 	signed.RequestNonce = atomic.AddUint64(&c.RequestNonce, 1)
 
-	t := time.NewTicker(timeout)
 	// Start tracking the request.
 	channel := make(chan proto.Message, 1)
 	closeSignal := make(chan struct{})
@@ -218,12 +217,13 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message, timeout tim
 	// Stop tracking the request.
 	defer close(closeSignal)
 	defer c.Requests.Delete(signed.RequestNonce)
-	defer t.Stop()
 
 	err = c.Network.Write(c.Address, signed)
 	if err != nil {
 		return nil, err
 	}
+	t := time.NewTicker(timeout)
+	defer t.Stop()
 
 	select {
 	case <-t.C:
