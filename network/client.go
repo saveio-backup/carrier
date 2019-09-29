@@ -18,6 +18,8 @@ import (
 	"github.com/saveio/themis/common/log"
 )
 
+const REQUEST_REPLY_TIMEOUT = "client sync request reply timeout"
+
 // PeerClient represents a single incoming peers client.
 type PeerClient struct {
 	Network *Network
@@ -185,7 +187,7 @@ func (c *PeerClient) Tell(ctx context.Context, message proto.Message) error {
 }
 
 // Request requests for a response for a request sent to a given peer.
-func (c *PeerClient) Request(ctx context.Context, req proto.Message) (proto.Message, error) {
+func (c *PeerClient) Request(ctx context.Context, req proto.Message, timeout time.Duration) (proto.Message, error) {
 	if ctx == nil {
 		return nil, errors.New("network: invalid context")
 	}
@@ -201,11 +203,7 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message) (proto.Mess
 
 	signed.RequestNonce = atomic.AddUint64(&c.RequestNonce, 1)
 
-	err = c.Network.Write(c.Address, signed)
-	if err != nil {
-		return nil, err
-	}
-
+	t := time.NewTicker(timeout)
 	// Start tracking the request.
 	channel := make(chan proto.Message, 1)
 	closeSignal := make(chan struct{})
@@ -218,8 +216,16 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message) (proto.Mess
 	// Stop tracking the request.
 	defer close(closeSignal)
 	defer c.Requests.Delete(signed.RequestNonce)
+	defer t.Stop()
+
+	err = c.Network.Write(c.Address, signed)
+	if err != nil {
+		return nil, err
+	}
 
 	select {
+	case <-t.C:
+		return nil, errors.New(REQUEST_REPLY_TIMEOUT)
 	case res := <-channel:
 		return res, nil
 	case <-ctx.Done():
