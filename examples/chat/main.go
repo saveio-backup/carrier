@@ -87,6 +87,7 @@ func main() {
 		metric.WithSampleInterval(1 * time.Second),
 		metric.WithSampleSize(10),
 		metric.WithPackageSize(1024 * 512),
+		metric.WithRequestTimeout(30 * time.Second),
 	}
 	builder.AddComponent(metric.New(metricOption...))
 

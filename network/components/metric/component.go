@@ -41,6 +41,7 @@ type MetricComponent struct {
 	packageSize    int
 	sampleData     TimeMetric
 	randRaw        []byte
+	requestTimeout time.Duration
 }
 
 // ComponentOption are configurable options for the backoff Component
@@ -50,6 +51,11 @@ type ComponentOption func(*MetricComponent)
 func WithSampleInterval(d time.Duration) ComponentOption {
 	return func(o *MetricComponent) {
 		o.sampleInterval = d
+	}
+}
+func WithRequestTimeout(d time.Duration) ComponentOption {
+	return func(o *MetricComponent) {
+		o.requestTimeout = d
 	}
 }
 
@@ -69,6 +75,7 @@ const (
 	defaultSampleInterval = 3 * time.Second
 	defaultSampleSize     = 100
 	defaultPackageSize    = 1024 * 16
+	defaultRequestTimeout = 30 * time.Second
 )
 
 func defaultOptions() ComponentOption {
@@ -76,6 +83,7 @@ func defaultOptions() ComponentOption {
 		o.sampleInterval = defaultSampleInterval
 		o.sampleSize = defaultSampleSize
 		o.packageSize = defaultPackageSize
+		o.requestTimeout = defaultRequestTimeout
 	}
 }
 
@@ -244,7 +252,7 @@ func (p *MetricComponent) sendMetricRequest(client *network.PeerClient) {
 	p.sampleData.index++
 	p.sampleData.mutex.Unlock()
 
-	resp, err := client.Request(context.Background(), &protobuf.MetricRequest{SendTimestamp: nanoTime, RawData: p.randRaw})
+	resp, err := client.Request(context.Background(), &protobuf.MetricRequest{SendTimestamp: nanoTime, RawData: p.randRaw}, p.requestTimeout)
 	if err != nil {
 		log.Errorf("send metric request err:%s, client.addr:%s", err.Error(), client.Address)
 		return
