@@ -300,6 +300,9 @@ func (p *MetricComponent) PeerConnect(client *network.PeerClient) {
 				if client == nil {
 					return
 				}
+				if client.ID == nil {
+					continue
+				}
 				p.echoMetricValues(client)
 				go p.sendMetricRequest(client)
 			case <-p.net.Kill:
