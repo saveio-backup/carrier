@@ -121,31 +121,36 @@ func (c *PeerClient) Submit(job func()) {
 
 func (c *PeerClient) RemoveEntries() error {
 	// Remove entries from node's network.
+	clientAddr := c.Address
 	if c.ID != nil {
-		// close out connections
-		if state, ok := c.Network.ConnectionState(c.ID.Address); ok {
-			addrInfo, err := ParseAddress(c.Network.Address)
-			if err != nil {
-				return err
-			}
-			if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
-				state.conn.(net.Conn).Close()
-			}
-			if addrInfo.Protocol == "udp" {
-				state.conn.(*net.UDPConn).Close()
-			}
-			if addrInfo.Protocol == "quic" {
-				state.conn.(quic.Stream).Close()
-			}
-			log.Debugf("remove entries of address: %s", c.ID.Address)
-			c.Network.peers.Delete(c.ID.Address)
-			c.Network.connections.Delete(c.ID.Address)
-			c.Network.UpdateConnState(c.ID.Address, PEER_UNREACHABLE)
-			state.conn = nil
-			debug.FreeOSMemory()
+		clientAddr = c.ID.Address
+	}
+	log.Debugf("remove entries for %s, c.ID: %v", clientAddr, c.ID)
+	if len(clientAddr) == 0 {
+		return nil
+	}
+
+	// close out connections
+	if state, ok := c.Network.ConnectionState(clientAddr); ok {
+		addrInfo, err := ParseAddress(c.Network.Address)
+		if err != nil {
+			return err
 		}
-	} else {
-		log.Debugf("client id is nil, address: %s", c.Address)
+		if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+			state.conn.(net.Conn).Close()
+		}
+		if addrInfo.Protocol == "udp" {
+			state.conn.(*net.UDPConn).Close()
+		}
+		if addrInfo.Protocol == "quic" {
+			state.conn.(quic.Stream).Close()
+		}
+		log.Debugf("remove entries of address: %s", clientAddr)
+		c.Network.peers.Delete(clientAddr)
+		c.Network.connections.Delete(clientAddr)
+		c.Network.UpdateConnState(clientAddr, PEER_UNREACHABLE)
+		state.conn = nil
+		debug.FreeOSMemory()
 	}
 	return nil
 }
@@ -155,7 +160,7 @@ func (c *PeerClient) Close() error {
 	if atomic.SwapUint32(&c.closed, 1) == 1 {
 		return nil
 	}
-	log.Debugf("close peer: %s", c.Address)
+	log.Debugf("close peer: %s, %p", c.Address, c)
 
 	close(c.CloseSignal)
 

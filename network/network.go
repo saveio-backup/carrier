@@ -809,7 +809,7 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 		if client == nil {
 			log.Debugf("receive msg from client.remoteAddr: %s", incoming.RemoteAddr().String())
 		} else {
-			log.Debugf("receive msg from client.addr: %s", client.Address)
+			log.Debugf("receive msg from client.addr: %s, client: %p, conn: %p", client.Address, client, incoming)
 		}
 		msg, err := n.receiveMessage(client, incoming)
 		if err != nil {
