@@ -13,12 +13,34 @@ import (
 
 	"runtime/debug"
 
+	"fmt"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
 )
 
 const REQUEST_REPLY_TIMEOUT = "client sync request reply timeout"
+const DEFAULT_ACK_REPLY_CAPACITY = 4096
+
+type AckState int
+
+const (
+	ACK_SUCCESS AckState = 1
+	ACK_FAILED  AckState = 2
+)
+
+type PrepareAckMessage struct {
+	MessageID string
+	Message   proto.Message
+	Latest    int
+	Frequency uint8
+}
+
+type AckStatus struct {
+	MessageID string
+	Status    AckState
+}
 
 // PeerClient represents a single incoming peers client.
 type PeerClient struct {
@@ -43,6 +65,10 @@ type PeerClient struct {
 	RecvWindow     *RecvWindow
 	enableBackoff  bool
 	ConnStateMutex *sync.Mutex
+
+	EnableAckReply  bool
+	SyncWaitAck     sync.Map
+	AckStatusNotify chan AckStatus
 }
 
 // StreamState represents a stream.
@@ -81,12 +107,14 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 			buffered: make(chan struct{}),
 		},
 
-		jobs:           make(chan func(), 128),
-		CloseSignal:    make(chan struct{}),
-		Time:           time.Now(),
-		RecvWindow:     NewRecvWindow(network.opts.recvWindowSize),
-		enableBackoff:  true,
-		ConnStateMutex: new(sync.Mutex),
+		jobs:            make(chan func(), 128),
+		CloseSignal:     make(chan struct{}),
+		Time:            time.Now(),
+		RecvWindow:      NewRecvWindow(network.opts.recvWindowSize),
+		enableBackoff:   true,
+		EnableAckReply:  false,
+		ConnStateMutex:  new(sync.Mutex),
+		AckStatusNotify: make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
 	}
 
 	return client, nil
@@ -238,6 +266,50 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message, timeout tim
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
+}
+func (c *PeerClient) waitAckLen() int {
+	count := 0
+	c.SyncWaitAck.Range(func(_, _ interface{}) bool {
+		count += 1
+		return true
+	})
+	return count
+}
+
+// Request requests for a response for a request sent to a given peer.
+func (c *PeerClient) AsyncSendWithAck(ctx context.Context, req proto.Message, msgID string) error {
+	if ctx == nil {
+		return errors.New("network: invalid context")
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	if c.waitAckLen() >= DEFAULT_ACK_REPLY_CAPACITY {
+		log.Errorf("async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.Address, msgID)
+		return errors.New(fmt.Sprintf("async send map filled fully. cap:%d", DEFAULT_ACK_REPLY_CAPACITY))
+	}
+
+	if _, ok := c.SyncWaitAck.Load(msgID); ok {
+		return errors.New(fmt.Sprintf("msgID:%s has been in sending queue", msgID))
+	}
+
+	signed, err := c.Network.PrepareMessageWithMsgID(ctx, req, msgID)
+	if err != nil {
+		return err
+	}
+	c.SyncWaitAck.Store(msgID, &PrepareAckMessage{
+		Message:   req,
+		Frequency: 1,
+		Latest:    time.Now().Second(),
+	})
+
+	err = c.Network.Write(c.Address, signed)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Reply is equivalent to Write() with an appended nonce to signal a reply.

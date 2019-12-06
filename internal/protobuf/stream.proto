@@ -51,6 +51,7 @@ message Message {
     uint32 opcode = 7;
 
     uint32 netID = 8;
+    string MessageID = 9;
 }
 
 message Ping {
@@ -98,4 +99,9 @@ message MetricRequest{
 message MetricResponse{
     int64 send_timestamp = 1;
     bytes raw_data = 2;
+}
+
+message AsyncAckResponse{
+    int64 send_timestamp = 1;
+    string message_id = 2;
 }

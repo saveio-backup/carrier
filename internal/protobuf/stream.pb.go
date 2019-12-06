@@ -38,7 +38,7 @@ func (m *ID) Reset()         { *m = ID{} }
 func (m *ID) String() string { return proto.CompactTextString(m) }
 func (*ID) ProtoMessage()    {}
 func (*ID) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{0}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{0}
 }
 func (m *ID) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -110,6 +110,7 @@ type Message struct {
 	// opcode specifies the message type
 	Opcode               uint32   `protobuf:"varint,7,opt,name=opcode,proto3" json:"opcode,omitempty"`
 	NetID                uint32   `protobuf:"varint,8,opt,name=netID,proto3" json:"netID,omitempty"`
+	MessageID            string   `protobuf:"bytes,9,opt,name=MessageID,proto3" json:"MessageID,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -119,7 +120,7 @@ func (m *Message) Reset()         { *m = Message{} }
 func (m *Message) String() string { return proto.CompactTextString(m) }
 func (*Message) ProtoMessage()    {}
 func (*Message) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{1}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{1}
 }
 func (m *Message) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -204,6 +205,13 @@ func (m *Message) GetNetID() uint32 {
 	return 0
 }
 
+func (m *Message) GetMessageID() string {
+	if m != nil {
+		return m.MessageID
+	}
+	return ""
+}
+
 type Ping struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -214,7 +222,7 @@ func (m *Ping) Reset()         { *m = Ping{} }
 func (m *Ping) String() string { return proto.CompactTextString(m) }
 func (*Ping) ProtoMessage()    {}
 func (*Ping) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{2}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{2}
 }
 func (m *Ping) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -253,7 +261,7 @@ func (m *Pong) Reset()         { *m = Pong{} }
 func (m *Pong) String() string { return proto.CompactTextString(m) }
 func (*Pong) ProtoMessage()    {}
 func (*Pong) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{3}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{3}
 }
 func (m *Pong) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -293,7 +301,7 @@ func (m *LookupNodeRequest) Reset()         { *m = LookupNodeRequest{} }
 func (m *LookupNodeRequest) String() string { return proto.CompactTextString(m) }
 func (*LookupNodeRequest) ProtoMessage()    {}
 func (*LookupNodeRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{4}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{4}
 }
 func (m *LookupNodeRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -340,7 +348,7 @@ func (m *LookupNodeResponse) Reset()         { *m = LookupNodeResponse{} }
 func (m *LookupNodeResponse) String() string { return proto.CompactTextString(m) }
 func (*LookupNodeResponse) ProtoMessage()    {}
 func (*LookupNodeResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{5}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{5}
 }
 func (m *LookupNodeResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -387,7 +395,7 @@ func (m *Bytes) Reset()         { *m = Bytes{} }
 func (m *Bytes) String() string { return proto.CompactTextString(m) }
 func (*Bytes) ProtoMessage()    {}
 func (*Bytes) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{6}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{6}
 }
 func (m *Bytes) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -433,7 +441,7 @@ func (m *Keepalive) Reset()         { *m = Keepalive{} }
 func (m *Keepalive) String() string { return proto.CompactTextString(m) }
 func (*Keepalive) ProtoMessage()    {}
 func (*Keepalive) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{7}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{7}
 }
 func (m *Keepalive) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -472,7 +480,7 @@ func (m *KeepaliveResponse) Reset()         { *m = KeepaliveResponse{} }
 func (m *KeepaliveResponse) String() string { return proto.CompactTextString(m) }
 func (*KeepaliveResponse) ProtoMessage()    {}
 func (*KeepaliveResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{8}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{8}
 }
 func (m *KeepaliveResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -511,7 +519,7 @@ func (m *Disconnect) Reset()         { *m = Disconnect{} }
 func (m *Disconnect) String() string { return proto.CompactTextString(m) }
 func (*Disconnect) ProtoMessage()    {}
 func (*Disconnect) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{9}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{9}
 }
 func (m *Disconnect) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -552,7 +560,7 @@ func (m *ProxyRequest) Reset()         { *m = ProxyRequest{} }
 func (m *ProxyRequest) String() string { return proto.CompactTextString(m) }
 func (*ProxyRequest) ProtoMessage()    {}
 func (*ProxyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{10}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{10}
 }
 func (m *ProxyRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -607,7 +615,7 @@ func (m *ProxyResponse) Reset()         { *m = ProxyResponse{} }
 func (m *ProxyResponse) String() string { return proto.CompactTextString(m) }
 func (*ProxyResponse) ProtoMessage()    {}
 func (*ProxyResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{11}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{11}
 }
 func (m *ProxyResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -662,7 +670,7 @@ func (m *MetricRequest) Reset()         { *m = MetricRequest{} }
 func (m *MetricRequest) String() string { return proto.CompactTextString(m) }
 func (*MetricRequest) ProtoMessage()    {}
 func (*MetricRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{12}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{12}
 }
 func (m *MetricRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -717,7 +725,7 @@ func (m *MetricResponse) Reset()         { *m = MetricResponse{} }
 func (m *MetricResponse) String() string { return proto.CompactTextString(m) }
 func (*MetricResponse) ProtoMessage()    {}
 func (*MetricResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_stream_9afdbfca68251bc9, []int{13}
+	return fileDescriptor_stream_9c9609c552c3defb, []int{13}
 }
 func (m *MetricResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -760,6 +768,61 @@ func (m *MetricResponse) GetRawData() []byte {
 	return nil
 }
 
+type AsyncAckResponse struct {
+	SendTimestamp        int64    `protobuf:"varint,1,opt,name=send_timestamp,json=sendTimestamp,proto3" json:"send_timestamp,omitempty"`
+	MessageId            string   `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *AsyncAckResponse) Reset()         { *m = AsyncAckResponse{} }
+func (m *AsyncAckResponse) String() string { return proto.CompactTextString(m) }
+func (*AsyncAckResponse) ProtoMessage()    {}
+func (*AsyncAckResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_stream_9c9609c552c3defb, []int{14}
+}
+func (m *AsyncAckResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AsyncAckResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AsyncAckResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *AsyncAckResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AsyncAckResponse.Merge(dst, src)
+}
+func (m *AsyncAckResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *AsyncAckResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AsyncAckResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AsyncAckResponse proto.InternalMessageInfo
+
+func (m *AsyncAckResponse) GetSendTimestamp() int64 {
+	if m != nil {
+		return m.SendTimestamp
+	}
+	return 0
+}
+
+func (m *AsyncAckResponse) GetMessageId() string {
+	if m != nil {
+		return m.MessageId
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*ID)(nil), "protobuf.ID")
 	proto.RegisterType((*Message)(nil), "protobuf.Message")
@@ -775,6 +838,7 @@ func init() {
 	proto.RegisterType((*ProxyResponse)(nil), "protobuf.ProxyResponse")
 	proto.RegisterType((*MetricRequest)(nil), "protobuf.MetricRequest")
 	proto.RegisterType((*MetricResponse)(nil), "protobuf.MetricResponse")
+	proto.RegisterType((*AsyncAckResponse)(nil), "protobuf.AsyncAckResponse")
 }
 func (m *ID) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
@@ -887,6 +951,12 @@ func (m *Message) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x40
 		i++
 		i = encodeVarintStream(dAtA, i, uint64(m.NetID))
+	}
+	if len(m.MessageID) > 0 {
+		dAtA[i] = 0x4a
+		i++
+		i = encodeVarintStream(dAtA, i, uint64(len(m.MessageID)))
+		i += copy(dAtA[i:], m.MessageID)
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -1220,6 +1290,38 @@ func (m *MetricResponse) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *AsyncAckResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AsyncAckResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.SendTimestamp != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintStream(dAtA, i, uint64(m.SendTimestamp))
+	}
+	if len(m.MessageId) > 0 {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintStream(dAtA, i, uint64(len(m.MessageId)))
+		i += copy(dAtA[i:], m.MessageId)
+	}
+	if m.XXX_unrecognized != nil {
+		i += copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	return i, nil
+}
+
 func encodeVarintStream(dAtA []byte, offset int, v uint64) int {
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
@@ -1283,6 +1385,10 @@ func (m *Message) Size() (n int) {
 	}
 	if m.NetID != 0 {
 		n += 1 + sovStream(uint64(m.NetID))
+	}
+	l = len(m.MessageID)
+	if l > 0 {
+		n += 1 + l + sovStream(uint64(l))
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -1433,6 +1539,22 @@ func (m *MetricResponse) Size() (n int) {
 		n += 1 + sovStream(uint64(m.SendTimestamp))
 	}
 	l = len(m.RawData)
+	if l > 0 {
+		n += 1 + l + sovStream(uint64(l))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *AsyncAckResponse) Size() (n int) {
+	var l int
+	_ = l
+	if m.SendTimestamp != 0 {
+		n += 1 + sovStream(uint64(m.SendTimestamp))
+	}
+	l = len(m.MessageId)
 	if l > 0 {
 		n += 1 + l + sovStream(uint64(l))
 	}
@@ -1848,6 +1970,35 @@ func (m *Message) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStream
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MessageID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipStream(dAtA[iNdEx:])
@@ -2793,6 +2944,105 @@ func (m *MetricResponse) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *AsyncAckResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStream
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AsyncAckResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AsyncAckResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SendTimestamp", wireType)
+			}
+			m.SendTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SendTimestamp |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field MessageId", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStream
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStream
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.MessageId = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStream(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStream
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func skipStream(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2898,40 +3148,43 @@ var (
 	ErrIntOverflowStream   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("stream.proto", fileDescriptor_stream_9afdbfca68251bc9) }
+func init() { proto.RegisterFile("stream.proto", fileDescriptor_stream_9c9609c552c3defb) }
 
-var fileDescriptor_stream_9afdbfca68251bc9 = []byte{
-	// 512 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x52, 0xcf, 0x6e, 0x13, 0x3f,
-	0x10, 0xfe, 0x39, 0x7f, 0x36, 0xc9, 0x74, 0x37, 0xfa, 0xd5, 0x20, 0x58, 0x04, 0x44, 0x91, 0x0b,
-	0x52, 0x4e, 0x39, 0xc0, 0x05, 0x8e, 0x54, 0x11, 0x52, 0x54, 0x5a, 0x95, 0x15, 0x27, 0x38, 0xac,
-	0xdc, 0x78, 0xba, 0xb2, 0x9a, 0xd8, 0x8b, 0xed, 0x50, 0xf6, 0x4d, 0x78, 0x24, 0x8e, 0x3c, 0x02,
-	0x0a, 0xef, 0x81, 0xd0, 0x7a, 0xbd, 0xa4, 0xa8, 0x47, 0x38, 0xd9, 0xf3, 0xcd, 0xf8, 0x9b, 0x6f,
-	0xc6, 0x1f, 0xc4, 0xd6, 0x19, 0xe4, 0x9b, 0x79, 0x69, 0xb4, 0xd3, 0x74, 0xe8, 0x8f, 0x8b, 0xed,
-	0x25, 0x5b, 0x43, 0x67, 0xb9, 0xa0, 0xf7, 0x61, 0xa0, 0xd0, 0xe5, 0x57, 0x58, 0xa5, 0x64, 0x4a,
-	0x66, 0x71, 0x16, 0x29, 0x74, 0x27, 0x58, 0xd1, 0x14, 0x06, 0x5c, 0x08, 0x83, 0xd6, 0xa6, 0x9d,
-	0x29, 0x99, 0x8d, 0xb2, 0x36, 0xa4, 0x63, 0xe8, 0x48, 0x91, 0x76, 0x7d, 0x75, 0x47, 0x0a, 0x7a,
-	0x04, 0xc9, 0x4a, 0x2b, 0x85, 0x2b, 0x27, 0xb5, 0xca, 0xa5, 0x48, 0x7b, 0x3e, 0x15, 0xef, 0xc1,
-	0xa5, 0x60, 0x3f, 0x09, 0x0c, 0x4e, 0xd1, 0x5a, 0x5e, 0x60, 0x4d, 0xbd, 0x69, 0xae, 0xa1, 0x67,
-	0x1b, 0xd2, 0x27, 0x10, 0x59, 0x54, 0x02, 0x8d, 0xef, 0x79, 0xf0, 0x2c, 0x9e, 0xb7, 0x72, 0xe7,
-	0xcb, 0x45, 0x16, 0x72, 0xf4, 0x11, 0x8c, 0xac, 0x2c, 0x14, 0x77, 0x5b, 0x83, 0x41, 0xc7, 0x1e,
-	0xa8, 0xe5, 0x18, 0xfc, 0xb8, 0x45, 0xeb, 0x72, 0xa5, 0xd5, 0x0a, 0xbd, 0x9c, 0x5e, 0x16, 0x07,
-	0xf0, 0xac, 0xc6, 0xea, 0xa2, 0xd0, 0x33, 0x14, 0xf5, 0x9b, 0xa2, 0x00, 0x36, 0x45, 0x8f, 0x01,
-	0x0c, 0x96, 0xeb, 0x2a, 0xbf, 0x5c, 0xf3, 0x22, 0x8d, 0xa6, 0x64, 0x36, 0xcc, 0x46, 0x1e, 0x79,
-	0xbd, 0xe6, 0x05, 0xbd, 0x07, 0x91, 0x2e, 0x57, 0x5a, 0x60, 0x3a, 0x98, 0x92, 0x59, 0x92, 0x85,
-	0x88, 0xde, 0x85, 0xbe, 0x42, 0xb7, 0x5c, 0xa4, 0x43, 0x0f, 0x37, 0x01, 0x8b, 0xa0, 0x77, 0x2e,
-	0x55, 0xe1, 0x4f, 0xad, 0x0a, 0xf6, 0x12, 0x0e, 0xdf, 0x68, 0x7d, 0xb5, 0x2d, 0xcf, 0xb4, 0xc0,
-	0xac, 0xd1, 0x56, 0xcf, 0xef, 0xb8, 0x29, 0xd0, 0xf9, 0xc5, 0xdc, 0x9a, 0xbf, 0xc9, 0xb1, 0x17,
-	0x40, 0x6f, 0x3e, 0xb5, 0xa5, 0x56, 0x16, 0x29, 0x83, 0x7e, 0x89, 0x68, 0x6c, 0x4a, 0xa6, 0xdd,
-	0x5b, 0x4f, 0x9b, 0x14, 0x7b, 0x08, 0xfd, 0xe3, 0xca, 0xa1, 0xa5, 0x14, 0x7a, 0x82, 0x3b, 0x1e,
-	0xf6, 0xef, 0xef, 0xec, 0x00, 0x46, 0x27, 0x88, 0x25, 0x5f, 0xcb, 0x4f, 0xc8, 0xee, 0xc0, 0xe1,
-	0xef, 0xa0, 0x6d, 0xc1, 0x62, 0x80, 0x85, 0xb4, 0xe1, 0x5f, 0xd9, 0x7b, 0x88, 0xcf, 0x8d, 0xfe,
-	0x5c, 0xb5, 0xe2, 0x9f, 0xc2, 0x58, 0x1b, 0x59, 0x48, 0x95, 0xb7, 0xc6, 0x21, 0xde, 0x38, 0x49,
-	0x83, 0xbe, 0x0a, 0xf6, 0x39, 0x82, 0xa4, 0xac, 0x9f, 0xe5, 0x7f, 0xda, 0x2b, 0xf6, 0x60, 0x28,
-	0x62, 0x1f, 0x20, 0x09, 0xdc, 0x61, 0xba, 0x7f, 0x49, 0xfe, 0x16, 0x92, 0x53, 0x74, 0x46, 0xae,
-	0x6e, 0x28, 0xaf, 0xad, 0x95, 0x3b, 0xb9, 0x41, 0xeb, 0xf8, 0xa6, 0xf4, 0xe4, 0xdd, 0x2c, 0xa9,
-	0xd1, 0x77, 0x2d, 0x48, 0x1f, 0xc0, 0xd0, 0xf0, 0xeb, 0xdc, 0x2f, 0xae, 0xd3, 0x18, 0xd7, 0xf0,
-	0xeb, 0x45, 0xbd, 0xbb, 0x0c, 0xc6, 0x2d, 0xe5, 0x5e, 0xf0, 0xdf, 0x71, 0x1e, 0xff, 0xff, 0x75,
-	0x37, 0x21, 0xdf, 0x76, 0x13, 0xf2, 0x7d, 0x37, 0x21, 0x5f, 0x7e, 0x4c, 0xfe, 0xbb, 0x88, 0xfc,
-	0x97, 0x3e, 0xff, 0x15, 0x00, 0x00, 0xff, 0xff, 0x68, 0x80, 0xc1, 0x3e, 0xd3, 0x03, 0x00, 0x00,
+var fileDescriptor_stream_9c9609c552c3defb = []byte{
+	// 546 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x52, 0x4d, 0x6f, 0xd4, 0x30,
+	0x10, 0x25, 0xdb, 0xfd, 0x9c, 0x26, 0x55, 0x6b, 0x10, 0x04, 0x41, 0x57, 0x2b, 0x17, 0xa4, 0x3d,
+	0xf5, 0x00, 0x17, 0x38, 0xb6, 0x8a, 0x90, 0xa2, 0xd2, 0xaa, 0x44, 0x1c, 0x10, 0x1c, 0x22, 0x37,
+	0x9e, 0x46, 0x56, 0x77, 0xed, 0x60, 0x7b, 0x29, 0xf9, 0x27, 0x1c, 0xf8, 0x41, 0x1c, 0xf9, 0x09,
+	0x68, 0xf9, 0x23, 0x28, 0x8e, 0xc3, 0x16, 0xf5, 0x84, 0xe0, 0x94, 0xcc, 0x9b, 0xf1, 0x9b, 0xe7,
+	0xe7, 0x07, 0xa1, 0xb1, 0x1a, 0xd9, 0xf2, 0xb0, 0xd2, 0xca, 0x2a, 0x32, 0x76, 0x9f, 0x8b, 0xd5,
+	0x25, 0x5d, 0x40, 0x2f, 0x4d, 0xc8, 0x03, 0x18, 0x49, 0xb4, 0xf9, 0x15, 0xd6, 0x71, 0x30, 0x0b,
+	0xe6, 0x61, 0x36, 0x94, 0x68, 0x4f, 0xb0, 0x26, 0x31, 0x8c, 0x18, 0xe7, 0x1a, 0x8d, 0x89, 0x7b,
+	0xb3, 0x60, 0x3e, 0xc9, 0xba, 0x92, 0xec, 0x40, 0x4f, 0xf0, 0x78, 0xcb, 0x4d, 0xf7, 0x04, 0x27,
+	0x07, 0x10, 0x15, 0x4a, 0x4a, 0x2c, 0xac, 0x50, 0x32, 0x17, 0x3c, 0xee, 0xbb, 0x56, 0xb8, 0x01,
+	0x53, 0x4e, 0xbf, 0xf6, 0x60, 0x74, 0x8a, 0xc6, 0xb0, 0x12, 0x1b, 0xea, 0x65, 0xfb, 0xeb, 0x77,
+	0x76, 0x25, 0x79, 0x02, 0x43, 0x83, 0x92, 0xa3, 0x76, 0x3b, 0xb7, 0x9f, 0x85, 0x87, 0x9d, 0xdc,
+	0xc3, 0x34, 0xc9, 0x7c, 0x8f, 0x3c, 0x86, 0x89, 0x11, 0xa5, 0x64, 0x76, 0xa5, 0xd1, 0xeb, 0xd8,
+	0x00, 0x8d, 0x1c, 0x8d, 0x1f, 0x57, 0x68, 0x6c, 0x2e, 0x95, 0x2c, 0xd0, 0xc9, 0xe9, 0x67, 0xa1,
+	0x07, 0xcf, 0x1a, 0xac, 0x19, 0xf2, 0x3b, 0xfd, 0xd0, 0xa0, 0x1d, 0xf2, 0x60, 0x3b, 0xb4, 0x0f,
+	0xa0, 0xb1, 0x5a, 0xd4, 0xf9, 0xe5, 0x82, 0x95, 0xf1, 0x70, 0x16, 0xcc, 0xc7, 0xd9, 0xc4, 0x21,
+	0xaf, 0x16, 0xac, 0x24, 0xf7, 0x61, 0xa8, 0xaa, 0x42, 0x71, 0x8c, 0x47, 0xb3, 0x60, 0x1e, 0x65,
+	0xbe, 0x22, 0xf7, 0x60, 0x20, 0xd1, 0xa6, 0x49, 0x3c, 0x76, 0x70, 0x5b, 0x34, 0xa2, 0xfd, 0xfd,
+	0xd3, 0x24, 0x9e, 0x38, 0x47, 0x37, 0x00, 0x1d, 0x42, 0xff, 0x5c, 0xc8, 0xd2, 0x7d, 0x95, 0x2c,
+	0xe9, 0x4b, 0xd8, 0x7b, 0xad, 0xd4, 0xd5, 0xaa, 0x3a, 0x53, 0x1c, 0xb3, 0x56, 0x79, 0xe3, 0x8e,
+	0x65, 0xba, 0x44, 0xeb, 0x6c, 0xbb, 0xe5, 0x4e, 0xdb, 0xa3, 0x2f, 0x80, 0xdc, 0x3c, 0x6a, 0x2a,
+	0x25, 0x0d, 0x12, 0x0a, 0x83, 0x0a, 0x51, 0x9b, 0x38, 0x98, 0x6d, 0xdd, 0x3a, 0xda, 0xb6, 0xe8,
+	0x23, 0x18, 0x1c, 0xd7, 0x16, 0x0d, 0x21, 0xd0, 0xe7, 0xcc, 0x32, 0xff, 0x3a, 0xee, 0x9f, 0x6e,
+	0xc3, 0xe4, 0x04, 0xb1, 0x62, 0x0b, 0xf1, 0x09, 0xe9, 0x5d, 0xd8, 0xfb, 0x5d, 0x74, 0x2b, 0x68,
+	0x08, 0x90, 0x08, 0xe3, 0x5f, 0x9d, 0xbe, 0x87, 0xf0, 0x5c, 0xab, 0xcf, 0x75, 0x27, 0xfe, 0x29,
+	0xec, 0x28, 0x2d, 0x4a, 0x21, 0xf3, 0x2e, 0x56, 0x81, 0x33, 0x21, 0x6a, 0xd1, 0x23, 0x1f, 0xae,
+	0x03, 0x88, 0xaa, 0xe6, 0x58, 0xfe, 0x67, 0xf8, 0x42, 0x07, 0xfa, 0x21, 0xfa, 0x01, 0x22, 0xcf,
+	0xed, 0x6f, 0xf7, 0x3f, 0xc9, 0xdf, 0x40, 0x74, 0x8a, 0x56, 0x8b, 0xe2, 0x86, 0xf2, 0x26, 0x78,
+	0xb9, 0x15, 0x4b, 0x34, 0x96, 0x2d, 0x2b, 0x47, 0xbe, 0x95, 0x45, 0x0d, 0xfa, 0xb6, 0x03, 0xc9,
+	0x43, 0x18, 0x6b, 0x76, 0x9d, 0x3b, 0xe3, 0x7a, 0x6d, 0xac, 0x35, 0xbb, 0x4e, 0x1a, 0xef, 0x32,
+	0xd8, 0xe9, 0x28, 0x37, 0x82, 0xff, 0x91, 0xf3, 0x1d, 0xec, 0x1e, 0x99, 0x5a, 0x16, 0x47, 0xc5,
+	0xd5, 0xdf, 0xb2, 0xee, 0x03, 0x74, 0xe1, 0x17, 0xdc, 0x7b, 0x30, 0xf1, 0x48, 0xca, 0x8f, 0x77,
+	0xbf, 0xad, 0xa7, 0xc1, 0xf7, 0xf5, 0x34, 0xf8, 0xb1, 0x9e, 0x06, 0x5f, 0x7e, 0x4e, 0xef, 0x5c,
+	0x0c, 0x5d, 0x58, 0x9e, 0xff, 0x0a, 0x00, 0x00, 0xff, 0xff, 0xd3, 0xe2, 0xe1, 0x26, 0x4b, 0x04,
+	0x00, 0x00,
 }

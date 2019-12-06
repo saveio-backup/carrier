@@ -849,16 +849,14 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 			log.Errorf("message signed by peer %s but client is %s", peer.ID(*msg.Sender), client.ID.Address)
 			return
 		}
-
-		/*client.RecvWindow.Push(msg.MessageNonce, msg)
-		ready := client.RecvWindow.Pop()
-		for _, msg := range ready {
-			msg := msg
-			cli := client
-			client.Submit(func() {
-				n.dispatchMessage(cli, msg.(*protobuf.Message))
-			})
-		}*/
+		if client.EnableAckReply && msg.MessageID != "" {
+			err := client.Tell(context.Background(), &protobuf.AsyncAckResponse{SendTimestamp: int64(time.Now().Second()), MessageId: msg.MessageID})
+			if err != nil {
+				log.Errorf("reply ack to %s err:%s, messageID:%s", client.Address, err.Error(), msg.MessageID)
+			} else {
+				log.Warnf("reply ack to %s success, messageID:%s", client.Address, msg.MessageID)
+			}
+		}
 		n.dispatchMessage(client, msg)
 	}
 }
@@ -964,6 +962,45 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 		Opcode:  uint32(opcode),
 		Sender:  &id,
 		NetID:   n.netID,
+	}
+
+	if GetSignMessage(ctx) {
+		signature, err := n.keys.Sign(
+			n.opts.signaturePolicy,
+			n.opts.hashPolicy,
+			SerializeMessage(&id, raw),
+		)
+		if err != nil {
+			return nil, err
+		}
+		msg.Signature = signature
+	}
+	return msg, nil
+}
+
+func (n *Network) PrepareMessageWithMsgID(ctx context.Context, message proto.Message, msgID string) (*protobuf.Message, error) {
+	if message == nil {
+		return nil, errors.New("network: message is null")
+	}
+
+	opcode, err := opcode.GetOpcode(message)
+	if err != nil {
+		return nil, err
+	}
+
+	raw, err := proto.Marshal(message)
+	if err != nil {
+		return nil, err
+	}
+
+	id := protobuf.ID(n.ID)
+
+	msg := &protobuf.Message{
+		Message:   raw,
+		Opcode:    uint32(opcode),
+		Sender:    &id,
+		NetID:     n.netID,
+		MessageID: msgID,
 	}
 
 	if GetSignMessage(ctx) {

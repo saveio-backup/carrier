@@ -27,6 +27,7 @@ func init() {
 		{&protobuf.ProxyResponse{}, ProxyResponseCode},
 		{&protobuf.MetricRequest{}, MetricRequestCode},
 		{&protobuf.MetricResponse{}, MetricResponseCode},
+		{&protobuf.AsyncAckResponse{}, AckResponseCode},
 	}
 
 	for _, pair := range msgOpcodePairs {
@@ -52,6 +53,8 @@ const (
 	ProxyRequestCode       Opcode = 0x0000f // 15
 	MetricRequestCode      Opcode = 0x00010 // 16
 	MetricResponseCode     Opcode = 0x00011 // 17
+	AckResponseCode        Opcode = 0x00012 // 18
+
 	ApplicationOpCodeStart Opcode = 1000
 )
 

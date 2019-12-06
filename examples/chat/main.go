@@ -13,9 +13,9 @@ import (
 	"github.com/saveio/carrier/crypto/ed25519"
 	"github.com/saveio/carrier/examples/chat/messages"
 	"github.com/saveio/carrier/network"
+	"github.com/saveio/carrier/network/components/ackreply"
 	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/keepalive"
-	"github.com/saveio/carrier/network/components/metric"
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
@@ -83,13 +83,21 @@ func main() {
 		backoff.WithPriority(10),
 	}
 
-	metricOption := []metric.ComponentOption{
+	/*	metricOption := []metric.ComponentOption{
 		metric.WithSampleInterval(1 * time.Second),
 		metric.WithSampleSize(10),
 		metric.WithPackageSize(1024 * 512),
 		metric.WithRequestTimeout(30 * time.Second),
+	}*/
+
+	ackOption := []ackreply.ComponentOption{
+		ackreply.WithAckCheckedInterval(time.Second * 3),
+		ackreply.WithAckMessageTimeout(time.Second * 10),
 	}
-	builder.AddComponent(metric.New(metricOption...))
+
+	builder.AddComponent(ackreply.New(ackOption...))
+
+	//builder.AddComponent(metric.New(metricOption...))
 
 	builder.AddComponent(backoff.New(backoffOptions...))
 	// Add custom chat Component.

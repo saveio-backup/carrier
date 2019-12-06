@@ -190,7 +190,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 		return nil, errors.New("(tcp)received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
 
-	log.Infof("(kcp/tcp)in Network.receiveMessage, receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce)
+	log.Infof("(kcp/tcp)in Network.receiveMessage,success receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce)
 
 	return msg, nil
 }
