@@ -277,7 +277,7 @@ func (c *PeerClient) waitAckLen() int {
 }
 
 // Request requests for a response for a request sent to a given peer.
-func (c *PeerClient) AsyncSendWithAck(ctx context.Context, req proto.Message, msgID string) error {
+func (c *PeerClient) AsyncSendAndWaitAck(ctx context.Context, req proto.Message, msgID string) error {
 	if ctx == nil {
 		return errors.New("network: invalid context")
 	}
