@@ -1,10 +1,14 @@
 package transport
 
 import (
+	"context"
 	"net"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
+
+	"github.com/saveio/themis/common/log"
 )
 
 // TCP represents the TCP transport protocol alongside its respective configurable options.
@@ -32,17 +36,40 @@ func resolveTcpAddr(address string) string {
 
 // Listen listens for incoming TCP connections on a specified port.
 func (t *TCP) Listen(port int) (interface{}, error) {
-	listener, err := net.Listen("tcp", ":"+strconv.Itoa(port))
+	var lc net.ListenConfig
+	lc.Control = func(network, address string, c syscall.RawConn) error {
+		return c.Control(func(fd uintptr) {
+			if err := syscall.SetNonblock(int(fd), true); err != nil {
+				log.Errorf("in tcp listen err when set non-block,err:%s", err.Error())
+			} else {
+				log.Info("set non-block success when listen, value is true")
+			}
+		})
+	}
+	listener, err := lc.Listen(context.Background(), "tcp", ":"+strconv.Itoa(port))
 	if err != nil {
 		return nil, err
 	}
-
 	return interface{}(listener), nil
 }
 
 // Dial dials an address via. the TCP protocol.
 func (t *TCP) Dial(address string, timeout time.Duration) (interface{}, error) {
-	conn, err := net.DialTimeout("tcp", resolveTcpAddr(address), timeout)
+	dialer := &net.Dialer{
+		Timeout:   timeout,
+		DualStack: true,
+		LocalAddr: nil,
+	}
+	dialer.Control = func(network, address string, c syscall.RawConn) error {
+		return c.Control(func(fd uintptr) {
+			if err := syscall.SetNonblock(int(fd), true); err != nil {
+				log.Errorf("in tcp dial err when set non-block,err:%s", err.Error())
+			} else {
+				log.Info("se non-block success when dial, value is true")
+			}
+		})
+	}
+	conn, err := dialer.DialContext(context.Background(), "tcp", resolveTcpAddr(address))
 	if err != nil {
 		return nil, err
 	}

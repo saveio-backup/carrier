@@ -33,7 +33,7 @@ const (
 type PrepareAckMessage struct {
 	MessageID string
 	Message   proto.Message
-	Latest    int
+	WhenSend  int
 	Frequency uint8
 }
 
@@ -299,16 +299,18 @@ func (c *PeerClient) AsyncSendAndWaitAck(ctx context.Context, req proto.Message,
 	if err != nil {
 		return err
 	}
-	c.SyncWaitAck.Store(msgID, &PrepareAckMessage{
-		Message:   req,
-		Frequency: 1,
-		Latest:    time.Now().Second(),
-	})
 
 	err = c.Network.Write(c.Address, signed)
 	if err != nil {
 		return err
 	}
+
+	c.SyncWaitAck.Store(msgID, &PrepareAckMessage{
+		Message:   req,
+		Frequency: 1,
+		WhenSend:  time.Now().Second(),
+	})
+
 	return nil
 }
 

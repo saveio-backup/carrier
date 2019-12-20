@@ -107,7 +107,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 	switch ctx.Message().(type) {
 	case *protobuf.AsyncAckResponse:
 		msgID := ctx.Message().(*protobuf.AsyncAckResponse).MessageId
-		log.Warnf("in ackReply component, Ack Message received successed, to-addr:%s, msgID:%s", ctx.Client().Address, msgID)
+		log.Infof("in ackReply component, Ack Message received successed, to-addr:%s, msgID:%s", ctx.Client().Address, msgID)
 		ctx.Client().SyncWaitAck.Delete(msgID)
 		ctx.Client().AckStatusNotify <- network.AckStatus{MessageID: msgID, Status: network.ACK_SUCCESS}
 	}
@@ -122,7 +122,7 @@ func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 		case <-t.C:
 			// broadcast keepalive msg to all peers
 			client.SyncWaitAck.Range(func(key, value interface{}) bool {
-				if time.Now().Second()-value.(*network.PrepareAckMessage).Latest > int(p.ackMessageTimeout/time.Second) {
+				if time.Now().Second()-value.(*network.PrepareAckMessage).WhenSend > int(p.ackMessageTimeout/time.Second) {
 					log.Warnf("in ackReply component, Message Timeout and delete now, to-addr:%s, msgID:%s", client.Address, value.(*network.PrepareAckMessage).MessageID)
 					client.SyncWaitAck.Delete(value.(*network.PrepareAckMessage).MessageID)
 					client.AckStatusNotify <- network.AckStatus{MessageID: value.(*network.PrepareAckMessage).MessageID, Status: network.ACK_FAILED}
@@ -131,7 +131,7 @@ func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 				if err := client.Tell(context.Background(), value.(*network.PrepareAckMessage).Message); err != nil {
 					log.Errorf("in ackReply component, ReSend Message err:%s", err.Error())
 				} else {
-					log.Warnf("in ackReply component, Resend Message Successed, to-addr:%s, msgID:%s", client.Address, value.(*network.PrepareAckMessage).MessageID)
+					log.Infof("in ackReply component, Resend Message Successed, to-addr:%s, msgID:%s", client.Address, value.(*network.PrepareAckMessage).MessageID)
 				}
 				value.(*network.PrepareAckMessage).Frequency += 1
 				return true
