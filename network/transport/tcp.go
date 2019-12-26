@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/saveio/carrier/network/transport/sockopt"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -39,7 +40,7 @@ func (t *TCP) Listen(port int) (interface{}, error) {
 	var lc net.ListenConfig
 	lc.Control = func(network, address string, c syscall.RawConn) error {
 		return c.Control(func(fd uintptr) {
-			if err := syscall.SetNonblock(int(fd), true); err != nil {
+			if err := sockopt.SetNonblock(fd, true); err != nil {
 				log.Errorf("in tcp listen err when set non-block,err:%s", err.Error())
 			} else {
 				log.Info("set non-block success when listen, value is true")
@@ -62,7 +63,7 @@ func (t *TCP) Dial(address string, timeout time.Duration) (interface{}, error) {
 	}
 	dialer.Control = func(network, address string, c syscall.RawConn) error {
 		return c.Control(func(fd uintptr) {
-			if err := syscall.SetNonblock(int(fd), true); err != nil {
+			if err := sockopt.SetNonblock(fd, true); err != nil {
 				log.Errorf("in tcp dial err when set non-block,err:%s", err.Error())
 			} else {
 				log.Info("se non-block success when dial, value is true")
