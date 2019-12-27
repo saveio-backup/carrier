@@ -306,6 +306,7 @@ func (c *PeerClient) AsyncSendAndWaitAck(ctx context.Context, req proto.Message,
 	}
 
 	c.SyncWaitAck.Store(msgID, &PrepareAckMessage{
+		MessageID: msgID,
 		Message:   req,
 		Frequency: 1,
 		WhenSend:  time.Now().Second(),
