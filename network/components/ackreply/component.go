@@ -128,6 +128,12 @@ func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 					client.AckStatusNotify <- network.AckStatus{MessageID: value.(*network.PrepareAckMessage).MessageID, Status: network.ACK_FAILED}
 					return true
 				}
+
+				if time.Now().Second()-value.(*network.PrepareAckMessage).WhenSend < int(p.ackCheckedInterval/time.Second) {
+					//avoid resending directly when message put into Map just now
+					return true
+				}
+
 				if err := client.Tell(context.Background(), value.(*network.PrepareAckMessage).Message); err != nil {
 					log.Errorf("in ackReply component, ReSend Message err:%s", err.Error())
 				} else {
