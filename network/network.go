@@ -283,7 +283,7 @@ func (n *Network) Listen() {
 
 	var listener interface{}
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
-		listener, err = t.(transport.Layer).Listen(int(addrInfo.Port))
+		listener, err = t.(transport.Layer).Listen(addrInfo.HostPort())
 		if udpconn, ok := listener.(*net.UDPConn); ok {
 			n.Conn = udpconn
 		}

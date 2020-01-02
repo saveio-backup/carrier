@@ -1,8 +1,6 @@
 package transport
 
 import (
-	"strconv"
-
 	"time"
 
 	"github.com/xtaci/kcp-go"
@@ -27,8 +25,8 @@ func NewKCP() *KCP {
 }
 
 // Listen listens for incoming KCP connections on a specified port.
-func (t *KCP) Listen(port int) (interface{}, error) {
-	listener, err := kcp.ListenWithOptions(":"+strconv.Itoa(port), nil, t.DataShards, t.ParityShards)
+func (t *KCP) Listen(address string) (interface{}, error) {
+	listener, err := kcp.ListenWithOptions(address, nil, t.DataShards, t.ParityShards)
 
 	if err != nil {
 		return nil, err

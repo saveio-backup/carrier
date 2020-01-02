@@ -8,7 +8,6 @@ package transport
 
 import (
 	"net"
-	"strconv"
 	"time"
 )
 
@@ -29,8 +28,8 @@ func NewUDP() *UDP {
 }
 
 // Listen listens for incoming UDP connections on a specified port.
-func (t *UDP) Listen(port int) (interface{}, error) {
-	resolved, err := net.ResolveUDPAddr("udp", ":"+strconv.Itoa(port))
+func (t *UDP) Listen(address string) (interface{}, error) {
+	resolved, err := net.ResolveUDPAddr("udp", address)
 	if err != nil {
 		return nil, err
 	}

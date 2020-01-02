@@ -3,7 +3,6 @@ package transport
 import (
 	"context"
 	"net"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -36,7 +35,7 @@ func resolveTcpAddr(address string) string {
 }
 
 // Listen listens for incoming TCP connections on a specified port.
-func (t *TCP) Listen(port int) (interface{}, error) {
+func (t *TCP) Listen(address string) (interface{}, error) {
 	var lc net.ListenConfig
 	lc.Control = func(network, address string, c syscall.RawConn) error {
 		return c.Control(func(fd uintptr) {
@@ -47,7 +46,7 @@ func (t *TCP) Listen(port int) (interface{}, error) {
 			}
 		})
 	}
-	listener, err := lc.Listen(context.Background(), "tcp", ":"+strconv.Itoa(port))
+	listener, err := lc.Listen(context.Background(), "tcp", address)
 	if err != nil {
 		return nil, err
 	}

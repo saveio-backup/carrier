@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := build
 
 GOFMT=gofmt
-GC=go build
+GC=GO111MODULE="off" go build
 VERSION := $(shell git describe --abbrev=4 --dirty --always --tags)
 Minversion := $(shell date)
 IDENTIFIER= $(GOOS)-$(GOARCH)

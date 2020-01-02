@@ -12,7 +12,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"math/big"
-	"strconv"
 	"strings"
 	"time"
 
@@ -42,8 +41,8 @@ func resolveQuicAddr(address string) string {
 }
 
 // Listen listens for incoming Quic connections on a specified port.
-func (t *Quic) Listen(port int) (interface{}, error) {
-	listener, err := quic.ListenAddr(":"+strconv.Itoa(port), generateTLSConfig(), &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
+func (t *Quic) Listen(address string) (interface{}, error) {
+	listener, err := quic.ListenAddr(address, generateTLSConfig(), &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
 	if err != nil {
 		return nil, err
 	}
