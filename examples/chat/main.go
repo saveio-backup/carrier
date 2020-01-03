@@ -42,6 +42,9 @@ func main() {
 	flag.Set("logtostderr", "true")
 
 	// process other flags
+	listenPortFlag := flag.Int("listenPort", 60002, "local port to listen to")
+	listenProtocolFlag := flag.String("listenProtocol", "udp", "protocol to use (kcp/tcp/udp)")
+	listenFlag := flag.String("listen", "127.0.0.1", "local host to listen to")
 	portFlag := flag.Int("port", 60002, "local port to listen to")
 	hostFlag := flag.String("host", "127.0.0.1", "local host to listen to")
 	protocolFlag := flag.String("protocol", "udp", "protocol to use (kcp/tcp/udp)")
@@ -53,6 +56,10 @@ func main() {
 	port := uint16(*portFlag)
 	host := *hostFlag
 	protocol := *protocolFlag
+
+	listen := *listenFlag
+	listenPort := uint16(*listenPortFlag)
+	listenProtocol := *listenProtocolFlag
 	peers := strings.Split(*peersFlag, ",")
 	proxyServer := *proxyFlag
 	keys := ed25519.RandomKeyPair()
@@ -65,6 +72,7 @@ func main() {
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
+	builder.SetListenAddr(network.FormatAddress(listenProtocol, listen, listenPort))
 
 	// Add keepalive Component
 	peerStateChan := make(chan *keepalive.PeerStateEvent, 100000)

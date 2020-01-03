@@ -76,8 +76,8 @@ type Network struct {
 	keys *crypto.KeyPair
 
 	// Full address to listen on. `protocol://host:port`
-	Address string
-
+	Address    string
+	ListenAddr string
 	// Map of Components registered to the network.
 	// map[string]Component
 	Components *ComponentList
@@ -275,7 +275,7 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 
 // Listen starts listening for peers on a port.
 func (n *Network) Listen() {
-	addrInfo, err := ParseAddress(n.Address)
+	addrInfo, err := ParseAddress(n.ListenAddr)
 	if err != nil {
 		log.Fatal("parse addr:", addrInfo.String(), err)
 		return

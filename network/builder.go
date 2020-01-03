@@ -32,9 +32,9 @@ var (
 type Builder struct {
 	opts options
 
-	keys    *crypto.KeyPair
-	address string
-
+	keys           *crypto.KeyPair
+	address        string
+	listenAddr     string
 	Components     *ComponentList
 	ComponentCount int
 
@@ -165,6 +165,10 @@ func (builder *Builder) SetAddress(address string) {
 	builder.address = address
 }
 
+func (builder *Builder) SetListenAddr(address string) {
+	builder.listenAddr = address
+}
+
 // AddComponentWithPriority registers a new Component onto the network with a set priority.
 func (builder *Builder) AddComponentWithPriority(priority int, Component ComponentInterface) error {
 	// Initialize Component list if not exist.
@@ -229,12 +233,16 @@ func (builder *Builder) Build() (*Network, error) {
 
 	id := peer.CreateID(unifiedAddress, builder.keys.PublicKey)
 
+	unifiedListenAddr, err := ToUnifiedAddress(builder.listenAddr)
+	if err != nil {
+		return nil, err
+	}
 	net := &Network{
-		opts:    builder.opts,
-		ID:      id,
-		keys:    builder.keys,
-		Address: unifiedAddress,
-
+		opts:       builder.opts,
+		ID:         id,
+		keys:       builder.keys,
+		Address:    unifiedAddress,
+		ListenAddr: unifiedListenAddr,
 		Components: builder.Components,
 		transports: builder.transports,
 
