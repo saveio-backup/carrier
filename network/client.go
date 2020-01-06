@@ -67,7 +67,7 @@ type PeerClient struct {
 	ConnStateMutex *sync.Mutex
 
 	EnableAckReply  bool
-	SyncWaitAck     sync.Map
+	SyncWaitAck     *sync.Map
 	AckStatusNotify chan AckStatus
 }
 
@@ -115,6 +115,7 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		EnableAckReply:  false,
 		ConnStateMutex:  new(sync.Mutex),
 		AckStatusNotify: make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
+		SyncWaitAck:     new(sync.Map),
 	}
 
 	return client, nil
