@@ -9,9 +9,17 @@ IDENTIFIER= $(GOOS)-$(GOARCH)
 help:
 	@grep -F -h "##" $(MAKEFILE_LIST) | grep -v grep | awk 'BEGIN { FS = ":.*?##" }; { printf "%-15s  %s\n", $$1,$$2 }'
 
-.PHONY: build
-build: clean
-	$(GC) -o carrier main.go
+.PHONY: mac
+mac: clean
+	GOOS=darwin $(GC) -o carrier main.go
+
+.PHONY: windows
+windows: clean
+	GOOS=windows $(GC) -o carrier main.go
+
+.PHONY: linux
+linux: clean
+	GOOS=linux $(GC) -o carrier main.go
 
 .PHONY: clean
 clean:

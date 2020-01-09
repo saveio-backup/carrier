@@ -44,6 +44,11 @@ func (t *TCP) Listen(address string) (interface{}, error) {
 			} else {
 				log.Info("set non-block success when listen, value is true")
 			}
+			if err := sockopt.SetSocksAddrReusedImmediately(fd, 1); err != nil {
+				log.Errorf("in tcp listen err when set addr/port reuse immediately, err:%s", err.Error())
+			} else {
+				log.Info("set addr/port reuse immediately success when listen, value is true")
+			}
 		})
 	}
 	listener, err := lc.Listen(context.Background(), "tcp", address)
@@ -65,7 +70,13 @@ func (t *TCP) Dial(address string, timeout time.Duration) (interface{}, error) {
 			if err := sockopt.SetNonblock(fd, true); err != nil {
 				log.Errorf("in tcp dial err when set non-block,err:%s", err.Error())
 			} else {
-				log.Info("se non-block success when dial, value is true")
+				log.Info("set non-block success when dial, value is true")
+			}
+
+			if err := sockopt.SetSocksAddrReusedImmediately(fd, 1); err != nil {
+				log.Errorf("in tcp dial err when set addr/port reuse immediately, err:%s", err.Error())
+			} else {
+				log.Info("set addr/port reuse immediately success when dial, value is true")
 			}
 		})
 	}
