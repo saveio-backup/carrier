@@ -1,4 +1,4 @@
-package keepaliveProxy
+package proxyKeepalive
 
 import (
 	"context"
