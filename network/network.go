@@ -433,6 +433,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			n.peers.Delete(address)
 			return nil, err
 		}
+		n.UpdateConnState(address, PEER_REACHABLE)
 	}
 	n.initConnection(address, conn)
 	n.peers.Store(address, client)

@@ -34,8 +34,16 @@ func resolveTcpAddr(address string) string {
 	return address
 }
 
-// Listen listens for incoming TCP connections on a specified port.
 func (t *TCP) Listen(address string) (interface{}, error) {
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+	return interface{}(listener), nil
+}
+
+// Listen listens for incoming TCP connections on a specified port.
+func (t *TCP) _Listen(address string) (interface{}, error) {
 	var lc net.ListenConfig
 	lc.Control = func(network, address string, c syscall.RawConn) error {
 		return c.Control(func(fd uintptr) {
@@ -58,8 +66,16 @@ func (t *TCP) Listen(address string) (interface{}, error) {
 	return interface{}(listener), nil
 }
 
-// Dial dials an address via. the TCP protocol.
 func (t *TCP) Dial(address string, timeout time.Duration) (interface{}, error) {
+	conn, err := net.DialTimeout("tcp", resolveTcpAddr(address), timeout)
+	if err != nil {
+		return nil, err
+	}
+	return interface{}(conn), nil
+}
+
+// Dial dials an address via. the TCP protocol.
+func (t *TCP) _Dial(address string, timeout time.Duration) (interface{}, error) {
 	dialer := &net.Dialer{
 		Timeout:   timeout,
 		DualStack: true,

@@ -1,4 +1,4 @@
-package keepalive
+package keepaliveProxy
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	DefaultKeepaliveInterval = 3 * time.Second
-	DefaultKeepaliveTimeout  = 15 * time.Second
+	DefaultProxyKeepaliveInterval = 3 * time.Second
+	DefaultProxyKeepaliveTimeout  = 180 * time.Second
 )
 
 // Component is the keepalive Component
@@ -22,9 +22,9 @@ type Component struct {
 	*network.Component
 
 	// interval to send keepalive msg
-	keepaliveInterval time.Duration
+	proxyKeepaliveInterval time.Duration
 	// total keepalive timeout
-	keepaliveTimeout time.Duration
+	proxyKeepaliveTimeout time.Duration
 
 	// Channel for peer network state change notification
 	peerStateChan chan *PeerStateEvent
@@ -43,18 +43,6 @@ type PeerStateEvent struct {
 // ComponentOption are configurable options for the keepalive Component
 type ComponentOption func(*Component)
 
-func WithKeepaliveTimeout(t time.Duration) ComponentOption {
-	return func(o *Component) {
-		o.keepaliveTimeout = t
-	}
-}
-
-func WithKeepaliveInterval(t time.Duration) ComponentOption {
-	return func(o *Component) {
-		o.keepaliveInterval = t
-	}
-}
-
 func WithPeerStateChan(c chan *PeerStateEvent) ComponentOption {
 	return func(o *Component) {
 		o.peerStateChan = c
@@ -63,8 +51,8 @@ func WithPeerStateChan(c chan *PeerStateEvent) ComponentOption {
 
 func defaultOptions() ComponentOption {
 	return func(o *Component) {
-		o.keepaliveInterval = DefaultKeepaliveInterval
-		o.keepaliveTimeout = DefaultKeepaliveTimeout
+		o.proxyKeepaliveInterval = DefaultProxyKeepaliveInterval
+		o.proxyKeepaliveTimeout = DefaultProxyKeepaliveTimeout
 	}
 }
 
@@ -91,8 +79,10 @@ func New(opts ...ComponentOption) *Component {
 // Startup implements the Component callback
 func (p *Component) Startup(net *network.Network) {
 	p.net = net
+
 	// start keepalive service
-	go p.keepaliveService()
+	//go p.keepaliveService()
+	go p.proxyKeepaliveService()
 }
 
 func (p *Component) Cleanup(net *network.Network) {
@@ -131,15 +121,31 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 	return nil
 }
 
-func (p *Component) keepaliveService() {
-	t := time.NewTicker(p.keepaliveInterval)
+func (p *Component) proxyKeepaliveService() {
+	t := time.NewTicker(p.proxyKeepaliveInterval)
 
 	for {
 		select {
 		case <-t.C:
 			// broadcast keepalive msg to all peers
-			p.net.BroadcastToPeers(context.Background(), &protobuf.Keepalive{})
-			p.timeout()
+			if p.net.ProxyModeEnable() == false {
+				log.Info("proxyModeEnable is false, proxyKeepaliveService groutine exit now")
+				return
+			}
+			client := p.net.GetPeerClient(p.net.GetWorkingProxyServer())
+			if client == nil {
+				log.Errorf("in proxyKeepliveService, connection to proxy:%s err, client is nil", p.net.GetWorkingProxyServer())
+				return
+			}
+			err := client.Tell(context.Background(), &protobuf.Keepalive{})
+			if err != nil {
+				log.Error("in proxyKeepaliveServer, send Keepalive msg ERROR:", err.Error(), ",working proxy addr:", p.net.GetWorkingProxyServer())
+			}
+			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
+				p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
+				client.Close()
+				return
+			}
 		case <-p.stopCh:
 			t.Stop()
 			return
@@ -147,21 +153,6 @@ func (p *Component) keepaliveService() {
 			return
 		}
 	}
-}
-
-// check all connetion if keepalive timeout
-func (p *Component) timeout() {
-	p.net.EachPeer(func(client *network.PeerClient) bool {
-		if client.Address == p.net.GetWorkingProxyServer() {
-			return true
-		}
-		// timeout notify state change
-		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
-			p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
-			client.Close()
-		}
-		return true
-	})
 }
 
 func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state network.PeerState) {
