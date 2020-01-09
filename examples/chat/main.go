@@ -72,7 +72,11 @@ func main() {
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
-	builder.SetListenAddr(network.FormatAddress(listenProtocol, listen, listenPort))
+	if listen == "127.0.0.1" {
+		builder.SetListenAddr(network.FormatAddress(protocol, host, port))
+	} else {
+		builder.SetListenAddr(network.FormatAddress(listenProtocol, listen, listenPort))
+	}
 
 	// Add keepalive Component
 	peerStateChan := make(chan *keepalive.PeerStateEvent, 100000)
