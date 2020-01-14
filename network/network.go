@@ -261,6 +261,21 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 		ctx.message = msgRaw
 		ctx.nonce = msg.RequestNonce
 
+		if client.DisableDispatchMsgGoroutine {
+			// Execute 'on receive message' callback for all Components.
+			n.Components.Each(func(Component ComponentInterface) {
+				if msg.Opcode >= 1000 {
+					log.Infof("in Network Component.Receive handle, recv msg.opcode:%d, msg.Nonce:%d, component name:%s,msg.Sender:%s", msg.Opcode, msg.MessageNonce, reflect.TypeOf(Component), msg.Sender.Address)
+				}
+				if err := Component.Receive(ctx); err != nil {
+					log.Errorf("in network Component.Receive err:%+v, component name:%s,msg.opcode:%d, msg.Nonce:%d, msg.Sender:%s", err, reflect.TypeOf(Component), msg.Opcode, msg.MessageNonce, msg.Sender.Address)
+				}
+			})
+
+			contextPool.Put(ctx)
+			return
+		}
+
 		go func() {
 			// Execute 'on receive message' callback for all Components.
 			n.Components.Each(func(Component ComponentInterface) {
