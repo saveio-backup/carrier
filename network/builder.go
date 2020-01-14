@@ -256,9 +256,9 @@ func (builder *Builder) Build() (*Network, error) {
 		NetDistanceMetric: new(sync.Map),
 	}
 
-	net.cmgr.peers = new(sync.Map)
-	net.cmgr.connections = new(sync.Map)
-	net.cmgr.connStates = new(sync.Map)
+	net.ConnMgr.peers = new(sync.Map)
+	net.ConnMgr.connections = new(sync.Map)
+	net.ConnMgr.connStates = new(sync.Map)
 
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))

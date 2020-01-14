@@ -173,11 +173,11 @@ func (c *PeerClient) RemoveEntries() error {
 			state.conn.(quic.Stream).Close()
 		}
 		log.Debugf("remove entries of address: %s", clientAddr)
-		c.Network.cmgr.Mutex.Lock()
-		c.Network.cmgr.peers.Delete(clientAddr)
-		c.Network.cmgr.connections.Delete(clientAddr)
+		c.Network.ConnMgr.Mutex.Lock()
+		c.Network.ConnMgr.peers.Delete(clientAddr)
+		c.Network.ConnMgr.connections.Delete(clientAddr)
 		c.Network.UpdateConnState(clientAddr, PEER_UNREACHABLE)
-		c.Network.cmgr.Mutex.Unlock()
+		c.Network.ConnMgr.Mutex.Unlock()
 		state.conn = nil
 		debug.FreeOSMemory()
 	}

@@ -105,7 +105,9 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		if err != nil {
 			return errors.New("in keepalive component send keepalive rsponse err, client.addr:" + ctx.Client().ID.Address)
 		}
+		p.net.ConnMgr.Lock()
 		p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
+		p.net.ConnMgr.Unlock()
 	case *protobuf.KeepaliveResponse:
 
 	case *protobuf.Ping:
@@ -114,8 +116,9 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 			return err
 		}
 	case *protobuf.Pong:
+		p.net.ConnMgr.Lock()
 		p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
-
+		p.net.ConnMgr.Unlock()
 	}
 
 	return nil
@@ -142,7 +145,9 @@ func (p *Component) proxyKeepaliveService() {
 				log.Error("in proxyKeepaliveServer, send Keepalive msg ERROR:", err.Error(), ",working proxy addr:", p.net.GetWorkingProxyServer())
 			}
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
+				p.net.ConnMgr.Lock()
 				p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
+				p.net.ConnMgr.Unlock()
 				client.Close()
 				return
 			}
