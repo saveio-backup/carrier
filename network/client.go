@@ -59,12 +59,11 @@ type PeerClient struct {
 
 	jobs chan func()
 
-	closed         uint32 // for atomic ops
-	CloseSignal    chan struct{}
-	Time           time.Time
-	RecvWindow     *RecvWindow
-	enableBackoff  bool
-	ConnStateMutex *sync.Mutex
+	closed        uint32 // for atomic ops
+	CloseSignal   chan struct{}
+	Time          time.Time
+	RecvWindow    *RecvWindow
+	enableBackoff bool
 
 	EnableAckReply  bool
 	SyncWaitAck     *sync.Map
@@ -113,7 +112,6 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		RecvWindow:      NewRecvWindow(network.opts.recvWindowSize),
 		enableBackoff:   true,
 		EnableAckReply:  false,
-		ConnStateMutex:  new(sync.Mutex),
 		AckStatusNotify: make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
 		SyncWaitAck:     new(sync.Map),
 	}
@@ -175,9 +173,11 @@ func (c *PeerClient) RemoveEntries() error {
 			state.conn.(quic.Stream).Close()
 		}
 		log.Debugf("remove entries of address: %s", clientAddr)
-		c.Network.peers.Delete(clientAddr)
-		c.Network.connections.Delete(clientAddr)
+		c.Network.cmgr.Mutex.Lock()
+		c.Network.cmgr.peers.Delete(clientAddr)
+		c.Network.cmgr.connections.Delete(clientAddr)
 		c.Network.UpdateConnState(clientAddr, PEER_UNREACHABLE)
+		c.Network.cmgr.Mutex.Unlock()
 		state.conn = nil
 		debug.FreeOSMemory()
 	}

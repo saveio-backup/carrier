@@ -238,17 +238,13 @@ func (builder *Builder) Build() (*Network, error) {
 		return nil, err
 	}
 	net := &Network{
-		opts:       builder.opts,
-		ID:         id,
-		keys:       builder.keys,
-		Address:    unifiedAddress,
-		ListenAddr: unifiedListenAddr,
-		Components: builder.Components,
-		transports: builder.transports,
-
-		peers:             new(sync.Map),
-		connections:       new(sync.Map),
-		connStates:        new(sync.Map),
+		opts:              builder.opts,
+		ID:                id,
+		keys:              builder.keys,
+		Address:           unifiedAddress,
+		ListenAddr:        unifiedListenAddr,
+		Components:        builder.Components,
+		transports:        builder.transports,
 		listeningCh:       make(chan struct{}),
 		ProxyService:      Proxy{Finish: new(sync.Map), ConnectionEvent: make([]chan *ProxyEvent, defaultProxyNotifySize), WorkID: 0},
 		Kill:              make(chan struct{}),
@@ -259,6 +255,11 @@ func (builder *Builder) Build() (*Network, error) {
 		metric:            initMetric(),
 		NetDistanceMetric: new(sync.Map),
 	}
+
+	net.cmgr.peers = new(sync.Map)
+	net.cmgr.connections = new(sync.Map)
+	net.cmgr.connStates = new(sync.Map)
+
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
 		return true

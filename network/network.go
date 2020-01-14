@@ -75,6 +75,9 @@ type Network struct {
 	// Node's keypair.
 	keys *crypto.KeyPair
 
+	//Store relationship between clientID(for example public key) and IP
+	ClientID *sync.Map
+
 	// Full address to listen on. `protocol://host:port`
 	Address    string
 	ListenAddr string
@@ -83,18 +86,19 @@ type Network struct {
 	Components *ComponentList
 
 	// Node's cryptographic ID.
-	ID peer.ID
+	ID   peer.ID
+	cmgr struct {
+		sync.Mutex
+		// Map of connection addresses (string) <-> *network.PeerClient
+		// so that the Network doesn't dial multiple times to the same ip
+		peers *sync.Map
+		// Map of connection addresses (string) <-> *ConnState
+		connections *sync.Map
 
-	// Map of connection addresses (string) <-> *network.PeerClient
-	// so that the Network doesn't dial multiple times to the same ip
-	peers *sync.Map
+		connStates *sync.Map
+	}
 
-	//RecvQueue chan *protobuf.Message
-
-	// Map of connection addresses (string) <-> *ConnState
-	connections *sync.Map
-	Conn        *net.UDPConn
-	connStates  *sync.Map
+	Conn *net.UDPConn
 
 	// Map of protocol addresses (string) <-> *transport.Layer
 	transports *sync.Map
@@ -384,7 +388,7 @@ func (n *Network) quicListen(listener interface{}) {
 }
 
 func (n *Network) GetPeerClient(address string) *PeerClient {
-	if client, ok := n.peers.Load(address); ok {
+	if client, ok := n.cmgr.peers.Load(address); ok {
 		return client.(*PeerClient)
 	} else {
 		return nil
@@ -410,7 +414,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return nil, err
 	}
 
-	c, exists := n.peers.Load(address)
+	c, exists := n.cmgr.peers.Load(address)
 	if exists {
 		client := c.(*PeerClient)
 
@@ -430,14 +434,16 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		conn, err = n.Dial(address, client)
 
 		if err != nil {
-			n.peers.Delete(address)
+			n.cmgr.peers.Delete(address)
 			return nil, err
 		}
 		n.UpdateConnState(address, PEER_REACHABLE)
 	}
+	n.cmgr.Mutex.Lock()
 	n.initConnection(address, conn)
-	n.peers.Store(address, client)
+	n.cmgr.peers.Store(address, client)
 	client.Init()
+	n.cmgr.Mutex.Unlock()
 
 	client.setIncomingReady()
 	return client, nil
@@ -451,7 +457,7 @@ func (n *Network) initConnection(address string, conn interface{}) {
 	switch addrInfo.Protocol {
 	case "tcp", "kcp":
 		netConn, _ := conn.(net.Conn)
-		n.connections.Store(address, &ConnState{
+		n.cmgr.connections.Store(address, &ConnState{
 			conn:           conn,
 			writer:         bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
 			writerMutex:    new(sync.Mutex),
@@ -460,14 +466,14 @@ func (n *Network) initConnection(address string, conn interface{}) {
 		})
 	case "udp":
 		udpConn, _ := conn.(*net.UDPConn)
-		n.connections.Store(address, &ConnState{
+		n.cmgr.connections.Store(address, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(udpConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
 		})
 	case "quic":
 		netConn, _ := conn.(quic.Stream)
-		n.connections.Store(address, &ConnState{
+		n.cmgr.connections.Store(address, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
@@ -483,20 +489,20 @@ func (n *Network) Client(address string) (*PeerClient, error) {
 }
 
 func (n *Network) ClientExist(address string) bool {
-	_, ok := n.peers.Load(address)
+	_, ok := n.cmgr.peers.Load(address)
 	return ok
 }
 
 // ConnectionStateExists returns true if network has a connection on a given address.
 func (n *Network) ConnectionStateExists(address string) bool {
-	_, ok := n.connections.Load(address)
+	_, ok := n.cmgr.connections.Load(address)
 	return ok
 }
 
 func (n *Network) ProxyConnectionStateExists() (bool, error) {
 	if n.ProxyModeEnable() == true {
 		address := n.GetWorkingProxyServer()
-		_, ok := n.connections.Load(address)
+		_, ok := n.cmgr.connections.Load(address)
 		return ok, nil
 	} else {
 		return false, errors.New("proxy does not enable")
@@ -505,7 +511,7 @@ func (n *Network) ProxyConnectionStateExists() (bool, error) {
 
 // ConnectionState returns a connections state for current address.
 func (n *Network) ConnectionState(address string) (*ConnState, bool) {
-	conn, ok := n.connections.Load(address)
+	conn, ok := n.cmgr.connections.Load(address)
 	if !ok {
 		return nil, false
 	}
@@ -518,7 +524,7 @@ func (n *Network) ProxyConnectionState() (*ConnState, bool) {
 		return nil, false
 	}
 	address := n.GetWorkingProxyServer()
-	conn, ok := n.connections.Load(address)
+	conn, ok := n.cmgr.connections.Load(address)
 	if !ok {
 		return nil, false
 	}
@@ -1181,7 +1187,7 @@ func (n *Network) Close() {
 	log.Info("delete all installed component, reset network.Components is NewComponentList")
 	n.Components = NewComponentList() //delete installed components
 	log.Infof("delete all relevant connections&peers resource, client.len:%d, connection.len:%d", n.PeersNum(), n.ConnsNum())
-	n.peers.Range(func(key, peer interface{}) bool {
+	n.cmgr.peers.Range(func(key, peer interface{}) bool {
 		peer.(*PeerClient).Close()
 		return true
 	})
@@ -1190,7 +1196,7 @@ func (n *Network) Close() {
 
 func (n *Network) PeersNum() int {
 	count := 0
-	n.peers.Range(func(key, value interface{}) bool {
+	n.cmgr.peers.Range(func(key, value interface{}) bool {
 		count++
 		return true
 	})
@@ -1199,7 +1205,7 @@ func (n *Network) PeersNum() int {
 
 func (n *Network) ConnsNum() int {
 	count := 0
-	n.connections.Range(func(key, value interface{}) bool {
+	n.cmgr.connections.Range(func(key, value interface{}) bool {
 		count++
 		return true
 	})
@@ -1207,7 +1213,7 @@ func (n *Network) ConnsNum() int {
 }
 
 func (n *Network) EachPeer(fn func(client *PeerClient) bool) {
-	n.peers.Range(func(_, value interface{}) bool {
+	n.cmgr.peers.Range(func(_, value interface{}) bool {
 		client := value.(*PeerClient)
 		return fn(client)
 	})
@@ -1262,21 +1268,23 @@ func (n *Network) Transports() *sync.Map {
 }
 
 func (n *Network) UpdateConnState(address string, state PeerState) {
-	n.connStates.Store(address, state)
+	n.cmgr.connStates.Store(address, state)
 }
 
 func (n *Network) GetRealConnState(address string) (PeerState, error) {
-	state, ok := n.connStates.Load(address)
+	n.cmgr.Mutex.Lock()
+	defer n.cmgr.Mutex.Unlock()
+	state, ok := n.cmgr.connStates.Load(address)
 	if !ok {
 		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, client addr:%s", address)
 	}
 
-	_, ok = n.peers.Load(address)
+	_, ok = n.cmgr.peers.Load(address)
 	if !ok {
 		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, client addr:%s", address)
 	}
 
-	_, ok = n.connections.Load(address)
+	_, ok = n.cmgr.connections.Load(address)
 	if !ok {
 		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, client addr:%s", address)
 	}
@@ -1313,4 +1321,8 @@ func (n *Network) SetCompressAlgo(algo AlgoType) {
 
 func (n *Network) SetCompressFileSize(bytes int) {
 	n.CompressCondition.Size = bytes
+}
+
+func (n *Network) SetClientID(IP, ID string) {
+	n.ClientID.Store(IP, ID)
 }

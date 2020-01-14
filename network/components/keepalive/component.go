@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
-	"github.com/saveio/themis/common/log"
 )
 
 const (
@@ -100,11 +99,11 @@ func (p *Component) Cleanup(net *network.Network) {
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
-	p.updateLastStateAndNotify(client, network.PEER_REACHABLE)
+	p.net.UpdateConnState(client.Address, network.PEER_REACHABLE)
 }
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
-	p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
+	p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
 }
 
 func (p *Component) Receive(ctx *network.ComponentContext) error {
@@ -115,7 +114,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		if err != nil {
 			return errors.New("in keepalive component send keepalive rsponse err, client.addr:" + ctx.Client().ID.Address)
 		}
-		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
+		p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
 	case *protobuf.KeepaliveResponse:
 
 	case *protobuf.Ping:
@@ -124,8 +123,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 			return err
 		}
 	case *protobuf.Pong:
-		p.updateLastStateAndNotify(ctx.Client(), network.PEER_REACHABLE)
-
+		p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
 	}
 
 	return nil
@@ -157,22 +155,11 @@ func (p *Component) timeout() {
 		}
 		// timeout notify state change
 		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
-			p.updateLastStateAndNotify(client, network.PEER_UNREACHABLE)
+			p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
 			client.Close()
 		}
 		return true
 	})
-}
-
-func (p *Component) updateLastStateAndNotify(client *network.PeerClient, state network.PeerState) {
-	client.ConnStateMutex.Lock()
-	defer client.ConnStateMutex.Unlock()
-
-	if last, ok := p.lastStates.Load(client.Address); ok {
-		log.Debugf("[keepalive]address:%s, last status:%d, tobe changed status:%d", client.Address, last, state)
-	}
-	p.lastStates.Store(client.Address, state)
-	p.net.UpdateConnState(client.Address, state)
 }
 
 func (p *Component) GetPeerStateChan() chan *PeerStateEvent {

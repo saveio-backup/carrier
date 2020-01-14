@@ -22,21 +22,22 @@ test_porter_main_server_max_connection(){
 #测试一个节点通过porter最多可以挂载多少个连接数
 test_remote_c2c_by_porter() {
     CONNECTION_NUM=10
-    BEGIN_PORT=5005
-    REMOTE_ADDR=40.73.96.40
-    REMOTE_PORT=59666
+    BEGIN_PORT=5105
+    REMOTE_ADDR=10.0.1.128
+    REMOTE_PORT=63936
     LOCAL_HOST=192.168.1.115
     for (( index = 0; index < ${CONNECTION_NUM}; index++ )); do
-        ./carrier -port=${BEGIN_PORT}+${index} -protocol=tcp -host=${LOCAL_HOST} -enableProxy=true -proxy=tcp://40.73.96.40:6011 -peers=tcp://${REMORE_ADDR}:${REMOTE_PORT}
+        echo "=============================="$index
+        nohup ./carrier -port=$((${BEGIN_PORT}+${index})) -protocol=tcp -host=${LOCAL_HOST} -enableProxy=true -proxy=tcp://10.0.1.128:6008 -peers=tcp://${REMOTE_ADDR}:${REMOTE_PORT} &
     done
 }
 
 case "$1" in
 max_conn)
-test_porter_main_server_max_connection
+    test_porter_main_server_max_connection
 ;;
-demo)
-
+run)
+    test_remote_c2c_by_porter
 ;;
 *)
 echo "please enter invalid command..."

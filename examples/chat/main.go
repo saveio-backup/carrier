@@ -16,6 +16,7 @@ import (
 	"github.com/saveio/carrier/network/components/ackreply"
 	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/keepalive"
+	"github.com/saveio/carrier/network/components/keepalive/proxyKeepalive"
 	"github.com/saveio/carrier/network/components/proxy"
 	"github.com/saveio/carrier/types/opcode"
 	"github.com/saveio/themis/common/log"
@@ -86,7 +87,7 @@ func main() {
 		keepalive.WithPeerStateChan(peerStateChan),
 	}
 	builder.AddComponent(keepalive.New(options...))
-
+	builder.AddComponent(proxyKeepalive.New())
 	// Register peer discovery Component.
 	//builder.AddComponent(new(discovery.Component))
 	backoffOptions := []backoff.ComponentOption{
