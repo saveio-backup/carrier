@@ -23,7 +23,7 @@ var errEmptyMsg = errors.New("received an empty message from a peer")
 
 // sendMessage marshals, signs and sends a message over a stream.
 func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, address string) error {
-	log.Debugf("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d,msg.msgID:",
+	log.Debugf("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d,msg.msgID:%s",
 		n.ID.Address, address, message.Opcode, message.MessageNonce, message.MessageID)
 	bytes, err := proto.Marshal(message)
 	if err != nil {
@@ -190,7 +190,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 		return nil, errors.New("(tcp)received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
 
-	log.Infof("(kcp/tcp)in Network.receiveMessage,success receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, msg.MsgID:", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce, msg.MessageID)
+	log.Infof("(kcp/tcp)in Network.receiveMessage,success receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, msg.MsgID:%s", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce, msg.MessageID)
 
 	return msg, nil
 }
