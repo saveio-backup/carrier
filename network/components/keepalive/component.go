@@ -99,11 +99,11 @@ func (p *Component) Cleanup(net *network.Network) {
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
-	p.net.UpdateConnState(client.Address, network.PEER_REACHABLE)
+	//p.net.UpdateConnState(client.Address, network.PEER_REACHABLE)
 }
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
-	p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
+	//p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
 }
 
 func (p *Component) Receive(ctx *network.ComponentContext) error {
@@ -114,9 +114,9 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		if err != nil {
 			return errors.New("in keepalive component send keepalive rsponse err, client.addr:" + ctx.Client().ID.Address)
 		}
-		p.net.ConnMgr.Lock()
-		p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
-		p.net.ConnMgr.Unlock()
+		//p.net.ConnMgr.Lock()
+		//p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
+		//p.net.ConnMgr.Unlock()
 	case *protobuf.KeepaliveResponse:
 
 	case *protobuf.Ping:
@@ -125,9 +125,9 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 			return err
 		}
 	case *protobuf.Pong:
-		p.net.ConnMgr.Lock()
-		p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
-		p.net.ConnMgr.Unlock()
+		//p.net.ConnMgr.Lock()
+		//p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
+		//p.net.ConnMgr.Unlock()
 	}
 
 	return nil

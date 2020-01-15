@@ -446,6 +446,8 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		client.setOutgoingReady()
 	}()
 
+	n.ConnMgr.Mutex.Lock()
+	defer n.ConnMgr.Mutex.Unlock()
 	if conn == nil {
 		conn, err = n.Dial(address, client)
 
@@ -453,13 +455,11 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 			n.ConnMgr.peers.Delete(address)
 			return nil, err
 		}
-		n.UpdateConnState(address, PEER_REACHABLE)
 	}
-	n.ConnMgr.Mutex.Lock()
 	n.initConnection(address, conn)
 	n.ConnMgr.peers.Store(address, client)
 	client.Init()
-	n.ConnMgr.Mutex.Unlock()
+	n.UpdateConnState(address, PEER_REACHABLE)
 
 	client.setIncomingReady()
 	return client, nil
@@ -1053,7 +1053,7 @@ func (n *Network) writeToDispatchChannel(state *ConnState, message *protobuf.Mes
 func (n *Network) Write(address string, message *protobuf.Message) error {
 	state, ok := n.ConnectionState(address)
 	if !ok {
-		n.UpdateConnState(address, PEER_UNREACHABLE)
+		//n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.write: connection does not exist")
 	}
 	state.writerMutex.Lock()
