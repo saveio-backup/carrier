@@ -145,9 +145,10 @@ func (p *Component) proxyKeepaliveService() {
 				log.Error("in proxyKeepaliveServer, send Keepalive msg ERROR:", err.Error(), ",working proxy addr:", p.net.GetWorkingProxyServer())
 			}
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
-				p.net.ConnMgr.Lock()
-				p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
-				p.net.ConnMgr.Unlock()
+				//p.net.ConnMgr.Lock()
+				//It is not need to update connection status ,beacause client.Close() will do!
+				//p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
+				//p.net.ConnMgr.Unlock()
 				client.Close()
 				return
 			}

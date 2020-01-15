@@ -117,9 +117,10 @@ type Network struct {
 	compressAlgo      AlgoType
 	CompressCondition CompressCondition
 
-	createClientMutex *sync.Mutex
-	NetDistanceMetric *sync.Map
-	metric            Metric
+	createClientMutex           *sync.Mutex
+	NetDistanceMetric           *sync.Map
+	metric                      Metric
+	DisableDispatchMsgGoroutine bool
 }
 
 type NetDistanceMetric struct {
@@ -261,7 +262,7 @@ func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 		ctx.message = msgRaw
 		ctx.nonce = msg.RequestNonce
 
-		if client.DisableDispatchMsgGoroutine {
+		if n.DisableDispatchMsgGoroutine {
 			// Execute 'on receive message' callback for all Components.
 			n.Components.Each(func(Component ComponentInterface) {
 				if msg.Opcode >= 1000 {
@@ -1340,4 +1341,12 @@ func (n *Network) SetCompressFileSize(bytes int) {
 
 func (n *Network) SetClientID(IP, ID string) {
 	n.ClientID.Store(IP, ID)
+}
+
+func (n *Network) DisableMsgGoroutine() {
+	n.DisableDispatchMsgGoroutine = true
+}
+
+func (n *Network) EnableMsgGoroutine() {
+	n.DisableDispatchMsgGoroutine = false
 }

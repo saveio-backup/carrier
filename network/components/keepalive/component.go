@@ -159,9 +159,10 @@ func (p *Component) timeout() {
 		}
 		// timeout notify state change
 		if time.Now().After(client.Time.Add(p.keepaliveTimeout)) {
-			p.net.ConnMgr.Lock()
-			p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
-			p.net.ConnMgr.Unlock()
+			//p.net.ConnMgr.Lock()
+			//It is not need to update connection status ,beacause client.Close() will do!
+			//p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
+			//p.net.ConnMgr.Unlock()
 			client.Close()
 		}
 		return true

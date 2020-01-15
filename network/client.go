@@ -65,10 +65,9 @@ type PeerClient struct {
 	RecvWindow    *RecvWindow
 	enableBackoff bool
 
-	EnableAckReply              bool
-	SyncWaitAck                 *sync.Map
-	AckStatusNotify             chan AckStatus
-	DisableDispatchMsgGoroutine bool
+	EnableAckReply  bool
+	SyncWaitAck     *sync.Map
+	AckStatusNotify chan AckStatus
 }
 
 // StreamState represents a stream.
@@ -483,12 +482,4 @@ func (c *PeerClient) EnableBackoff() {
 
 func (c *PeerClient) GetBackoffStatus() bool {
 	return c.enableBackoff
-}
-
-func (c *PeerClient) DisableMsgGoroutine() {
-	c.DisableDispatchMsgGoroutine = true
-}
-
-func (c *PeerClient) EnableMsgGoroutine() {
-	c.DisableDispatchMsgGoroutine = false
 }
