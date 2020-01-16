@@ -96,6 +96,7 @@ type Network struct {
 		connections *sync.Map
 
 		connStates *sync.Map
+		streams    *sync.Map
 	}
 
 	Conn *net.UDPConn
@@ -458,6 +459,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 	}
 	n.initConnection(address, conn)
 	n.ConnMgr.peers.Store(address, client)
+	n.ConnMgr.streams.Store(address, NewMultiStream())
 	client.Init()
 	n.UpdateConnState(address, PEER_REACHABLE)
 
@@ -985,6 +987,7 @@ func (n *Network) PrepareMessage(ctx context.Context, message proto.Message) (*p
 		Opcode:  uint32(opcode),
 		Sender:  &id,
 		NetID:   n.netID,
+		NeedAck: false,
 	}
 
 	if GetSignMessage(ctx) {
@@ -1024,6 +1027,7 @@ func (n *Network) PrepareMessageWithMsgID(ctx context.Context, message proto.Mes
 		Sender:    &id,
 		NetID:     n.netID,
 		MessageID: msgID,
+		NeedAck:   true,
 	}
 
 	if GetSignMessage(ctx) {
@@ -1047,6 +1051,48 @@ func (n *Network) writeToDispatchChannel(state *ConnState, message *protobuf.Mes
 	default:
 		state.DataSignal <- message
 	}
+}
+
+func (n *Network) StreamWrite(streamID, address string, message *protobuf.Message) (error, int32) {
+	var bytes int32
+	state, ok := n.ConnectionState(address)
+	if !ok {
+		//n.UpdateConnState(address, PEER_UNREACHABLE)
+		return errors.New("Network.write: connection does not exist"), 0
+	}
+	state.writerMutex.Lock()
+	log.Debugf("Network.Write write msg to %s", address)
+	defer func() {
+		state.writerMutex.Unlock()
+		log.Debugf("Network.Write write msg to %s done", address)
+	}()
+	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
+
+	addrInfo, err := ParseAddress(n.Address)
+	if err != nil {
+		log.Fatal(err)
+		return errors.Errorf("Network.Write parse address,%s", err.Error()), 0
+	}
+
+	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+		tcpConn, _ := state.conn.(net.Conn)
+		if tcpConn == nil {
+			return errors.Errorf("Network.Write connection is nil address,%s", address), 0
+		}
+		err, bytes = n.streamSendMessage(tcpConn, state.writer, message, state.writerMutex, address, streamID)
+		if err != nil {
+			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
+		}
+	}
+	if err != nil && (err != WriteInterruptMsg || err != ReadInterruptMsg) {
+		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), address)
+		if client := n.GetPeerClient(address); client != nil {
+			client.Close()
+		} else {
+			log.Errorf("get client entry err in Writer:%s", err.Error())
+		}
+	}
+	return err, bytes
 }
 
 // Write asynchronously sends a message to a denoted target address.

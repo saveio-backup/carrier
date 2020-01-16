@@ -260,6 +260,7 @@ func (builder *Builder) Build() (*Network, error) {
 	net.ConnMgr.peers = new(sync.Map)
 	net.ConnMgr.connections = new(sync.Map)
 	net.ConnMgr.connStates = new(sync.Map)
+	net.ConnMgr.streams = new(sync.Map)
 
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))

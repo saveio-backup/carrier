@@ -176,6 +176,7 @@ func (c *PeerClient) RemoveEntries() error {
 		c.Network.ConnMgr.Mutex.Lock()
 		c.Network.ConnMgr.peers.Delete(clientAddr)
 		c.Network.ConnMgr.connections.Delete(clientAddr)
+		c.Network.ConnMgr.streams.Delete(clientAddr)
 		c.Network.UpdateConnState(clientAddr, PEER_UNREACHABLE)
 		c.Network.ConnMgr.Mutex.Unlock()
 		state.conn = nil
@@ -220,6 +221,78 @@ func (c *PeerClient) Tell(ctx context.Context, message proto.Message) error {
 	}
 
 	return nil
+}
+
+func (c *PeerClient) StreamSendDataCnt(streamID string) uint64 {
+	if value, ok := c.Network.ConnMgr.streams.Load(c.Address); ok {
+		if s, isOK := value.(MultiStream).stream.Load(streamID); isOK {
+			return s.(*Stream).SendCnt
+		}
+	}
+	return 0
+}
+
+// Tell will asynchronously emit a message to a given peer.
+func (c *PeerClient) StreamSend(streamID string, ctx context.Context, message proto.Message) (error, int32) {
+	signed, err := c.Network.PrepareMessage(ctx, message)
+	if err != nil {
+		return errors.Wrap(err, "failed to sign message"), 0
+	}
+
+	err, bytes := c.Network.StreamWrite(streamID, c.Address, signed)
+	if err != nil {
+		return errors.Wrapf(err, "failed to send message to %s", c.Address), 0
+	}
+
+	return nil, bytes
+}
+
+func (c *PeerClient) StreamRequest(streamID string, ctx context.Context, req proto.Message, timeout time.Duration) (proto.Message, error, int32) {
+	if ctx == nil {
+		return nil, errors.New("network: invalid context"), 0
+	}
+
+	if ctx.Err() != nil {
+		return nil, ctx.Err(), 0
+	}
+
+	signed, err := c.Network.PrepareMessage(ctx, req)
+	if err != nil {
+		return nil, err, 0
+	}
+
+	signed.RequestNonce = atomic.AddUint64(&c.RequestNonce, 1)
+
+	// Start tracking the request.
+	channel := make(chan proto.Message, 1)
+	closeSignal := make(chan struct{})
+
+	c.Requests.Store(signed.RequestNonce, &RequestState{
+		data:        channel,
+		closeSignal: closeSignal,
+	})
+
+	// Stop tracking the request.
+	defer close(closeSignal)
+	defer c.Requests.Delete(signed.RequestNonce)
+
+	err, bytes := c.Network.StreamWrite(streamID, c.Address, signed)
+	if err != nil {
+		return nil, err, 0
+	}
+	t := time.NewTicker(timeout)
+	defer t.Stop()
+
+	select {
+	case <-t.C:
+		return nil, errors.New(REQUEST_REPLY_TIMEOUT), 0
+	case res := <-channel:
+		return res, nil, 0
+	case <-ctx.Done():
+		return nil, ctx.Err(), 0
+	default:
+		return nil, err, bytes
+	}
 }
 
 // Request requests for a response for a request sent to a given peer.
@@ -277,6 +350,44 @@ func (c *PeerClient) waitAckLen() int {
 	return count
 }
 
+func (c *PeerClient) StreamAsyncSendAndWaitAck(streamID string, ctx context.Context, req proto.Message, msgID string) (error, int32) {
+	if ctx == nil {
+		return errors.New("network: invalid context"), 0
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err(), 0
+	}
+
+	if c.waitAckLen() >= DEFAULT_ACK_REPLY_CAPACITY {
+		log.Errorf("async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.Address, msgID)
+		return errors.New(fmt.Sprintf("async send map filled fully. cap:%d", DEFAULT_ACK_REPLY_CAPACITY)), 0
+	}
+
+	if _, ok := c.SyncWaitAck.Load(msgID); ok {
+		return errors.New(fmt.Sprintf("msgID:%s has been in sending queue", msgID)), 0
+	}
+
+	signed, err := c.Network.PrepareMessageWithMsgID(ctx, req, msgID)
+	if err != nil {
+		return err, 0
+	}
+
+	err, bytes := c.Network.StreamWrite(streamID, c.Address, signed)
+	if err != nil {
+		return err, bytes
+	}
+
+	c.SyncWaitAck.Store(msgID, &PrepareAckMessage{
+		MessageID: msgID,
+		Message:   req,
+		Frequency: 1,
+		WhenSend:  time.Now().Second(),
+	})
+
+	return nil, 0
+}
+
 // Request requests for a response for a request sent to a given peer.
 func (c *PeerClient) AsyncSendAndWaitAck(ctx context.Context, req proto.Message, msgID string) error {
 	if ctx == nil {
@@ -314,6 +425,24 @@ func (c *PeerClient) AsyncSendAndWaitAck(ctx context.Context, req proto.Message,
 	})
 
 	return nil
+}
+
+func (c *PeerClient) StreamReply(streamID string, ctx context.Context, nonce uint64, message proto.Message) (error, int32) {
+	msg, err := c.Network.PrepareMessage(ctx, message)
+	if err != nil {
+		return err, 0
+	}
+
+	// Set the nonce.
+	msg.RequestNonce = nonce
+	msg.ReplyFlag = true
+
+	err, bytes := c.Network.StreamWrite(streamID, c.Address, msg)
+	if err != nil {
+		return err, bytes
+	}
+
+	return nil, 0
 }
 
 // Reply is equivalent to Write() with an appended nonce to signal a reply.

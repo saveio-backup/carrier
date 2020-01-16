@@ -155,7 +155,14 @@ func main() {
 	if len(peers) > 0 {
 		networkBuilder.Bootstrap(peers...)
 	}
-
+	var stream *network.Stream
+	var client *network.PeerClient
+	if len(peers) > 0 {
+		client = networkBuilder.GetPeerClient(peers[0])
+		if client != nil {
+			stream = client.OpenStream()
+		}
+	}
 	reader := bufio.NewReader(os.Stdin)
 	//monitor.Run(networkBuilder)
 	networkBuilder.SetCompressFileSize(140)
@@ -174,6 +181,16 @@ func main() {
 		ctx := network.WithSignMessage(context.Background(), true)
 		//fData, _:= readAllIntoMemory("./data")
 		networkBuilder.Broadcast(ctx, &messages.ChatMessage{Message: fmt.Sprintf("%s", input)})
+		if client != nil {
+			client.StreamSend(stream.ID, context.Background(), &messages.ChatMessage{Message: fmt.Sprintf("%s", input)})
+			client.StreamAsyncSendAndWaitAck(stream.ID, context.Background(), &messages.ChatMessage{Message: fmt.Sprintf("%s", input)}, "msg-id")
+			fmt.Println("===============:", stream.GetSendDataCnt())
+			client.CloseStream(stream.ID)
+			/*client.StreamRequest(stream.ID, context.Background(), &messages.ChatMessage{Message: fmt.Sprintf("%s", input)}, time.Second*3)
+
+			client.StreamSendDataCnt(stream.ID)
+			client.CloseStream(stream.ID)*/
+		}
 	}
 
 }

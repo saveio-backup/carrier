@@ -52,6 +52,7 @@ message Message {
 
     uint32 netID = 8;
     string MessageID = 9;
+    bool need_ack = 10;
 }
 
 message Ping {
