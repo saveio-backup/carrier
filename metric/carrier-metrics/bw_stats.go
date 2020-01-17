@@ -34,6 +34,10 @@ func (bwc *BandwidthCounter) LogRecvMessage(size int64) {
 	bwc.totalIn.Mark(uint64(size))
 }
 
+func (bwc *BandwidthCounter) LogSentMessageConnOnly(size int64, proto string) {
+	bwc.protocolOut.Get(string(proto)).Mark(uint64(size))
+}
+
 func (bwc *BandwidthCounter) LogSentMessageStream(size int64, proto, p string) {
 	bwc.protocolOut.Get(string(proto)).Mark(uint64(size))
 	bwc.peerOut.Get(string(p)).Mark(uint64(size))

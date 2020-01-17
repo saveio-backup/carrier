@@ -9,6 +9,7 @@ import (
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/blake2b"
 	"github.com/saveio/carrier/crypto/ed25519"
+	"github.com/saveio/carrier/metric/carrier-metrics"
 	"github.com/saveio/carrier/network/transport"
 	"github.com/saveio/carrier/peer"
 	"github.com/saveio/themis/common/log"
@@ -255,6 +256,7 @@ func (builder *Builder) Build() (*Network, error) {
 		metric:                      initMetric(),
 		NetDistanceMetric:           new(sync.Map),
 		DisableDispatchMsgGoroutine: false,
+		Reporter:                    metrics.NewBandwidthCounter(),
 	}
 
 	net.ConnMgr.peers = new(sync.Map)

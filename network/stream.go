@@ -100,6 +100,10 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 		totalBytesWritten += bytesWritten
 		s.(*Stream).SendCnt += uint64(bytesWritten)
 
+		n.Reporter.LogSentMessageStream(int64(bytesWritten), streamID, n.PeerID())
+		n.Reporter.LogSentMessage(int64(bytesWritten))
+		n.Reporter.LogSentMessageConnOnly(int64(bytesWritten), address)
+
 		if bw.Available() <= 0 {
 			if err = bw.Flush(); err != nil {
 				log.Error("(kcp/tcp)in Network.streamSendMessage,stream flush err in buffer immediately written:", err.Error())
@@ -181,6 +185,10 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 		log.Debugf("(kcp/tcp)in Network.sendMessage, once write buffer successed; send from addr:%s, send to:%s, "+
 			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, address, message.Opcode, message.MessageNonce, bytesWritten)
 		totalBytesWritten += bytesWritten
+
+		n.Reporter.LogSentMessageStream(int64(bytesWritten), address, n.PeerID())
+		n.Reporter.LogSentMessage(int64(bytesWritten))
+
 		if bw.Available() <= 0 {
 			if err = bw.Flush(); err != nil {
 				log.Error("stream flush err in buffer immediately written:", err.Error())
@@ -214,6 +222,9 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 	for totalBytesRead < 4 && err == nil {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
+
+		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
+		n.Reporter.LogRecvMessage(int64(bytesRead))
 	}
 	if err != nil {
 		return nil, errors.Errorf("tcp receive networkID ahead bytes err:%s, buffer: %v", err.Error(), buffer)
@@ -228,6 +239,9 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 	for totalBytesRead < 2 && err == nil {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
+
+		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
+		n.Reporter.LogRecvMessage(int64(bytesRead))
 	}
 
 	if err != nil {
@@ -243,6 +257,9 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 	for totalBytesRead < 4 && err == nil {
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
+
+		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
+		n.Reporter.LogRecvMessage(int64(bytesRead))
 	}
 
 	if err != nil {
@@ -266,6 +283,9 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 			client.Time = time.Now()
 		}
 		totalBytesRead += bytesRead
+
+		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
+		n.Reporter.LogRecvMessage(int64(bytesRead))
 	}
 
 	if err != nil {

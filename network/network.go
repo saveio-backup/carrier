@@ -3,6 +3,7 @@ package network
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"math/rand"
 	"net"
 	"sync"
@@ -27,6 +28,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
+	"github.com/saveio/carrier/metric/carrier-metrics"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -122,6 +124,7 @@ type Network struct {
 	NetDistanceMetric           *sync.Map
 	metric                      Metric
 	DisableDispatchMsgGoroutine bool
+	Reporter                    *metrics.BandwidthCounter
 }
 
 type NetDistanceMetric struct {
@@ -182,6 +185,10 @@ func (n *Network) waitExit() {
 		n.Close()
 		os.Exit(0)
 	}
+}
+
+func (n *Network) PeerID() string {
+	return fmt.Sprintf("%s", n.ID.Id)
 }
 
 // GetKeys returns the keypair for this network
