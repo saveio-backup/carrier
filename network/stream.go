@@ -78,7 +78,7 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 						"send from:%s, send to:%s,message.opcode:%d,msg.nonce:%d", totalBytesWritten, n.ID.Address, address, message.Opcode, message.MessageNonce)
 					client.SyncWaitAck.Delete(message.MessageID)
 				}
-				s.(*Stream).SendCnt += uint64(bytesWritten)
+				//s.(*Stream).SendCnt += uint64(bytesWritten)
 				return WriteInterruptMsg, int32(totalBytesWritten)
 			}
 		} else {
@@ -96,7 +96,10 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 		}
 		log.Debugf("(kcp/tcp)in Network.streamSendMessage, once write buffer successed; send from addr:%s, send to:%s, "+
 			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, address, message.Opcode, message.MessageNonce, bytesWritten)
+
 		totalBytesWritten += bytesWritten
+		s.(*Stream).SendCnt += uint64(bytesWritten)
+
 		if bw.Available() <= 0 {
 			if err = bw.Flush(); err != nil {
 				log.Error("(kcp/tcp)in Network.streamSendMessage,stream flush err in buffer immediately written:", err.Error())
@@ -114,8 +117,6 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 	if err := bw.Flush(); err != nil {
 		return err, int32(totalBytesWritten)
 	}
-
-	s.(*Stream).SendCnt += uint64(bytesWritten)
 
 	log.Infof("(kcp/tcp)in Network.streamSendMessage, successed finished; send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, totalWrited: %d", n.ID.Address, address, message.Opcode, message.MessageNonce, totalBytesWritten)
 	return nil, int32(totalBytesWritten)
