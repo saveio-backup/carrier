@@ -134,12 +134,17 @@ func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 					return true
 				}
 
-				if err := client.Tell(context.Background(), value.(*network.PrepareAckMessage).Message); err != nil {
-					log.Errorf("in ackReply component, ReSend Message err:%s", err.Error())
-				} else {
-					log.Infof("in ackReply component, Resend Message Successed, to-addr:%s, msgID:%s", client.Address, value.(*network.PrepareAckMessage).MessageID)
+				if time.Now().Second()-value.(*network.PrepareAckMessage).LatestSendSuccessAt > int(p.ackCheckedInterval/time.Second) {
+					go func() {
+						if err := client.Tell(context.Background(), value.(*network.PrepareAckMessage).Message); err != nil {
+							log.Errorf("in ackReply component, ReSend Message err:%s", err.Error())
+						} else {
+							log.Infof("in ackReply component, Resend Message Successed, to-addr:%s, msgID:%s", client.Address, value.(*network.PrepareAckMessage).MessageID)
+							value.(*network.PrepareAckMessage).LatestSendSuccessAt = time.Now().Second()
+						}
+						value.(*network.PrepareAckMessage).Frequency += 1
+					}()
 				}
-				value.(*network.PrepareAckMessage).Frequency += 1
 				return true
 			})
 		case <-p.stopCh:

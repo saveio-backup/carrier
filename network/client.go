@@ -31,10 +31,11 @@ const (
 )
 
 type PrepareAckMessage struct {
-	MessageID string
-	Message   proto.Message
-	WhenSend  int
-	Frequency uint8
+	MessageID           string
+	Message             proto.Message
+	WhenSend            int
+	Frequency           uint8
+	LatestSendSuccessAt int
 }
 
 type AckStatus struct {
@@ -379,10 +380,11 @@ func (c *PeerClient) StreamAsyncSendAndWaitAck(streamID string, ctx context.Cont
 	}
 
 	c.SyncWaitAck.Store(msgID, &PrepareAckMessage{
-		MessageID: msgID,
-		Message:   req,
-		Frequency: 1,
-		WhenSend:  time.Now().Second(),
+		MessageID:           msgID,
+		Message:             req,
+		Frequency:           1,
+		WhenSend:            time.Now().Second(),
+		LatestSendSuccessAt: time.Now().Second(),
 	})
 
 	return nil, 0
