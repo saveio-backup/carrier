@@ -7,6 +7,8 @@ import (
 
 	"context"
 
+	"math/rand"
+
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
@@ -15,14 +17,16 @@ import (
 const (
 	DefaultAckCheckedInterval = 3 * time.Second
 	DefaultAckMessageTimeout  = 10 * time.Second
+	DefaultDelayResentTime    = 1 * time.Second
 )
 
 // Component is the keepalive Component
 type Component struct {
 	*network.Component
 	// interval to send keepalive msg
-	ackCheckedInterval time.Duration
-	ackMessageTimeout  time.Duration
+	ackCheckedInterval      time.Duration
+	ackMessageTimeout       time.Duration
+	delayResentTimeDistance time.Duration
 	// Channel for peer network state change notification
 	peerStateChan chan *PeerStateEvent
 	stopCh        chan struct{}
@@ -58,10 +62,16 @@ func WithAckMessageTimeout(t time.Duration) ComponentOption {
 	}
 }
 
+func WithDealyResentTimeDistance(t time.Duration) ComponentOption {
+	return func(o *Component) {
+		o.delayResentTimeDistance = t
+	}
+}
 func defaultOptions() ComponentOption {
 	return func(o *Component) {
 		o.ackCheckedInterval = DefaultAckCheckedInterval
 		o.ackMessageTimeout = DefaultAckMessageTimeout
+		o.delayResentTimeDistance = DefaultDelayResentTime
 	}
 }
 
@@ -114,6 +124,12 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 	return nil
 }
 
+func (p *Component) getJitDelayTime(value interface{}) time.Duration {
+	delayByFrequency := p.delayResentTimeDistance * time.Duration(value.(*network.PrepareAckMessage).Frequency)
+	jitter := time.Millisecond * time.Duration(rand.Intn(200))
+	return delayByFrequency + jitter
+}
+
 func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 	t := time.NewTicker(p.ackCheckedInterval)
 
@@ -136,6 +152,8 @@ func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 
 				if time.Now().Second()-value.(*network.PrepareAckMessage).LatestSendSuccessAt > int(p.ackCheckedInterval/time.Second) {
 					go func() {
+						time.Sleep(p.getJitDelayTime(value))
+
 						if err := client.Tell(context.Background(), value.(*network.PrepareAckMessage).Message); err != nil {
 							log.Errorf("in ackReply component, ReSend Message err:%s", err.Error())
 						} else {
