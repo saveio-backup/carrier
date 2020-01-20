@@ -1058,41 +1058,31 @@ func (n *Network) StreamWrite(streamID, address string, message *protobuf.Messag
 	state, ok := n.ConnectionState(address)
 	if !ok {
 		//n.UpdateConnState(address, PEER_UNREACHABLE)
-		return errors.New("Network.write: connection does not exist"), 0
+		return errors.New("Network.StreamWrite: connection does not exist"), 0
 	}
 	state.writerMutex.Lock()
-	log.Debugf("Network.Write write msg to %s", address)
+	log.Debugf("Network.StreamWrite write msg to %s", address)
 	defer func() {
 		state.writerMutex.Unlock()
-		log.Debugf("Network.Write write msg to %s done", address)
+		log.Debugf("Network.StreamWrite write msg to %s done", address)
 	}()
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
 	addrInfo, err := ParseAddress(n.Address)
 	if err != nil {
 		log.Fatal(err)
-		return errors.Errorf("Network.Write parse address,%s", err.Error()), 0
+		return errors.Errorf("Network.StreamWrite parse address,%s", err.Error()), 0
 	}
 
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
 		if tcpConn == nil {
-			return errors.Errorf("Network.Write connection is nil address,%s", address), 0
+			return errors.Errorf("Network.StreamWrite connection is nil address,%s", address), 0
 		}
 		err, bytes = n.streamSendMessage(tcpConn, state.writer, message, state.writerMutex, address, streamID)
 		if err != nil {
-			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
+			log.Error("(tcp/kcp) Network.StreamWrite to addr:", address, "err:", err.Error())
 		}
-	}
-	if err != nil && (err != WriteInterruptMsg || err != ReadInterruptMsg) {
-		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), address)
-		/*
-			if client := n.GetPeerClient(address); client != nil {
-						client.Close()
-					} else {
-						log.Errorf("get client entry err in Writer:%s", err.Error())
-					}
-		*/
 	}
 	return err, bytes
 }

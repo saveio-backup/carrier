@@ -238,12 +238,12 @@ func (c *PeerClient) StreamSendDataCnt(streamID string) uint64 {
 func (c *PeerClient) StreamSend(streamID string, ctx context.Context, message proto.Message) (error, int32) {
 	signed, err := c.Network.PrepareMessage(ctx, message)
 	if err != nil {
-		return errors.Wrap(err, "failed to sign message"), 0
+		return errors.Wrap(err, "failed to sign message in stream send"), 0
 	}
 
 	err, bytes := c.Network.StreamWrite(streamID, c.Address, signed)
 	if err != nil {
-		return errors.Wrapf(err, "failed to send message to %s", c.Address), 0
+		return errors.Wrapf(err, "StreamSend failed to send message to %s", c.Address), 0
 	}
 
 	return nil, bytes
@@ -251,7 +251,7 @@ func (c *PeerClient) StreamSend(streamID string, ctx context.Context, message pr
 
 func (c *PeerClient) StreamRequest(streamID string, ctx context.Context, req proto.Message, timeout time.Duration) (proto.Message, error, int32) {
 	if ctx == nil {
-		return nil, errors.New("network: invalid context"), 0
+		return nil, errors.New("network: invalid context in stream request"), 0
 	}
 
 	if ctx.Err() != nil {
@@ -354,7 +354,7 @@ func (c *PeerClient) waitAckLen() int {
 
 func (c *PeerClient) StreamAsyncSendAndWaitAck(streamID string, ctx context.Context, req proto.Message, msgID string) (error, int32) {
 	if ctx == nil {
-		return errors.New("network: invalid context"), 0
+		return errors.New("network: invalid context in stream async send and wait ack"), 0
 	}
 
 	if ctx.Err() != nil {
@@ -362,12 +362,12 @@ func (c *PeerClient) StreamAsyncSendAndWaitAck(streamID string, ctx context.Cont
 	}
 
 	if c.waitAckLen() >= DEFAULT_ACK_REPLY_CAPACITY {
-		log.Errorf("async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.Address, msgID)
+		log.Errorf("stream async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.Address, msgID)
 		return errors.New(fmt.Sprintf("async send map filled fully. cap:%d", DEFAULT_ACK_REPLY_CAPACITY)), 0
 	}
 
 	if _, ok := c.SyncWaitAck.Load(msgID); ok {
-		return errors.New(fmt.Sprintf("msgID:%s has been in sending queue", msgID)), 0
+		return errors.New(fmt.Sprintf("msgID:%s has been in stream sending queue", msgID)), 0
 	}
 
 	signed, err := c.Network.PrepareMessageWithMsgID(ctx, req, msgID)
