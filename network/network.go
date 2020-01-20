@@ -1086,11 +1086,13 @@ func (n *Network) StreamWrite(streamID, address string, message *protobuf.Messag
 	}
 	if err != nil && (err != WriteInterruptMsg || err != ReadInterruptMsg) {
 		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), address)
-		if client := n.GetPeerClient(address); client != nil {
-			client.Close()
-		} else {
-			log.Errorf("get client entry err in Writer:%s", err.Error())
-		}
+		/*
+			if client := n.GetPeerClient(address); client != nil {
+						client.Close()
+					} else {
+						log.Errorf("get client entry err in Writer:%s", err.Error())
+					}
+		*/
 	}
 	return err, bytes
 }

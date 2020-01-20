@@ -149,6 +149,7 @@ func (c *PeerClient) Submit(job func()) {
 
 func (c *PeerClient) RemoveEntries() error {
 	// Remove entries from node's network.
+	log.Debug("stack info:", fmt.Sprintf("%s", debug.Stack()))
 	clientAddr := c.Address
 	if c.ID != nil {
 		clientAddr = c.ID.Address
