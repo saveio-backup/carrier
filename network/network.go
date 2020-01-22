@@ -198,6 +198,7 @@ func (n *Network) GetKeys() *crypto.KeyPair {
 
 func (n *Network) dispatchMessage(client *PeerClient, msg *protobuf.Message) {
 	if !client.IsIncomingReady() {
+		log.Warnf("in Network.dispatchMessage, client.IsIncomingReady is false,client addr:%s,msg.ID:%s,msg.Nonce:%d", client.Address, msg.MessageID, msg.MessageNonce)
 		return
 	}
 

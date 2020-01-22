@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
+	"github.com/saveio/themis/common/log"
 )
 
 const (
@@ -112,7 +113,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		// Send keepalive response to peer.
 		err := ctx.Client().Tell(context.Background(), &protobuf.KeepaliveResponse{})
 		if err != nil {
-			return errors.New("in keepalive component send keepalive rsponse err, client.addr:" + ctx.Client().ID.Address)
+			return errors.New("in keepalive component send keepalive response err:" + err.Error() + ", client.addr:" + ctx.Client().ID.Address)
 		}
 		//p.net.ConnMgr.Lock()
 		//p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
@@ -163,7 +164,9 @@ func (p *Component) timeout() {
 			//It is not need to update connection status ,beacause client.Close() will do!
 			//p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
 			//p.net.ConnMgr.Unlock()
-			client.Close()
+			//client.Close()
+			log.Warn("expect keepalive response from :%s timeout, local addr is:%s, "+
+				"keepaliveTimeout:%d, keepaliveInterval:%d", client.Address, p.net.Address, p.keepaliveTimeout, p.keepaliveInterval)
 		}
 		return true
 	})
