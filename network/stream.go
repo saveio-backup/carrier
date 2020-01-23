@@ -223,8 +223,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 
-		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
-		n.Reporter.LogRecvMessage(int64(bytesRead))
+		n.LogNetStatics(int64(bytesRead), client)
 	}
 	if err != nil {
 		return nil, errors.Errorf("tcp receive networkID ahead bytes err:%s, buffer: %v", err.Error(), buffer)
@@ -240,8 +239,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 
-		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
-		n.Reporter.LogRecvMessage(int64(bytesRead))
+		n.LogNetStatics(int64(bytesRead), client)
 	}
 
 	if err != nil {
@@ -258,8 +256,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 		bytesRead, err = conn.Read(buffer[totalBytesRead:])
 		totalBytesRead += bytesRead
 
-		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
-		n.Reporter.LogRecvMessage(int64(bytesRead))
+		n.LogNetStatics(int64(bytesRead), client)
 	}
 
 	if err != nil {
@@ -283,9 +280,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 			client.Time = time.Now()
 		}
 		totalBytesRead += bytesRead
-
-		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
-		n.Reporter.LogRecvMessage(int64(bytesRead))
+		n.LogNetStatics(int64(bytesRead), client)
 	}
 
 	if err != nil {
@@ -314,4 +309,10 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 	log.Infof("(kcp/tcp)in Network.receiveMessage,success receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, msg.MsgID:%s", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce, msg.MessageID)
 
 	return msg, nil
+}
+func (n *Network) LogNetStatics(bytesRead int64, client *PeerClient) {
+	if client != nil {
+		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
+	}
+	n.Reporter.LogRecvMessage(int64(bytesRead))
 }
