@@ -15,6 +15,8 @@ import (
 
 	"fmt"
 
+	"io"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
@@ -69,6 +71,15 @@ type PeerClient struct {
 	EnableAckReply  bool
 	SyncWaitAck     *sync.Map
 	AckStatusNotify chan AckStatus
+	StreamSendQueue chan StreamSendItem
+}
+
+type StreamSendItem struct {
+	TcpConn  net.Conn
+	Write    io.Writer
+	Message  *protobuf.Message
+	Address  string
+	StreamID string
 }
 
 // StreamState represents a stream.
@@ -115,9 +126,24 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		EnableAckReply:  false,
 		AckStatusNotify: make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
 		SyncWaitAck:     new(sync.Map),
+		StreamSendQueue: make(chan StreamSendItem, network.streamQueueLen),
 	}
 
 	return client, nil
+}
+
+func (c *PeerClient) loopStreamSend() {
+	for {
+		select {
+		case item := <-c.StreamSendQueue:
+			if c.StreamExist(item.StreamID) == false {
+				continue // if stream has been closed or deleted, drop it immediately.
+			}
+			c.Network.streamSendMessage(item.TcpConn, item.Write, item.Message, item.Address, item.StreamID)
+		case <-c.CloseSignal:
+			return
+		}
+	}
 }
 
 // Init initialize a client's Component and starts executing a jobs.
@@ -126,6 +152,7 @@ func (c *PeerClient) Init() {
 		Component.PeerConnect(c)
 	})
 	go c.executeJobs()
+	go c.loopStreamSend()
 }
 
 func (c *PeerClient) executeJobs() {
@@ -613,4 +640,20 @@ func (c *PeerClient) EnableBackoff() {
 
 func (c *PeerClient) GetBackoffStatus() bool {
 	return c.enableBackoff
+}
+
+func (c *PeerClient) StreamQueueCap() int {
+	return cap(c.StreamSendQueue)
+}
+
+func (c *PeerClient) StreamQueueLen() int {
+	return len(c.StreamSendQueue)
+}
+
+func (c *PeerClient) StreamCanWrite() bool {
+	if c.StreamQueueCap()-c.StreamQueueLen() > 0 {
+		return true
+	} else {
+		return false
+	}
 }

@@ -52,6 +52,7 @@ const (
 	defaultWriteTimeout      = 3
 	defaultProxyNotifySize   = 256
 	defaultCompressFileSize  = 4 * 1024 * 1024
+	defaultStreamQueueLen    = 256
 )
 
 const (
@@ -125,6 +126,8 @@ type Network struct {
 	metric                      Metric
 	DisableDispatchMsgGoroutine bool
 	Reporter                    *metrics.BandwidthCounter
+
+	streamQueueLen uint16
 }
 
 type NetDistanceMetric struct {
@@ -1087,10 +1090,25 @@ func (n *Network) StreamWrite(streamID, address string, message *protobuf.Messag
 		if tcpConn == nil {
 			return errors.Errorf("Network.StreamWrite connection is nil address,%s", address), 0
 		}
-		err, bytes = n.streamSendMessage(tcpConn, state.writer, message, state.writerMutex, address, streamID)
-		if err != nil {
-			log.Error("(tcp/kcp) Network.StreamWrite to addr:", address, "err:", err.Error())
+
+		if peer := n.GetPeerClient(address); nil != peer {
+			peer.StreamSendQueue <- StreamSendItem{
+				TcpConn:  tcpConn,
+				Write:    state.writer,
+				Message:  message,
+				Address:  address,
+				StreamID: streamID,
+			}
+		} else {
+			log.Error("(tcp/kcp) Network.StreamWrite to addr:", address, "err: client does not exist")
 		}
+
+		/*
+			err, bytes = n.streamSendMessage(tcpConn, state.writer, message, address, streamID)
+					if err != nil {
+						log.Error("(tcp/kcp) Network.StreamWrite to addr:", address, "err:", err.Error())
+					}
+		*/
 	}
 	return err, bytes
 }
@@ -1121,7 +1139,7 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		if tcpConn == nil {
 			return errors.Errorf("Network.Write connection is nil address,%s", address)
 		}
-		err = n.sendMessage(tcpConn, state.writer, message, state.writerMutex, address)
+		err = n.sendMessage(tcpConn, state.writer, message, address)
 		if err != nil {
 			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
 		}
@@ -1395,4 +1413,8 @@ func (n *Network) DisableMsgGoroutine() {
 
 func (n *Network) EnableMsgGoroutine() {
 	n.DisableDispatchMsgGoroutine = false
+}
+
+func (n *Network) SetStreamQueueLen(size uint16) {
+	n.streamQueueLen = size
 }

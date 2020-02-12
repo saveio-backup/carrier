@@ -21,6 +21,7 @@ type Stream struct {
 	mutex   *sync.Mutex
 	ID      string
 	SendCnt uint64
+	Client  *PeerClient
 }
 
 func (s *Stream) GetSendDataCnt() uint64 {
@@ -50,6 +51,7 @@ func (peer *PeerClient) OpenStream() *Stream {
 		ID:      fmt.Sprintf("%s:%d", peer.Address, stream.idIncCounter),
 		mutex:   new(sync.Mutex),
 		SendCnt: 0,
+		Client:  peer,
 	}
 	if value, ok := peer.Network.ConnMgr.streams.Load(peer.Address); ok {
 		value.(MultiStream).stream.Store(s.ID, &s)
@@ -66,5 +68,17 @@ func (peer *PeerClient) CloseStream(streamID string) {
 			value.(MultiStream).stream.Delete(streamID)
 			v.(*Stream).mutex.Unlock()
 		}
+	}
+}
+
+func (peer *PeerClient) StreamExist(streamID string) bool {
+	if value, ok := peer.Network.ConnMgr.streams.Load(peer.Address); ok {
+		if _, isOK := value.(MultiStream).stream.Load(streamID); isOK {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
 	}
 }

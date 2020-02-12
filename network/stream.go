@@ -3,7 +3,6 @@ package network
 import (
 	"encoding/binary"
 	"io"
-	"sync"
 	"time"
 
 	"net"
@@ -23,7 +22,7 @@ var WriteInterruptMsg = errors.New("socket write interrupt by application")
 var ReadInterruptMsg = errors.New("socket read interrupt by application")
 var errEmptyMsg = errors.New("received an empty message from a peer")
 
-func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, address, streamID string) (error, int32) {
+func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, address, streamID string) (error, int32) {
 	log.Debugf("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d,msg.msgID:%s",
 		n.ID.Address, address, message.Opcode, message.MessageNonce, message.MessageID)
 	bytes, err := proto.Marshal(message)
@@ -127,7 +126,7 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 }
 
 // sendMessage marshals, signs and sends a message over a stream.
-func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, writerMutex *sync.Mutex, address string) error {
+func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, address string) error {
 	log.Debugf("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d,msg.msgID:%s",
 		n.ID.Address, address, message.Opcode, message.MessageNonce, message.MessageID)
 	bytes, err := proto.Marshal(message)
