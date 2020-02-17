@@ -305,10 +305,15 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 		return nil, errors.New("(tcp)received an invalid message (either no opcode, no sender, no net key, or no signature) from a peer")
 	}
 
+	if msg.MessageID != "" && client != nil {
+		n.Reporter.LogRecvMessageStream(int64(totalBytesRead), client.Address, msg.MessageID)
+	}
+
 	log.Infof("(kcp/tcp)in Network.receiveMessage,success receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, msg.MsgID:%s", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce, msg.MessageID)
 
 	return msg, nil
 }
+
 func (n *Network) LogNetStatics(bytesRead int64, client *PeerClient) {
 	if client != nil {
 		n.Reporter.LogRecvMessageStream(int64(bytesRead), client.Address, n.PeerID())
