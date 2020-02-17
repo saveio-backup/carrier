@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"fmt"
+
 	"github.com/saveio/carrier/dht"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
@@ -13,7 +15,7 @@ import (
 )
 
 func queryPeerByID(net *network.Network, peerID peer.ID, targetID peer.ID, responses chan []*protobuf.ID) {
-	client, err := net.Client(peerID.Address)
+	client, err := net.Client(peerID.Address, fmt.Sprintf("%s", peerID.Id))
 	if err != nil {
 		responses <- []*protobuf.ID{}
 		return
@@ -24,7 +26,7 @@ func queryPeerByID(net *network.Network, peerID peer.ID, targetID peer.ID, respo
 	msg := &protobuf.LookupNodeRequest{Target: &targetProtoID}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	response, err := client.Request(ctx, msg)
+	response, err := client.Request(ctx, msg, 3*time.Second)
 
 	if err != nil {
 		responses <- []*protobuf.ID{}

@@ -25,13 +25,13 @@ type NetworkInterface interface {
 	Listen()
 
 	// Client either creates or returns a cached peer client given its host address.
-	Client(address string) (*PeerClient, error)
+	Client(address, peerID string) (*PeerClient, error)
 
 	// BlockUntilListening blocks until this node is listening for new peers.
 	BlockUntilListening()
 
 	// Bootstrap with a number of peers and commence a handshake.
-	Bootstrap(addresses ...string)
+	Bootstrap(addresses, peers []string)
 
 	// Dial establishes a bidirectional connection to an address, and additionally handshakes with said address.
 	Dial(address string, client *PeerClient) (interface{}, error)

@@ -21,9 +21,9 @@ import (
 
 	"sync/atomic"
 
-	"strings"
-
 	"reflect"
+
+	"encoding/hex"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/lucas-clemente/quic-go"
@@ -141,10 +141,15 @@ type ProxyEvent struct {
 	ConnectionID string
 }
 
+type ProxyServer struct {
+	IP     string
+	PeerID string
+}
+
 type Proxy struct {
 	Enable          bool
 	Finish          *sync.Map
-	Servers         []string
+	Servers         []ProxyServer
 	WorkID          uint16
 	ConnectionEvent []chan *ProxyEvent
 }
@@ -415,8 +420,8 @@ func (n *Network) quicListen(listener interface{}) {
 	}
 }
 
-func (n *Network) GetPeerClient(address string) *PeerClient {
-	if client, ok := n.ConnMgr.peers.Load(address); ok {
+func (n *Network) GetPeerClient(peerID string) *PeerClient {
+	if client, ok := n.ConnMgr.peers.Load(peerID); ok {
 		return client.(*PeerClient)
 	} else {
 		return nil
@@ -425,7 +430,7 @@ func (n *Network) GetPeerClient(address string) *PeerClient {
 
 // getOrSetPeerClient either returns a cached peer client or creates a new one given a net.Conn
 // or dials the client if no net.Conn is provided.
-func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerClient, error) {
+func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (*PeerClient, error) {
 	n.createClientMutex.Lock()
 	defer n.createClientMutex.Unlock()
 	address, err := ToUnifiedAddress(address)
@@ -442,7 +447,7 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		return nil, err
 	}
 
-	c, exists := n.ConnMgr.peers.Load(address)
+	c, exists := n.ConnMgr.peers.Load(peerID)
 	if exists {
 		client := c.(*PeerClient)
 
@@ -464,21 +469,21 @@ func (n *Network) getOrSetPeerClient(address string, conn interface{}) (*PeerCli
 		conn, err = n.Dial(address, client)
 
 		if err != nil {
-			n.ConnMgr.peers.Delete(address)
+			n.ConnMgr.peers.Delete(peerID)
 			return nil, err
 		}
 	}
-	n.initConnection(address, conn)
-	n.ConnMgr.peers.Store(address, client)
-	n.ConnMgr.streams.Store(address, NewMultiStream())
+	n.initConnection(address, peerID, conn)
+	n.ConnMgr.peers.Store(peerID, client)
+	n.ConnMgr.streams.Store(peerID, NewMultiStream())
 	client.Init()
-	n.UpdateConnState(address, PEER_REACHABLE)
+	n.UpdateConnState(peerID, PEER_REACHABLE)
 
 	client.setIncomingReady()
 	return client, nil
 }
 
-func (n *Network) initConnection(address string, conn interface{}) {
+func (n *Network) initConnection(address, peerID string, conn interface{}) {
 	addrInfo, err := ParseAddress(address)
 	if err != nil {
 		log.Errorf("address:%s,initConnection err:%s", address, err.Error())
@@ -486,7 +491,7 @@ func (n *Network) initConnection(address string, conn interface{}) {
 	switch addrInfo.Protocol {
 	case "tcp", "kcp":
 		netConn, _ := conn.(net.Conn)
-		n.ConnMgr.connections.Store(address, &ConnState{
+		n.ConnMgr.connections.Store(peerID, &ConnState{
 			conn:           conn,
 			writer:         bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
 			writerMutex:    new(sync.Mutex),
@@ -495,14 +500,14 @@ func (n *Network) initConnection(address string, conn interface{}) {
 		})
 	case "udp":
 		udpConn, _ := conn.(*net.UDPConn)
-		n.ConnMgr.connections.Store(address, &ConnState{
+		n.ConnMgr.connections.Store(peerID, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(udpConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
 		})
 	case "quic":
 		netConn, _ := conn.(quic.Stream)
-		n.ConnMgr.connections.Store(address, &ConnState{
+		n.ConnMgr.connections.Store(peerID, &ConnState{
 			conn:        conn,
 			writer:      bufio.NewWriterSize(netConn, n.opts.writeBufferSize),
 			writerMutex: new(sync.Mutex),
@@ -513,25 +518,25 @@ func (n *Network) initConnection(address string, conn interface{}) {
 }
 
 // Client either creates or returns a cached peer client given its host address.
-func (n *Network) Client(address string) (*PeerClient, error) {
-	return n.getOrSetPeerClient(address, nil)
+func (n *Network) Client(address, peerID string) (*PeerClient, error) {
+	return n.getOrSetPeerClient(address, peerID, nil)
 }
 
-func (n *Network) ClientExist(address string) bool {
-	_, ok := n.ConnMgr.peers.Load(address)
+func (n *Network) ClientExist(peerID string) bool {
+	_, ok := n.ConnMgr.peers.Load(peerID)
 	return ok
 }
 
 // ConnectionStateExists returns true if network has a connection on a given address.
-func (n *Network) ConnectionStateExists(address string) bool {
-	_, ok := n.ConnMgr.connections.Load(address)
+func (n *Network) ConnectionStateExists(peerID string) bool {
+	_, ok := n.ConnMgr.connections.Load(peerID)
 	return ok
 }
 
 func (n *Network) ProxyConnectionStateExists() (bool, error) {
 	if n.ProxyModeEnable() == true {
-		address := n.GetWorkingProxyServer()
-		_, ok := n.ConnMgr.connections.Load(address)
+		_, peerID := n.GetWorkingProxyServer()
+		_, ok := n.ConnMgr.connections.Load(peerID)
 		return ok, nil
 	} else {
 		return false, errors.New("proxy does not enable")
@@ -539,8 +544,8 @@ func (n *Network) ProxyConnectionStateExists() (bool, error) {
 }
 
 // ConnectionState returns a connections state for current address.
-func (n *Network) ConnectionState(address string) (*ConnState, bool) {
-	conn, ok := n.ConnMgr.connections.Load(address)
+func (n *Network) ConnectionState(peerID string) (*ConnState, bool) {
+	conn, ok := n.ConnMgr.connections.Load(peerID)
 	if !ok {
 		return nil, false
 	}
@@ -552,8 +557,8 @@ func (n *Network) ProxyConnectionState() (*ConnState, bool) {
 	if n.ProxyModeEnable() == false {
 		return nil, false
 	}
-	address := n.GetWorkingProxyServer()
-	conn, ok := n.ConnMgr.connections.Load(address)
+	_, peerID := n.GetWorkingProxyServer()
+	conn, ok := n.ConnMgr.connections.Load(peerID)
 	if !ok {
 		return nil, false
 	}
@@ -610,8 +615,8 @@ func (n *Network) BlockUntilUDPProxyFinish() {
 	}
 }
 
-func (n *Network) ReconnectProxyServer(address string) error {
-	if client := n.GetPeerClient(address); client != nil {
+func (n *Network) ReconnectProxyServer(address, peerID string) error {
+	if client := n.GetPeerClient(peerID); client != nil {
 		client.DisableBackoff()
 		client.Close()
 	}
@@ -623,20 +628,29 @@ func (n *Network) ReconnectProxyServer(address string) error {
 	n.ProxyService.Finish.Store(addrInfo.Protocol, make(chan struct{}))
 
 	log.Infof("in carrier.Network,Reconnect Proxy Server start, proxy addr:%s", address)
-	return n.ConnectProxyServer(address)
+	return n.ConnectProxyServer(address, peerID)
 }
 
-func (n *Network) ConnectProxyServer(address string) error {
-	if n.ConnectionStateExists(address) {
+func (n *Network) ConnectProxyServer(address, peerID string) error {
+	if n.ConnectionStateExists(peerID) {
 		log.Info("in ConnectProxyServer, connection belong to addr:", address, "has exist, return directly.")
 		return nil
 	}
-	client, err := n.Client(address)
+
+	pubKey, err := hex.DecodeString(peerID)
+	if err != nil {
+		log.Error("decodeString peer pubkey in bootstrap err:", err, ";address:", address)
+		return err
+	}
+
+	unifiedAddress, _ := ToUnifiedAddress(address)
+	id := peer.CreateID(unifiedAddress, pubKey)
+	client, err := n.Client(address, peerID)
 	if err != nil {
 		log.Error("create client in ConnectProxyServer err:", err, ";address:", address)
 		return err
 	}
-
+	client.ID = (*peer.ID)(&id)
 	err = client.Tell(context.Background(), &protobuf.ProxyRequest{})
 	if err != nil {
 		log.Error("new client send proxy request message in ConnectProxyServer err:", err, ";address:", address)
@@ -645,27 +659,27 @@ func (n *Network) ConnectProxyServer(address string) error {
 	return nil
 }
 
-func (n *Network) ReconnectPeer(address string) error {
-	if client := n.GetPeerClient(address); client != nil {
+func (n *Network) ReconnectPeer(address, peerID string) error {
+	if client := n.GetPeerClient(peerID); client != nil {
 		client.DisableBackoff()
 		client.Close()
 	}
 
 	log.Infof("in carrier.Network,Reconnect Peer start, peer addr:%s", address)
-	return n.ConnectPeer(address)
+	return n.ConnectPeer(address, peerID)
 }
 
-func (n *Network) ConnectPeer(address string) error {
-	if n.ConnectionStateExists(address) {
+func (n *Network) ConnectPeer(address, peerID string) error {
+	if n.ConnectionStateExists(peerID) {
 		log.Info("in ConnectPeer, connection belong to addr:", address, "has exist, return directly.")
 		return nil
 	}
 
-	if n.ClientExist(address) {
+	if n.ClientExist(peerID) {
 		log.Info("in ConnectPeer, client belong to addr:", address, "has exist, return directly.")
 		return nil
 	}
-	client, err := n.Client(address)
+	client, err := n.Client(address, peerID)
 	if err != nil {
 		log.Error("create client in ConnectPeer err:", err, ";address:", address)
 		return err
@@ -680,18 +694,29 @@ func (n *Network) ConnectPeer(address string) error {
 }
 
 // Bootstrap with a number of peers and commence a handshake.
-func (n *Network) Bootstrap(addresses ...string) {
+func (n *Network) Bootstrap(addresses, peers []string) {
 	n.BlockUntilListening()
 
 	addresses = FilterPeers(n.Address, addresses)
-
+	index := -1
 	for _, address := range addresses {
-		client, err := n.Client(address)
+		index++
 
+		pubKey, err := hex.DecodeString(peers[index])
+		if err != nil {
+			log.Error("decodeString peer pubkey in bootstrap err:", err, ";address:", address)
+			continue
+		}
+
+		unifiedAddress, _ := ToUnifiedAddress(address)
+		id := peer.CreateID(unifiedAddress, pubKey)
+		client, err := n.Client(address, peers[index])
 		if err != nil {
 			log.Error("create client in bootstrap err:", err, ";address:", address)
 			continue
 		}
+
+		client.ID = (*peer.ID)(&id)
 
 		err = client.Tell(context.Background(), &protobuf.Ping{})
 		if err != nil {
@@ -768,11 +793,11 @@ func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 			log.Warn("quit connect with ", address)
 			return
 		}
-
+		peerID := hex.EncodeToString(msg.Sender.NetKey)
 		if n.ProxyModeEnable() {
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, peerID, nil)
 		} else {
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, stream)
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, peerID, stream)
 		}
 
 		if err != nil {
@@ -781,7 +806,7 @@ func (n *Network) AcceptQuic(stream quic.Stream, cli *PeerClient) {
 		address = msg.Sender.Address
 		client.ID = (*peer.ID)(msg.Sender)
 
-		if !n.ConnectionStateExists(client.ID.Address) {
+		if !n.ConnectionStateExists(client.PeerID()) {
 			err = errors.New("network: failed to load session")
 		}
 
@@ -853,10 +878,11 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 			break
 		}
 
+		peerID := hex.EncodeToString(msg.Sender.NetKey)
 		if n.ProxyModeEnable() {
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, peerID, nil)
 		} else {
-			client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+			client, err = n.getOrSetPeerClient(msg.Sender.Address, peerID, incoming)
 		}
 		if err != nil {
 			log.Error(err)
@@ -865,7 +891,7 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 
 		client.ID = (*peer.ID)(msg.Sender)
 
-		if !n.ConnectionStateExists(client.ID.Address) {
+		if !n.ConnectionStateExists(client.PeerID()) {
 			log.Error("network: failed to load session")
 			return
 		}
@@ -935,10 +961,11 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 				log.Error("received message had an malformed signature")
 				return
 			}
+			peerID := hex.EncodeToString(msg.Sender.NetKey)
 			if n.ProxyModeEnable() {
-				client, err = n.getOrSetPeerClient(msg.Sender.Address, nil)
+				client, err = n.getOrSetPeerClient(msg.Sender.Address, peerID, nil)
 			} else {
-				client, err = n.getOrSetPeerClient(msg.Sender.Address, incoming)
+				client, err = n.getOrSetPeerClient(msg.Sender.Address, peerID, incoming)
 			}
 
 			if err != nil {
@@ -948,7 +975,7 @@ func (n *Network) AcceptUdp(incoming interface{}) {
 
 			client.ID = (*peer.ID)(msg.Sender)
 
-			if !n.ConnectionStateExists(msg.Sender.Address) {
+			if !n.ConnectionStateExists(client.PeerID()) {
 				log.Error(errors.New("network: failed to load session"))
 				return
 			}
@@ -1064,13 +1091,18 @@ func (n *Network) writeToDispatchChannel(state *ConnState, message *protobuf.Mes
 	}
 }
 
-func (n *Network) StreamWrite(streamID, address string, message *protobuf.Message) (error, int32) {
+func (n *Network) StreamWrite(streamID, peerID string, message *protobuf.Message) (error, int32) {
 	var bytes int32
-	state, ok := n.ConnectionState(address)
+	state, ok := n.ConnectionState(peerID)
 	if !ok {
 		return errors.New("Network.StreamWrite: connection does not exist"), 0
 	}
-
+	state.writerMutex.Lock()
+	log.Debugf("Network.StreamWrite write msg to %s", peerID)
+	defer func() {
+		state.writerMutex.Unlock()
+		log.Debugf("Network.StreamWrite write msg to %s done", peerID)
+	}()
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
 	addrInfo, err := ParseAddress(n.Address)
@@ -1082,22 +1114,22 @@ func (n *Network) StreamWrite(streamID, address string, message *protobuf.Messag
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
 		if tcpConn == nil {
-			return errors.Errorf("Network.StreamWrite connection is nil address,%s", address), 0
+			return errors.Errorf("Network.StreamWrite connection is nil address,%s", peerID), 0
 		}
 
-		if peer := n.GetPeerClient(address); nil != peer {
+		if peer := n.GetPeerClient(peerID); nil != peer {
 			peer.StreamSendQueue <- StreamSendItem{
 				TcpConn:  tcpConn,
 				Write:    state.writer,
 				Message:  message,
-				Address:  address,
+				PeerID:   peerID,
 				StreamID: streamID,
 				Mutex:    state.writerMutex,
 			}
 			log.Debugf("Network.StreamWrite msg(id:%s) write to addr:%s(streamID:%s) has been put into queue",
 				message.MessageID, address, streamID)
 		} else {
-			log.Error("(tcp/kcp) Network.StreamWrite to addr:", address, "err: client does not exist")
+			log.Error("(tcp/kcp) Network.StreamWrite to addr:", peerID, "err: client does not exist")
 		}
 
 		/*
@@ -1111,17 +1143,17 @@ func (n *Network) StreamWrite(streamID, address string, message *protobuf.Messag
 }
 
 // Write asynchronously sends a message to a denoted target address.
-func (n *Network) Write(address string, message *protobuf.Message) error {
-	state, ok := n.ConnectionState(address)
+func (n *Network) Write(peerID string, message *protobuf.Message) error {
+	state, ok := n.ConnectionState(peerID)
 	if !ok {
 		//n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.write: connection does not exist")
 	}
 	state.writerMutex.Lock()
-	log.Debugf("Network.Write write msg to %s", address)
+	log.Debugf("Network.Write write msg to %s", peerID)
 	defer func() {
 		state.writerMutex.Unlock()
-		log.Debugf("Network.Write write msg to %s done", address)
+		log.Debugf("Network.Write write msg to %s done", peerID)
 	}()
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
@@ -1134,19 +1166,19 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
 		if tcpConn == nil {
-			return errors.Errorf("Network.Write connection is nil address,%s", address)
+			return errors.Errorf("Network.Write connection is nil address,%s", peerID)
 		}
-		err = n.sendMessage(tcpConn, state.writer, message, address)
+		err = n.sendMessage(tcpConn, state.writer, message, peerID)
 		if err != nil {
-			log.Error("(tcp/kcp) write to addr:", address, "err:", err.Error())
+			log.Error("(tcp/kcp) write to addr:", peerID, "err:", err.Error())
 		}
 	}
 	if addrInfo.Protocol == "udp" {
 		//udpConn, _ := state.conn.(*net.UDPConn)
 		//udpConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
-		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state, address)
+		err = n.sendUDPMessage(state.writer, message, state.writerMutex, state, peerID)
 		if err != nil {
-			log.Error("(udp) write to addr:", address, "err:", err.Error())
+			log.Error("(udp) write to addr:", peerID, "err:", err.Error())
 		}
 	}
 
@@ -1155,13 +1187,13 @@ func (n *Network) Write(address string, message *protobuf.Message) error {
 		//quicConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendQuicMessage(state.writer, message, state.writerMutex)
 		if err != nil {
-			log.Error("(quic) write to addr:", address, "err:", err.Error())
+			log.Error("(quic) write to addr:", peerID, "err:", err.Error())
 		}
 	}
 
 	if err != nil {
-		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), address)
-		if client := n.GetPeerClient(address); client != nil {
+		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), peerID)
+		if client := n.GetPeerClient(peerID); client != nil {
 			client.Close()
 		} else {
 			log.Errorf("get client entry err in Writer:%s", err.Error())
@@ -1179,7 +1211,7 @@ func (n *Network) Broadcast(ctx context.Context, message proto.Message) {
 	}
 
 	n.EachPeer(func(client *PeerClient) bool {
-		err := n.Write(client.Address, signed)
+		err := n.Write(client.PeerID(), signed)
 		if err != nil {
 			log.Warnf("failed to send message to peer %v [err=%s]", client.ID, err)
 		}
@@ -1196,11 +1228,12 @@ func (n *Network) BroadcastToPeers(ctx context.Context, message proto.Message) {
 	}
 
 	n.EachPeer(func(client *PeerClient) bool {
-		if client.Address == n.GetWorkingProxyServer() {
+		proxyAddr, _ := n.GetWorkingProxyServer()
+		if client.Address == proxyAddr {
 			return true
 		}
 
-		err := n.Write(client.Address, signed)
+		err := n.Write(client.PeerID(), signed)
 		if err != nil {
 			log.Warnf("in BroadcastToPeers failed to send message to peer,peer addr:%s, peer.ID:%v, err:%s", client.Address, client.ID, err)
 		}
@@ -1304,8 +1337,8 @@ func (n *Network) GetNetworkID() uint32 {
 	return n.netID
 }
 
-func (n *Network) SetProxyServer(proxies string) {
-	n.ProxyService.Servers = strings.Split(proxies, ",")
+func (n *Network) SetProxyServer(proxies []ProxyServer) {
+	n.ProxyService.Servers = proxies
 }
 
 func (n *Network) EnableProxyMode(enable bool) {
@@ -1315,11 +1348,12 @@ func (n *Network) EnableProxyMode(enable bool) {
 func (n *Network) ProxyModeEnable() bool {
 	return n.ProxyService.Enable
 }
-func (n *Network) GetWorkingProxyServer() string {
+
+func (n *Network) GetWorkingProxyServer() (string, string) {
 	if n.ProxyModeEnable() == false {
-		return ""
+		return "", ""
 	}
-	return n.ProxyService.Servers[n.ProxyService.WorkID]
+	return n.ProxyService.Servers[n.ProxyService.WorkID].IP, n.ProxyService.Servers[n.ProxyService.WorkID].PeerID
 }
 
 func (n *Network) UpdateProxyWorkID() {
@@ -1344,32 +1378,32 @@ func (n *Network) Transports() *sync.Map {
 	return n.transports
 }
 
-func (n *Network) UpdateConnState(address string, state PeerState) {
-	n.ConnMgr.connStates.Store(address, state)
+func (n *Network) UpdateConnState(peerID string, state PeerState) {
+	n.ConnMgr.connStates.Store(peerID, state)
 }
 
-func (n *Network) GetRealConnState(address string) (PeerState, error) {
+func (n *Network) GetRealConnState(peerID string) (PeerState, error) {
 	n.ConnMgr.Mutex.Lock()
 	defer n.ConnMgr.Mutex.Unlock()
-	state, ok := n.ConnMgr.connStates.Load(address)
+	state, ok := n.ConnMgr.connStates.Load(peerID)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, client addr:%s", address)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, client addr:%s", peerID)
 	}
 
-	_, ok = n.ConnMgr.peers.Load(address)
+	_, ok = n.ConnMgr.peers.Load(peerID)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, client addr:%s", address)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, client addr:%s", peerID)
 	}
 
-	_, ok = n.ConnMgr.connections.Load(address)
+	_, ok = n.ConnMgr.connections.Load(peerID)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, client addr:%s", address)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, client addr:%s", peerID)
 	}
 
 	if state == PEER_REACHABLE {
 		return PEER_REACHABLE, nil
 	}
-	return PEER_UNREACHABLE, errors.Errorf("in Network.GetRealConnState, conn&peer exist but state is UNREACHABLE ,client addr:%s", address)
+	return PEER_UNREACHABLE, errors.Errorf("in Network.GetRealConnState, conn&peer exist but state is UNREACHABLE ,client addr:%s", peerID)
 }
 
 func (n *Network) SetDialTimeout(timeout time.Duration) {

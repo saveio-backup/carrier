@@ -35,25 +35,25 @@ func NewMultiStream() MultiStream {
 	}
 }
 
-func (peer *PeerClient) OpenStream() *Stream {
-	log.Info("in Network.OpenStream, open stream for addr:", peer.Address)
-	peer.Network.ConnMgr.Lock()
-	defer peer.Network.ConnMgr.Unlock()
+func (c *PeerClient) OpenStream() *Stream {
+	log.Info("in Network.OpenStream, open stream for addr:", c.Address)
+	c.Network.ConnMgr.Lock()
+	defer c.Network.ConnMgr.Unlock()
 
 	var stream MultiStream
-	if value, ok := peer.Network.ConnMgr.streams.Load(peer.Address); ok {
+	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
 		stream = value.(MultiStream)
 	}
 
 	stream.idIncCounter++
 
 	s := Stream{
-		ID:      fmt.Sprintf("%s:%d", peer.Address, stream.idIncCounter),
+		ID:      fmt.Sprintf("%s:%d", c.Address, stream.idIncCounter),
 		mutex:   new(sync.Mutex),
 		SendCnt: 0,
-		Client:  peer,
+		Client:  c,
 	}
-	if value, ok := peer.Network.ConnMgr.streams.Load(peer.Address); ok {
+	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
 		value.(MultiStream).stream.Store(s.ID, &s)
 	} else {
 		log.Errorf("New MultiStream maybe does not called. PLEASE CHECK YOUR CODE.")
@@ -61,8 +61,8 @@ func (peer *PeerClient) OpenStream() *Stream {
 	return &s
 }
 
-func (peer *PeerClient) CloseStream(streamID string) {
-	if value, ok := peer.Network.ConnMgr.streams.Load(peer.Address); ok {
+func (c *PeerClient) CloseStream(streamID string) {
+	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
 		if v, isOK := value.(MultiStream).stream.Load(streamID); isOK {
 			v.(*Stream).mutex.Lock()
 			value.(MultiStream).stream.Delete(streamID)
@@ -72,8 +72,8 @@ func (peer *PeerClient) CloseStream(streamID string) {
 	}
 }
 
-func (peer *PeerClient) StreamExist(streamID string) bool {
-	if value, ok := peer.Network.ConnMgr.streams.Load(peer.Address); ok {
+func (c *PeerClient) StreamExist(streamID string) bool {
+	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
 		if _, isOK := value.(MultiStream).stream.Load(streamID); isOK {
 			return true
 		} else {

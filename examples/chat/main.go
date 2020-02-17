@@ -51,6 +51,7 @@ func main() {
 	protocolFlag := flag.String("protocol", "udp", "protocol to use (kcp/tcp/udp)")
 	peersFlag := flag.String("peers", "", "peers to connect to")
 	proxyFlag := flag.String("proxy", "localhost", "proxy server ip")
+	proxyIDFlag := flag.String("proxy_id", "", "proxy id")
 	enableProxy := flag.Bool("enableProxy", false, "enable proxy")
 	flag.Parse()
 
@@ -63,6 +64,7 @@ func main() {
 	listenProtocol := *listenProtocolFlag
 	peers := strings.Split(*peersFlag, ",")
 	proxyServer := *proxyFlag
+	proxyID := *proxyIDFlag
 	keys := ed25519.RandomKeyPair()
 
 	log.Infof("Private Key: %s", keys.PrivateKeyHex())
@@ -134,8 +136,21 @@ func main() {
 		return
 	}
 	networkBuilder.SetNetworkID(1564141146)
+
 	networkBuilder.EnableProxyMode(*enableProxy)
-	networkBuilder.SetProxyServer(proxyServer)
+	if *enableProxy {
+		pServer := strings.Split(proxyServer, ",")
+		pID := strings.Split(proxyID, ",")
+		proxy_server := make([]network.ProxyServer, len(pServer))
+		for i := 0; i < len(pServer); i++ {
+			proxy_server[i] = network.ProxyServer{
+				IP:     pServer[i],
+				PeerID: pID[i],
+			}
+		}
+		networkBuilder.SetProxyServer(proxy_server)
+	}
+
 	networkBuilder.DisableCompress()
 	go networkBuilder.Listen()
 	networkBuilder.BlockUntilListening()
@@ -153,7 +168,7 @@ func main() {
 	}
 
 	if len(peers) > 0 {
-		networkBuilder.Bootstrap(peers...)
+		networkBuilder.Bootstrap(peers, []string{"0eafb51d5ea8dc420e121d406ff0ce0465d3487ace7f235b8f2cd1f4f6a97733"})
 	}
 	var stream *network.Stream
 	var client *network.PeerClient

@@ -23,7 +23,8 @@ func prepareUDPRawMessage(n *network.Network, message proto.Message) ([]byte, *n
 	}
 
 	buffer := n.BuildRawContent(signed)
-	addrInfo, err := network.ParseAddress(n.GetWorkingProxyServer())
+	proxySrv, _ := n.GetWorkingProxyServer()
+	addrInfo, err := network.ParseAddress(proxySrv)
 	if err != nil {
 		log.Error("parse address error in send proxy request:", err.Error())
 		return nil, nil, err

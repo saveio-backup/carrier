@@ -68,13 +68,13 @@ func Run(protocol string) {
 	}
 
 	go net.Listen()
-	net.Bootstrap(receiver[protocol])
+	net.Bootstrap([]string{receiver[protocol]}, []string{"peer-id"})
 
 	time.Sleep(500 * time.Millisecond)
 
 	fmt.Printf("Spamming messages to %s...\n", receiver[protocol])
 
-	client, err := net.Client(receiver[protocol])
+	client, err := net.Client(receiver[protocol], "client-id")
 	if err != nil {
 		panic(err)
 	}

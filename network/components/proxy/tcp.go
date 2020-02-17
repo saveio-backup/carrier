@@ -22,13 +22,14 @@ func TcpComponentRestartUp(n *network.Network) {
 
 	var i int
 	for i = 0; i < len(n.ProxyService.Servers); i++ {
-		if err := n.ConnectProxyServer(n.GetWorkingProxyServer()); err != nil {
-			log.Error("tcp proxy component start err:", err.Error(), "proxy server:", n.GetWorkingProxyServer(), "proxy workID:", n.ProxyService.WorkID)
+		proxySrv, peerID := n.GetWorkingProxyServer()
+		if err := n.ConnectProxyServer(proxySrv, peerID); err != nil {
+			log.Error("tcp proxy component start err:", err.Error(), "proxy server:", proxySrv, "proxy workID:", n.ProxyService.WorkID)
 			n.UpdateProxyWorkID()
 			continue
 		} else {
 			n.BlockUntilTcpProxyFinish()
-			log.Info("successed restart and connect to proxy server:", n.GetWorkingProxyServer(), "proxy server workID:", n.ProxyService.WorkID)
+			log.Info("successed restart and connect to proxy server:", proxySrv, "proxy server workID:", n.ProxyService.WorkID)
 			return
 		}
 	}
@@ -43,12 +44,13 @@ func TcpComponentStartup(n *network.Network) {
 	}
 
 	for i := 0; i < len(n.ProxyService.Servers); i++ {
-		if err := n.ConnectProxyServer(n.GetWorkingProxyServer()); err != nil {
-			log.Error("tcp proxy component start err:", err.Error(), "proxy server:", n.GetWorkingProxyServer(), "proxy workID:", n.ProxyService.WorkID)
+		proxySrv, peerID := n.GetWorkingProxyServer()
+		if err := n.ConnectProxyServer(proxySrv, peerID); err != nil {
+			log.Error("tcp proxy component start err:", err.Error(), "proxy server:", proxySrv, "proxy workID:", n.ProxyService.WorkID)
 			n.UpdateProxyWorkID()
 			continue
 		} else {
-			log.Info("successed about dialing to proxy server:", n.GetWorkingProxyServer(), "proxy server workID:", n.ProxyService.WorkID)
+			log.Info("successed about dialing to proxy server:", proxySrv, "proxy server workID:", n.ProxyService.WorkID)
 			return
 		}
 	}

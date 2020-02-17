@@ -135,14 +135,15 @@ func (p *Component) proxyKeepaliveService() {
 				log.Info("proxyModeEnable is false, proxyKeepaliveService groutine exit now")
 				return
 			}
-			client := p.net.GetPeerClient(p.net.GetWorkingProxyServer())
+			proxyServer, peerID := p.net.GetWorkingProxyServer()
+			client := p.net.GetPeerClient(peerID)
 			if client == nil {
-				log.Errorf("in proxyKeepliveService, connection to proxy:%s err, client is nil", p.net.GetWorkingProxyServer())
+				log.Errorf("in proxyKeepliveService, connection to proxy:%s err, client is nil", proxyServer)
 				return
 			}
 			err := client.Tell(context.Background(), &protobuf.Keepalive{})
 			if err != nil {
-				log.Error("in proxyKeepaliveServer, send Keepalive msg ERROR:", err.Error(), ",working proxy addr:", p.net.GetWorkingProxyServer())
+				log.Error("in proxyKeepaliveServer, send Keepalive msg ERROR:", err.Error(), ",working proxy addr:", proxyServer)
 			}
 			if time.Now().After(client.Time.Add(p.proxyKeepaliveTimeout)) {
 				//p.net.ConnMgr.Lock()

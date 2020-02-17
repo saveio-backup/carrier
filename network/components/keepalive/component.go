@@ -155,7 +155,8 @@ func (p *Component) keepaliveService() {
 // check all connetion if keepalive timeout
 func (p *Component) timeout() {
 	p.net.EachPeer(func(client *network.PeerClient) bool {
-		if client.Address == p.net.GetWorkingProxyServer() {
+		_, peerID := p.net.GetWorkingProxyServer()
+		if client.PeerID() == peerID {
 			return true
 		}
 		// timeout notify state change

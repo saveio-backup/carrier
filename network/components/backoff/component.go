@@ -103,27 +103,28 @@ func (p *Component) PeerDisconnect(client *network.PeerClient) {
 	if client.GetBackoffStatus() == false {
 		return
 	}
-	if client.Address == p.net.GetWorkingProxyServer() && p.net.ProxyModeEnable() {
-		go p.startProxyBackoff(client.Address)
+	_, peerID := p.net.GetWorkingProxyServer()
+	if client.PeerID() == peerID && p.net.ProxyModeEnable() {
+		go p.startProxyBackoff(client.Address, client.PeerID())
 	} else {
-		go p.startBackoff(client.Address)
+		go p.startBackoff(client.Address, client.PeerID())
 	}
 }
 
 // startBackoff uses an exponentially increasing timer to try to reconnect to a given address
-func (p *Component) startBackoff(addr string) {
+func (p *Component) startBackoff(addr, peerID string) {
 	time.Sleep(p.initialDelay)
 
-	if _, exists := p.backoffs.Load(addr); exists {
+	if _, exists := p.backoffs.Load(peerID); exists {
 		// don't activate if backoff is already active
 		log.Infof("backoff skipped for addr %s, already active", addr)
 		return
 	}
 	// reset the backoff counter
-	p.backoffs.Store(addr, NewBackoff(WithBackoffInterval(p.maxInterval)))
+	p.backoffs.Store(peerID, NewBackoff(WithBackoffInterval(p.maxInterval)))
 	startTime := time.Now()
 	for i := 0; i < p.maxAttempts; i++ {
-		s, active := p.backoffs.Load(addr)
+		s, active := p.backoffs.Load(peerID)
 		if !active {
 			break
 		}
@@ -137,17 +138,17 @@ func (p *Component) startBackoff(addr string) {
 		d := b.NextDuration()
 		log.Infof("backoff reconnecting to %s in %s iteration %d", addr, d, i+1)
 		time.Sleep(d)
-		if p.net.ConnectionStateExists(addr) {
+		if p.net.ConnectionStateExists(peerID) {
 			// check that the connection is still empty before dialing
 			break
 		}
 		// dial the client and see if it is successful
-		c, err := p.net.Client(addr)
+		c, err := p.net.Client(addr, peerID)
 		if err != nil {
 			log.Errorf("create Client and Connection is ERROR:%s, dial to addr:%s", err.Error(), addr)
 			continue
 		}
-		if !p.net.ConnectionStateExists(addr) {
+		if !p.net.ConnectionStateExists(peerID) {
 			// check if successfully connected
 			continue
 		}
@@ -159,14 +160,14 @@ func (p *Component) startBackoff(addr string) {
 		break
 	}
 	// clean up this backoff
-	p.backoffs.Delete(addr)
+	p.backoffs.Delete(peerID)
 }
 
 // startBackoff uses an exponentially increasing timer to try to reconnect to a given address
-func (p *Component) startProxyBackoff(addr string) {
+func (p *Component) startProxyBackoff(addr, peerID string) {
 	time.Sleep(p.initialDelay)
 
-	if _, exists := p.backoffs.Load(addr); exists {
+	if _, exists := p.backoffs.Load(peerID); exists {
 		// don't activate if backoff is already active
 		log.Infof("proxy backoff skipped for addr %s, already active", addr)
 		return
@@ -178,13 +179,13 @@ func (p *Component) startProxyBackoff(addr string) {
 		return
 	}
 	// reset the backoff counter
-	p.backoffs.Store(addr, DefaultBackoff())
+	p.backoffs.Store(peerID, DefaultBackoff())
 	startTime := time.Now()
 	p.net.ProxyService.Finish.Store(addrInfo.Protocol, make(chan struct{}))
 
 	var i int
 	for i = 0; i < p.maxAttempts; i++ {
-		s, active := p.backoffs.Load(addr)
+		s, active := p.backoffs.Load(peerID)
 		if !active {
 			break
 		}
@@ -198,16 +199,16 @@ func (p *Component) startProxyBackoff(addr string) {
 		d := b.NextDuration()
 		log.Infof("proxy backoff reconnecting to %s in %s iteration %d", addr, d/4, i+1)
 		time.Sleep(d / 4)
-		if p.net.ConnectionStateExists(addr) {
+		if p.net.ConnectionStateExists(peerID) {
 			// check that the connection is still empty before dialing
 			break
 		}
 		// dial the client and see if it is successful
-		c, err := p.net.Client(addr)
+		c, err := p.net.Client(addr, peerID)
 		if err != nil {
 			continue
 		}
-		if !p.net.ConnectionStateExists(addr) {
+		if !p.net.ConnectionStateExists(peerID) {
 			// check if successfully connected
 			continue
 		}
@@ -219,6 +220,6 @@ func (p *Component) startProxyBackoff(addr string) {
 		p.net.BlockUntilProxyFinish(addrInfo.Protocol)
 		break
 	}
-	p.backoffs.Delete(addr)
+	p.backoffs.Delete(peerID)
 	proxy.ProxyComponentRestart(addrInfo.Protocol, p.net)
 }

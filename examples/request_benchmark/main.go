@@ -106,7 +106,7 @@ func setupNetworks(host string, startPort int, numNodes int) []*network.Network 
 	// Bootstrap to Node 0.
 	for i, node := range nodes {
 		if i != 0 {
-			node.Bootstrap(nodes[0].Address)
+			node.Bootstrap([]string{nodes[0].Address}, []string{"client-id"})
 		}
 	}
 
@@ -140,7 +140,7 @@ func sendMsg(net *network.Network, idx int) uint32 {
 
 			expectedID := fmt.Sprintf("%s:%d->%s", net.Address, idx, address)
 
-			client, err := net.Client(address)
+			client, err := net.Client(address, "client-id")
 			if err != nil {
 				errs <- errors.Wrapf(err, "client error for req id %s", expectedID)
 				return
@@ -148,7 +148,7 @@ func sendMsg(net *network.Network, idx int) uint32 {
 
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 			defer cancel()
-			response, err := client.Request(ctx, &messages.LoadRequest{Id: expectedID})
+			response, err := client.Request(ctx, &messages.LoadRequest{Id: expectedID}, 1*time.Second)
 			if err != nil {
 				errs <- errors.Wrapf(err, "request error for req id %s", expectedID)
 				return

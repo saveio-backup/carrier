@@ -17,6 +17,8 @@ import (
 
 	"io"
 
+	"encoding/hex"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/saveio/themis/common/log"
@@ -78,7 +80,7 @@ type StreamSendItem struct {
 	TcpConn  net.Conn
 	Write    io.Writer
 	Message  *protobuf.Message
-	Address  string
+	PeerID   string
 	StreamID string
 	Mutex    *sync.Mutex
 }
@@ -158,6 +160,14 @@ func (c *PeerClient) loopStreamSend() {
 	}
 }
 
+func (c *PeerClient) PeerID() string {
+	if c.ID != nil {
+		return hex.EncodeToString(c.ID.NetKey)
+	} else {
+		return ""
+	}
+}
+
 // Init initialize a client's Component and starts executing a jobs.
 func (c *PeerClient) Init() {
 	c.Network.Components.Each(func(Component ComponentInterface) {
@@ -199,7 +209,7 @@ func (c *PeerClient) RemoveEntries() error {
 	}
 
 	// close out connections
-	if state, ok := c.Network.ConnectionState(clientAddr); ok {
+	if state, ok := c.Network.ConnectionState(c.PeerID()); ok {
 		addrInfo, err := ParseAddress(c.Network.Address)
 		if err != nil {
 			return err
@@ -215,10 +225,10 @@ func (c *PeerClient) RemoveEntries() error {
 		}
 		log.Debugf("remove entries of address: %s", clientAddr)
 		c.Network.ConnMgr.Mutex.Lock()
-		c.Network.ConnMgr.peers.Delete(clientAddr)
-		c.Network.ConnMgr.connections.Delete(clientAddr)
-		c.Network.ConnMgr.streams.Delete(clientAddr)
-		c.Network.UpdateConnState(clientAddr, PEER_UNREACHABLE)
+		c.Network.ConnMgr.peers.Delete(c.PeerID())
+		c.Network.ConnMgr.connections.Delete(c.PeerID())
+		c.Network.ConnMgr.streams.Delete(c.PeerID())
+		c.Network.UpdateConnState(c.PeerID(), PEER_UNREACHABLE)
 		c.Network.ConnMgr.Mutex.Unlock()
 		state.conn = nil
 		debug.FreeOSMemory()
@@ -256,7 +266,7 @@ func (c *PeerClient) Tell(ctx context.Context, message proto.Message) error {
 		return errors.Wrap(err, "failed to sign message")
 	}
 
-	err = c.Network.Write(c.Address, signed)
+	err = c.Network.Write(c.PeerID(), signed)
 	if err != nil {
 		return errors.Wrapf(err, "failed to send message to %s", c.Address)
 	}
@@ -265,7 +275,7 @@ func (c *PeerClient) Tell(ctx context.Context, message proto.Message) error {
 }
 
 func (c *PeerClient) StreamSendDataCnt(streamID string) uint64 {
-	if value, ok := c.Network.ConnMgr.streams.Load(c.Address); ok {
+	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
 		if s, isOK := value.(MultiStream).stream.Load(streamID); isOK {
 			return s.(*Stream).SendCnt
 		}
@@ -280,7 +290,7 @@ func (c *PeerClient) StreamSend(streamID string, ctx context.Context, message pr
 		return errors.Wrap(err, "failed to sign message in stream send"), 0
 	}
 
-	err, bytes := c.Network.StreamWrite(streamID, c.Address, signed)
+	err, bytes := c.Network.StreamWrite(streamID, c.PeerID(), signed)
 	if err != nil {
 		return errors.Wrapf(err, "StreamSend failed to send message to %s", c.Address), 0
 	}
@@ -317,7 +327,7 @@ func (c *PeerClient) StreamRequest(streamID string, ctx context.Context, req pro
 	defer close(closeSignal)
 	defer c.Requests.Delete(signed.RequestNonce)
 
-	err, bytes := c.Network.StreamWrite(streamID, c.Address, signed)
+	err, bytes := c.Network.StreamWrite(streamID, c.PeerID(), signed)
 	if err != nil {
 		return nil, err, 0
 	}
@@ -401,7 +411,7 @@ func (c *PeerClient) StreamAsyncSendAndWaitAck(streamID string, ctx context.Cont
 	}
 
 	if c.waitAckLen() >= DEFAULT_ACK_REPLY_CAPACITY {
-		log.Errorf("stream async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.Address, msgID)
+		log.Errorf("stream async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.PeerID(), msgID)
 		return errors.New(fmt.Sprintf("async send map filled fully. cap:%d", DEFAULT_ACK_REPLY_CAPACITY)), 0
 	}
 
@@ -414,7 +424,7 @@ func (c *PeerClient) StreamAsyncSendAndWaitAck(streamID string, ctx context.Cont
 		return err, 0
 	}
 
-	err, bytes := c.Network.StreamWrite(streamID, c.Address, signed)
+	err, bytes := c.Network.StreamWrite(streamID, c.PeerID(), signed)
 	if err != nil {
 		return err, bytes
 	}
@@ -441,7 +451,7 @@ func (c *PeerClient) AsyncSendAndWaitAck(ctx context.Context, req proto.Message,
 	}
 
 	if c.waitAckLen() >= DEFAULT_ACK_REPLY_CAPACITY {
-		log.Errorf("async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.Address, msgID)
+		log.Errorf("async send map has been filled fully. length is:%d, send to address:%s, messageID:%s", DEFAULT_ACK_REPLY_CAPACITY, c.PeerID(), msgID)
 		return errors.New(fmt.Sprintf("async send map filled fully. cap:%d", DEFAULT_ACK_REPLY_CAPACITY))
 	}
 
@@ -454,7 +464,7 @@ func (c *PeerClient) AsyncSendAndWaitAck(ctx context.Context, req proto.Message,
 		return err
 	}
 
-	err = c.Network.Write(c.Address, signed)
+	err = c.Network.Write(c.PeerID(), signed)
 	if err != nil {
 		return err
 	}
@@ -479,7 +489,7 @@ func (c *PeerClient) StreamReply(streamID string, ctx context.Context, nonce uin
 	msg.RequestNonce = nonce
 	msg.ReplyFlag = true
 
-	err, bytes := c.Network.StreamWrite(streamID, c.Address, msg)
+	err, bytes := c.Network.StreamWrite(streamID, c.PeerID(), msg)
 	if err != nil {
 		return err, bytes
 	}
@@ -498,7 +508,7 @@ func (c *PeerClient) Reply(ctx context.Context, nonce uint64, message proto.Mess
 	msg.RequestNonce = nonce
 	msg.ReplyFlag = true
 
-	err = c.Network.Write(c.Address, msg)
+	err = c.Network.Write(c.PeerID(), msg)
 	if err != nil {
 		return err
 	}
