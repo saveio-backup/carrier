@@ -306,7 +306,7 @@ func (n *Network) receiveMessage(client *PeerClient, conn net.Conn) (*protobuf.M
 	}
 
 	if msg.MessageID != "" && client != nil {
-		n.Reporter.LogRecvMessageStream(int64(totalBytesRead), client.Address, msg.MessageID)
+		n.Reporter.LogRecvMessageStream(int64(totalBytesRead), msg.MessageID, client.Address)
 	}
 
 	log.Infof("(kcp/tcp)in Network.receiveMessage,success receive from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, msg.MsgID:%s", msg.Sender.Address, n.ID.Address, msg.Opcode, msg.MessageNonce, msg.MessageID)
