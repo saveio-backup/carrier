@@ -428,6 +428,14 @@ func (n *Network) GetPeerClient(peerID string) *PeerClient {
 	}
 }
 
+func (n *Network) GetAddrByPeerID(peerID string) string {
+	if peer := n.GetPeerClient(peerID); peer != nil {
+		return peer.Address
+	} else {
+		return "NO_EXIST_ADDR"
+	}
+}
+
 // getOrSetPeerClient either returns a cached peer client or creates a new one given a net.Conn
 // or dials the client if no net.Conn is provided.
 func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (*PeerClient, error) {
@@ -1098,10 +1106,10 @@ func (n *Network) StreamWrite(streamID, peerID string, message *protobuf.Message
 		return errors.New("Network.StreamWrite: connection does not exist"), 0
 	}
 	state.writerMutex.Lock()
-	log.Debugf("Network.StreamWrite write msg to %s", peerID)
+	log.Debugf("Network.StreamWrite write msg to %s", n.GetAddrByPeerID(peerID))
 	defer func() {
 		state.writerMutex.Unlock()
-		log.Debugf("Network.StreamWrite write msg to %s done", peerID)
+		log.Debugf("Network.StreamWrite write msg to %s done", n.GetAddrByPeerID(peerID))
 	}()
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
@@ -1114,7 +1122,7 @@ func (n *Network) StreamWrite(streamID, peerID string, message *protobuf.Message
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
 		if tcpConn == nil {
-			return errors.Errorf("Network.StreamWrite connection is nil address,%s", peerID), 0
+			return errors.Errorf("Network.StreamWrite connection is nil address,%s", n.GetAddrByPeerID(peerID)), 0
 		}
 
 		if peer := n.GetPeerClient(peerID); nil != peer {
@@ -1129,7 +1137,7 @@ func (n *Network) StreamWrite(streamID, peerID string, message *protobuf.Message
 			log.Debugf("Network.StreamWrite msg(id:%s) write to addr:%s(streamID:%s) has been put into queue",
 				message.MessageID, address, streamID)
 		} else {
-			log.Error("(tcp/kcp) Network.StreamWrite to addr:", peerID, "err: client does not exist")
+			log.Error("(tcp/kcp) Network.StreamWrite to addr:", n.GetAddrByPeerID(peerID), "err: client does not exist")
 		}
 
 		/*
@@ -1150,10 +1158,10 @@ func (n *Network) Write(peerID string, message *protobuf.Message) error {
 		return errors.New("Network.write: connection does not exist")
 	}
 	state.writerMutex.Lock()
-	log.Debugf("Network.Write write msg to %s", peerID)
+	log.Debugf("Network.Write write msg to %s", n.GetAddrByPeerID(peerID))
 	defer func() {
 		state.writerMutex.Unlock()
-		log.Debugf("Network.Write write msg to %s done", peerID)
+		log.Debugf("Network.Write write msg to %s done", n.GetAddrByPeerID(peerID))
 	}()
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
@@ -1166,11 +1174,11 @@ func (n *Network) Write(peerID string, message *protobuf.Message) error {
 	if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
 		tcpConn, _ := state.conn.(net.Conn)
 		if tcpConn == nil {
-			return errors.Errorf("Network.Write connection is nil address,%s", peerID)
+			return errors.Errorf("Network.Write connection is nil address,%s", n.GetAddrByPeerID(peerID))
 		}
 		err = n.sendMessage(tcpConn, state.writer, message, peerID)
 		if err != nil {
-			log.Error("(tcp/kcp) write to addr:", peerID, "err:", err.Error())
+			log.Error("(tcp/kcp) write to addr:", n.GetAddrByPeerID(peerID), "err:", err.Error())
 		}
 	}
 	if addrInfo.Protocol == "udp" {
@@ -1187,12 +1195,12 @@ func (n *Network) Write(peerID string, message *protobuf.Message) error {
 		//quicConn.SetWriteDeadline(time.Now().Add(n.opts.writeTimeout))
 		err = n.sendQuicMessage(state.writer, message, state.writerMutex)
 		if err != nil {
-			log.Error("(quic) write to addr:", peerID, "err:", err.Error())
+			log.Error("(quic) write to addr:", n.GetAddrByPeerID(peerID), "err:", err.Error())
 		}
 	}
 
 	if err != nil {
-		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), peerID)
+		log.Errorf("Network.Wirte error:%s, begin to delete client and connection resource from sync.Maps，client addr:%s", err.Error(), n.GetAddrByPeerID(peerID))
 		if client := n.GetPeerClient(peerID); client != nil {
 			client.Close()
 		} else {
@@ -1387,23 +1395,23 @@ func (n *Network) GetRealConnState(peerID string) (PeerState, error) {
 	defer n.ConnMgr.Mutex.Unlock()
 	state, ok := n.ConnMgr.connStates.Load(peerID)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, client addr:%s", peerID)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connStates does not exist, client addr:%s", n.GetAddrByPeerID(peerID))
 	}
 
 	_, ok = n.ConnMgr.peers.Load(peerID)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, client addr:%s", peerID)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState peer does not exist, client addr:%s", n.GetAddrByPeerID(peerID))
 	}
 
 	_, ok = n.ConnMgr.connections.Load(peerID)
 	if !ok {
-		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, client addr:%s", peerID)
+		return PEER_UNREACHABLE, errors.Errorf("Network.GetRealConnState connection does not exist, client addr:%s", n.GetAddrByPeerID(peerID))
 	}
 
 	if state == PEER_REACHABLE {
 		return PEER_REACHABLE, nil
 	}
-	return PEER_UNREACHABLE, errors.Errorf("in Network.GetRealConnState, conn&peer exist but state is UNREACHABLE ,client addr:%s", peerID)
+	return PEER_UNREACHABLE, errors.Errorf("in Network.GetRealConnState, conn&peer exist but state is UNREACHABLE ,client addr:%s", n.GetAddrByPeerID(peerID))
 }
 
 func (n *Network) SetDialTimeout(timeout time.Duration) {

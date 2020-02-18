@@ -23,14 +23,15 @@ var ReadInterruptMsg = errors.New("socket read interrupt by application")
 var errEmptyMsg = errors.New("received an empty message from a peer")
 
 func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, peerID, streamID string) (error, int32) {
+	addr := n.GetAddrByPeerID(peerID)
 	log.Debugf("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d,msg.msgID:%s",
-		n.ID.Address, peerID, message.Opcode, message.MessageNonce, message.MessageID)
+		n.ID.Address, addr, message.Opcode, message.MessageNonce, message.MessageID)
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message"), 0
 	}
 	log.Debugf("(kcp/tcp)in Network.sendMessage, marshal message finished, send to:%s, message.opcode:%d, msg.nonce:%d",
-		peerID, message.Opcode, message.MessageNonce)
+		addr, message.Opcode, message.MessageNonce)
 	msgOriginSize := len(bytes)
 	if msgOriginSize == 0 {
 		log.Info("stack info:", fmt.Sprintf("%s", debug.Stack()))
@@ -47,7 +48,7 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 	}
 	log.Debugf("(kcp/tcp)in Network.sendMessage, compress successed. compress enable:%d, compress condition size:%d, origin size:%d, after compress size:%d, "+
 		"compress algo:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.compressEnable, n.CompressCondition.Size, msgOriginSize, len(bytes), AlgoName[n.compressAlgo],
-		peerID, message.Opcode, message.MessageNonce)
+		addr, message.Opcode, message.MessageNonce)
 	// Serialize size.
 	buffer := make([]byte, 10)
 	binary.BigEndian.PutUint32(buffer, n.GetNetworkID())
@@ -74,7 +75,7 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 			if !isOK {
 				if client := n.GetPeerClient(peerID); client != nil && message.NeedAck == true {
 					log.Debugf("(kcp/tcp)in Network.streamSendMessage,stream was closed by appliction, has sent:%d, "+
-						"send from:%s, send to:%s,message.opcode:%d,msg.nonce:%d", totalBytesWritten, n.ID.Address, peerID, message.Opcode, message.MessageNonce)
+						"send from:%s, send to:%s,message.opcode:%d,msg.nonce:%d", totalBytesWritten, n.ID.Address, addr, message.Opcode, message.MessageNonce)
 					client.SyncWaitAck.Delete(message.MessageID)
 				}
 				//s.(*Stream).SendCnt += uint64(bytesWritten)
@@ -82,19 +83,19 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 			}
 		} else {
 			log.Errorf("(kcp/tcp)in Network.streamSendMessage,connection maybe has been closed, has sent:%d, "+
-				"send from:%s, send to:%s,message.opcode:%d,msg.nonce:%d", totalBytesWritten, n.ID.Address, peerID, message.Opcode, message.MessageNonce)
+				"send from:%s, send to:%s,message.opcode:%d,msg.nonce:%d", totalBytesWritten, n.ID.Address, addr, message.Opcode, message.MessageNonce)
 			return errors.New("in streamSendMessage, connection maybe has been closed"), int32(totalBytesWritten)
 		}
 
 		log.Debugf("(kcp/tcp)in Network.streamSendMessage, begin to write socket buffer, send from addr:%s, send to:%s, "+
-			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, peerID, message.Opcode, message.MessageNonce, bytesWritten)
+			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, addr, message.Opcode, message.MessageNonce, bytesWritten)
 		bytesWritten, err = bw.Write(buffer[totalBytesWritten:])
 		if err != nil {
 			log.Errorf("(kcp/tcp)in Network.streamSendMessage,failed to write entire buffer, err: %+v", err)
 			break
 		}
 		log.Debugf("(kcp/tcp)in Network.streamSendMessage, once write buffer successed; send from addr:%s, send to:%s, "+
-			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, peerID, message.Opcode, message.MessageNonce, bytesWritten)
+			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, addr, message.Opcode, message.MessageNonce, bytesWritten)
 
 		totalBytesWritten += bytesWritten
 		s.(*Stream).SendCnt += uint64(bytesWritten)
@@ -109,13 +110,13 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 				break
 			}
 			log.Debugf("(kcp/tcp)in Network.streamSendMessage, immediately flush successed; send from addr:%s, send to:%s, "+
-				"message.opcode:%d, msg.nonce:%d, flush buffer size:%d", n.ID.Address, peerID, message.Opcode, message.MessageNonce, bw.Size())
+				"message.opcode:%d, msg.nonce:%d, flush buffer size:%d", n.ID.Address, addr, message.Opcode, message.MessageNonce, bw.Size())
 		}
 	}
 
 	if err != nil {
 		return errors.Errorf("(kcp/tcp)in Network.streamSendMessage,failed to write to socket, send from addr:%s, send to:%s, "+
-			"message.opcode:%d, msg.nonce:%d, send has written byte:%d, total need to be written:%d, err:%s", n.ID.Address, peerID, message.Opcode, message.MessageNonce, totalBytesWritten, len(buffer), err.Error()), int32(totalBytesWritten)
+			"message.opcode:%d, msg.nonce:%d, send has written byte:%d, total need to be written:%d, err:%s", n.ID.Address, addr, message.Opcode, message.MessageNonce, totalBytesWritten, len(buffer), err.Error()), int32(totalBytesWritten)
 	}
 	if err := bw.Flush(); err != nil {
 		return err, int32(totalBytesWritten)
@@ -127,14 +128,15 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 
 // sendMessage marshals, signs and sends a message over a stream.
 func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.Message, peerID string) error {
+	addr := n.GetAddrByPeerID(peerID)
 	log.Debugf("(kcp/tcp)in Network.sendMessage, send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d,msg.msgID:%s",
-		n.ID.Address, peerID, message.Opcode, message.MessageNonce, message.MessageID)
+		n.ID.Address, addr, message.Opcode, message.MessageNonce, message.MessageID)
 	bytes, err := proto.Marshal(message)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal message")
 	}
 	log.Debugf("(kcp/tcp)in Network.sendMessage, marshal message finished, send to:%s, message.opcode:%d, msg.nonce:%d",
-		peerID, message.Opcode, message.MessageNonce)
+		addr, message.Opcode, message.MessageNonce)
 	msgOriginSize := len(bytes)
 	if msgOriginSize == 0 {
 		log.Info("stack info:", fmt.Sprintf("%s", debug.Stack()))
@@ -151,7 +153,7 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 	}
 	log.Debugf("(kcp/tcp)in Network.sendMessage, compress successed. compress enable:%d, compress condition size:%d, origin size:%d, after compress size:%d, "+
 		"compress algo:%s, send to:%s, message.opcode:%d, msg.nonce:%d", n.compressEnable, n.CompressCondition.Size, msgOriginSize, len(bytes), AlgoName[n.compressAlgo],
-		peerID, message.Opcode, message.MessageNonce)
+		addr, message.Opcode, message.MessageNonce)
 	// Serialize size.
 	buffer := make([]byte, 10)
 	binary.BigEndian.PutUint32(buffer, n.GetNetworkID())
@@ -175,14 +177,14 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 	bw, _ := w.(*bufio.Writer)
 	for totalBytesWritten < len(buffer) && err == nil {
 		log.Debugf("(kcp/tcp)in Network.sendMessage, begin to write socket buffer, send from addr:%s, send to:%s, "+
-			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, peerID, message.Opcode, message.MessageNonce, bytesWritten)
+			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, addr, message.Opcode, message.MessageNonce, bytesWritten)
 		bytesWritten, err = bw.Write(buffer[totalBytesWritten:])
 		if err != nil {
 			log.Errorf("stream: failed to write entire buffer, err: %+v", err)
 			break
 		}
 		log.Debugf("(kcp/tcp)in Network.sendMessage, once write buffer successed; send from addr:%s, send to:%s, "+
-			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, peerID, message.Opcode, message.MessageNonce, bytesWritten)
+			"message.opcode:%d, msg.nonce:%d, write buffer size:%d", n.ID.Address, addr, message.Opcode, message.MessageNonce, bytesWritten)
 		totalBytesWritten += bytesWritten
 
 		n.Reporter.LogSentMessageStream(int64(bytesWritten), peerID, n.PeerID())
@@ -194,18 +196,18 @@ func (n *Network) sendMessage(tcpConn net.Conn, w io.Writer, message *protobuf.M
 				break
 			}
 			log.Debugf("(kcp/tcp)in Network.sendMessage, immediately flush successed; send from addr:%s, send to:%s, "+
-				"message.opcode:%d, msg.nonce:%d, flush buffer size:%d", n.ID.Address, peerID, message.Opcode, message.MessageNonce, bw.Size())
+				"message.opcode:%d, msg.nonce:%d, flush buffer size:%d", n.ID.Address, addr, message.Opcode, message.MessageNonce, bw.Size())
 		}
 	}
 
 	if err != nil {
 		return errors.Errorf("stream: failed to write to socket, send from addr:%s, send to:%s, "+
-			"message.opcode:%d, msg.nonce:%d, send has written byte:%d, total need to be written:%d, err:%s", n.ID.Address, peerID, message.Opcode, message.MessageNonce, totalBytesWritten, len(buffer), err.Error())
+			"message.opcode:%d, msg.nonce:%d, send has written byte:%d, total need to be written:%d, err:%s", n.ID.Address, addr, message.Opcode, message.MessageNonce, totalBytesWritten, len(buffer), err.Error())
 	}
 	if err := bw.Flush(); err != nil {
 		return err
 	}
-	log.Infof("(kcp/tcp)in Network.sendMessage, successed finished; send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, totalWrited: %d", n.ID.Address, peerID, message.Opcode, message.MessageNonce, totalBytesWritten)
+	log.Infof("(kcp/tcp)in Network.sendMessage, successed finished; send from addr:%s, send to:%s, message.opcode:%d, msg.nonce:%d, totalWrited: %d", n.ID.Address, addr, message.Opcode, message.MessageNonce, totalBytesWritten)
 	return nil
 }
 

@@ -166,7 +166,7 @@ func (p *Component) timeout() {
 			//p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
 			//p.net.ConnMgr.Unlock()
 			//client.Close()
-			log.Warn("expect keepalive response from :%s timeout, local addr is:%s, "+
+			log.Warnf("expect keepalive response from :%s timeout, local addr is:%s, "+
 				"keepaliveTimeout:%d, keepaliveInterval:%d", client.Address, p.net.Address, p.keepaliveTimeout, p.keepaliveInterval)
 		}
 		return true

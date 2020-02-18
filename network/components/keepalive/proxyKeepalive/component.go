@@ -150,7 +150,9 @@ func (p *Component) proxyKeepaliveService() {
 				//It is not need to update connection status ,beacause client.Close() will do!
 				//p.net.UpdateConnState(client.Address, network.PEER_UNREACHABLE)
 				//p.net.ConnMgr.Unlock()
-				client.Close()
+				//client.Close()
+				log.Warnf("expect proxy keepalive response from :%s timeout, local addr is:%s, "+
+					"keepaliveTimeout:%d, keepaliveInterval:%d", client.Address, p.net.Address, p.proxyKeepaliveTimeout, p.proxyKeepaliveInterval)
 				return
 			}
 		case <-p.stopCh:
