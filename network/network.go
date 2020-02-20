@@ -1068,15 +1068,9 @@ func (n *Network) StreamWrite(streamID, address string, message *protobuf.Messag
 	var bytes int32
 	state, ok := n.ConnectionState(address)
 	if !ok {
-		//n.UpdateConnState(address, PEER_UNREACHABLE)
 		return errors.New("Network.StreamWrite: connection does not exist"), 0
 	}
-	state.writerMutex.Lock()
-	log.Debugf("Network.StreamWrite write msg to %s", address)
-	defer func() {
-		state.writerMutex.Unlock()
-		log.Debugf("Network.StreamWrite write msg to %s done", address)
-	}()
+
 	message.MessageNonce = atomic.AddUint64(&state.messageNonce, 1)
 
 	addrInfo, err := ParseAddress(n.Address)
@@ -1098,7 +1092,10 @@ func (n *Network) StreamWrite(streamID, address string, message *protobuf.Messag
 				Message:  message,
 				Address:  address,
 				StreamID: streamID,
+				Mutex:    state.writerMutex,
 			}
+			log.Debugf("Network.StreamWrite msg(id:%s) write to addr:%s(streamID:%s) has been put into queue",
+				message.MessageID, address, streamID)
 		} else {
 			log.Error("(tcp/kcp) Network.StreamWrite to addr:", address, "err: client does not exist")
 		}

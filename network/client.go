@@ -80,6 +80,7 @@ type StreamSendItem struct {
 	Message  *protobuf.Message
 	Address  string
 	StreamID string
+	Mutex    *sync.Mutex
 }
 
 // StreamState represents a stream.
@@ -139,7 +140,11 @@ func (c *PeerClient) loopStreamSend() {
 			if c.StreamExist(item.StreamID) == false {
 				continue // if stream has been closed or deleted, drop it immediately.
 			}
-			c.Network.streamSendMessage(item.TcpConn, item.Write, item.Message, item.Address, item.StreamID)
+			go func() {
+				item.Mutex.Lock()
+				defer item.Mutex.Unlock()
+				c.Network.streamSendMessage(item.TcpConn, item.Write, item.Message, item.Address, item.StreamID)
+			}()
 		case <-c.CloseSignal:
 			return
 		}
