@@ -436,11 +436,49 @@ func (n *Network) GetAddrByPeerID(peerID string) string {
 	}
 }
 
+func (n *Network) resetConnMgrItemByPeerID(address, peerID string) {
+	if peer, ok := n.ConnMgr.peers.Load(address); ok {
+		n.ConnMgr.peers.Store(peerID, peer)
+		n.ConnMgr.peers.Delete(address)
+	} else {
+		return
+	}
+
+	if conn, ok := n.ConnMgr.connections.Load(address); ok {
+		n.ConnMgr.connections.Store(peerID, conn)
+		n.ConnMgr.connections.Delete(address)
+	} else {
+		log.Errorf("addr:%s,peerID:%s, peer exist but connection does not exist", address, peerID)
+		return
+	}
+
+	if status, ok := n.ConnMgr.connStates.Load(address); ok {
+		n.ConnMgr.connStates.Store(peerID, status)
+		n.ConnMgr.connStates.Delete(address)
+	} else {
+		log.Errorf("addr:%s,peerID:%s, peer and connection exist but status does not exist", address, peerID)
+		return
+	}
+
+	if stream, ok := n.ConnMgr.streams.Load(address); ok {
+		n.ConnMgr.streams.Store(peerID, stream)
+		n.ConnMgr.streams.Delete(address)
+	} else {
+		log.Errorf("addr:%s,peerID:%s, peer、connection、status exist but stream does not exist", address, peerID)
+		return
+	}
+}
+
 // getOrSetPeerClient either returns a cached peer client or creates a new one given a net.Conn
 // or dials the client if no net.Conn is provided.
 func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (*PeerClient, error) {
 	n.createClientMutex.Lock()
 	defer n.createClientMutex.Unlock()
+
+	if peerID == "" {
+		peerID = address //when start bootstrap, peerID is nil, we need to instead of it by address;
+	}
+
 	address, err := ToUnifiedAddress(address)
 	if err != nil {
 		return nil, err
@@ -453,6 +491,10 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 	clientNew, err := createPeerClient(n, address)
 	if err != nil {
 		return nil, err
+	}
+
+	if address != peerID { //address!=peerID stand for
+		n.resetConnMgrItemByPeerID(address, peerID)
 	}
 
 	c, exists := n.ConnMgr.peers.Load(peerID)
@@ -702,7 +744,7 @@ func (n *Network) ConnectPeer(address, peerID string) error {
 }
 
 // Bootstrap with a number of peers and commence a handshake.
-func (n *Network) Bootstrap(addresses, peers []string) {
+func (n *Network) Bootstrap(addresses []string) {
 	n.BlockUntilListening()
 
 	addresses = FilterPeers(n.Address, addresses)
@@ -710,23 +752,13 @@ func (n *Network) Bootstrap(addresses, peers []string) {
 	for _, address := range addresses {
 		index++
 
-		pubKey, err := hex.DecodeString(peers[index])
-		if err != nil {
-			log.Error("decodeString peer pubkey in bootstrap err:", err, ";address:", address)
-			continue
-		}
-
-		unifiedAddress, _ := ToUnifiedAddress(address)
-		id := peer.CreateID(unifiedAddress, pubKey)
-		client, err := n.Client(address, peers[index])
+		client, err := n.Client(address, "")
 		if err != nil {
 			log.Error("create client in bootstrap err:", err, ";address:", address)
 			continue
 		}
 
-		client.ID = (*peer.ID)(&id)
-
-		err = client.Tell(context.Background(), &protobuf.Ping{})
+		err = client.TellByAddr(context.Background(), &protobuf.Ping{})
 		if err != nil {
 			log.Error("new client send ping message err:", err, ";address:", address)
 			continue

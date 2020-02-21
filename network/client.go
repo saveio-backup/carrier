@@ -274,6 +274,20 @@ func (c *PeerClient) Tell(ctx context.Context, message proto.Message) error {
 	return nil
 }
 
+func (c *PeerClient) TellByAddr(ctx context.Context, message proto.Message) error {
+	signed, err := c.Network.PrepareMessage(ctx, message)
+	if err != nil {
+		return errors.Wrap(err, "failed to sign message")
+	}
+
+	err = c.Network.Write(c.Address, signed)
+	if err != nil {
+		return errors.Wrapf(err, "failed to send message to %s", c.Address)
+	}
+
+	return nil
+}
+
 func (c *PeerClient) StreamSendDataCnt(streamID string) uint64 {
 	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
 		if s, isOK := value.(MultiStream).stream.Load(streamID); isOK {
@@ -376,7 +390,7 @@ func (c *PeerClient) Request(ctx context.Context, req proto.Message, timeout tim
 	defer close(closeSignal)
 	defer c.Requests.Delete(signed.RequestNonce)
 
-	err = c.Network.Write(c.Address, signed)
+	err = c.Network.Write(c.PeerID(), signed)
 	if err != nil {
 		return nil, err
 	}

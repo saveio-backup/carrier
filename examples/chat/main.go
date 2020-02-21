@@ -168,7 +168,7 @@ func main() {
 	}
 
 	if len(peers) > 0 {
-		networkBuilder.Bootstrap(peers, []string{"0eafb51d5ea8dc420e121d406ff0ce0465d3487ace7f235b8f2cd1f4f6a97733"})
+		networkBuilder.Bootstrap(peers)
 	}
 	var stream *network.Stream
 	var client *network.PeerClient
