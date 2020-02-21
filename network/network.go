@@ -682,26 +682,17 @@ func (n *Network) ReconnectProxyServer(address, peerID string) error {
 }
 
 func (n *Network) ConnectProxyServer(address, peerID string) error {
-	if n.ConnectionStateExists(peerID) {
+	if n.ConnectionStateExists(address) {
 		log.Info("in ConnectProxyServer, connection belong to addr:", address, "has exist, return directly.")
 		return nil
 	}
 
-	pubKey, err := hex.DecodeString(peerID)
-	if err != nil {
-		log.Error("decodeString peer pubkey in bootstrap err:", err, ";address:", address)
-		return err
-	}
-
-	unifiedAddress, _ := ToUnifiedAddress(address)
-	id := peer.CreateID(unifiedAddress, pubKey)
-	client, err := n.Client(address, peerID)
+	client, err := n.Client(address, "")
 	if err != nil {
 		log.Error("create client in ConnectProxyServer err:", err, ";address:", address)
 		return err
 	}
-	client.ID = (*peer.ID)(&id)
-	err = client.Tell(context.Background(), &protobuf.ProxyRequest{})
+	err = client.TellByAddr(context.Background(), &protobuf.ProxyRequest{})
 	if err != nil {
 		log.Error("new client send proxy request message in ConnectProxyServer err:", err, ";address:", address)
 		return err

@@ -6,6 +6,8 @@
 package proxy
 
 import (
+	"encoding/hex"
+
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/themis/common/log"
@@ -65,6 +67,7 @@ func TcpComponentReceive(ctx *network.ComponentContext) error {
 		if proxyIP != ctx.Network().ID.Address {
 			ctx.Network().ID.Address = proxyIP
 			ctx.Network().FinishProxyServer("tcp")
+			ctx.Network().ProxyService.Servers[ctx.Network().ProxyService.WorkID].PeerID = hex.EncodeToString(ctx.Sender().NetKey)
 		}
 	}
 
