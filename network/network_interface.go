@@ -31,7 +31,7 @@ type NetworkInterface interface {
 	BlockUntilListening()
 
 	// Bootstrap with a number of peers and commence a handshake.
-	Bootstrap(addresses []string)
+	Bootstrap(addresses []string) []string
 
 	// Dial establishes a bidirectional connection to an address, and additionally handshakes with said address.
 	Dial(address string, client *PeerClient) (interface{}, error)
