@@ -98,6 +98,9 @@ func (p *Component) PeerDisconnect(client *network.PeerClient) {
 }
 
 func (p *Component) Receive(ctx *network.ComponentContext) error {
+	if srv, _ := ctx.Network().GetWorkingProxyServer(); srv != ctx.Sender().Address {
+		return nil
+	}
 	switch ctx.Message().(type) {
 	case *protobuf.Keepalive:
 		// Send keepalive response to peer.
@@ -111,7 +114,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 	case *protobuf.KeepaliveResponse:
 
 	case *protobuf.Ping:
-		err := ctx.Reply(context.Background(), &protobuf.Pong{})
+		err := ctx.Client().Tell(context.Background(), &protobuf.Pong{})
 		if err != nil {
 			return err
 		}

@@ -74,6 +74,9 @@ type PeerClient struct {
 	SyncWaitAck     *sync.Map
 	AckStatusNotify chan AckStatus
 	StreamSendQueue chan StreamSendItem
+
+	RecvRemotePubKey chan struct{}
+	PubKey           string
 }
 
 type StreamSendItem struct {
@@ -121,15 +124,16 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 			buffered: make(chan struct{}),
 		},
 
-		jobs:            make(chan func(), 128),
-		CloseSignal:     make(chan struct{}),
-		Time:            time.Now(),
-		RecvWindow:      NewRecvWindow(network.opts.recvWindowSize),
-		enableBackoff:   true,
-		EnableAckReply:  false,
-		AckStatusNotify: make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
-		SyncWaitAck:     new(sync.Map),
-		StreamSendQueue: make(chan StreamSendItem, network.streamQueueLen),
+		jobs:             make(chan func(), 128),
+		CloseSignal:      make(chan struct{}),
+		Time:             time.Now(),
+		RecvWindow:       NewRecvWindow(network.opts.recvWindowSize),
+		enableBackoff:    true,
+		EnableAckReply:   false,
+		AckStatusNotify:  make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
+		SyncWaitAck:      new(sync.Map),
+		StreamSendQueue:  make(chan StreamSendItem, network.streamQueueLen),
+		RecvRemotePubKey: make(chan struct{}),
 	}
 
 	return client, nil

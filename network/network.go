@@ -739,10 +739,8 @@ func (n *Network) Bootstrap(addresses []string) {
 	n.BlockUntilListening()
 
 	addresses = FilterPeers(n.Address, addresses)
-	index := -1
-	for _, address := range addresses {
-		index++
 
+	for _, address := range addresses {
 		client, err := n.Client(address, "")
 		if err != nil {
 			log.Error("create client in bootstrap err:", err, ";address:", address)
@@ -753,6 +751,8 @@ func (n *Network) Bootstrap(addresses []string) {
 		if err != nil {
 			log.Error("new client send ping message err:", err, ";address:", address)
 			continue
+		} else {
+			<-client.RecvRemotePubKey
 		}
 	}
 }

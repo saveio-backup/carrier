@@ -6,6 +6,8 @@ import (
 
 	"sync"
 
+	"encoding/hex"
+
 	"github.com/pkg/errors"
 	"github.com/saveio/carrier/internal/protobuf"
 	"github.com/saveio/carrier/network"
@@ -121,11 +123,14 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 	case *protobuf.KeepaliveResponse:
 
 	case *protobuf.Ping:
-		err := ctx.Reply(context.Background(), &protobuf.Pong{})
+		//err := ctx.Reply(context.Background(), &protobuf.Pong{})
+		err := ctx.Client().Tell(context.Background(), &protobuf.Pong{})
 		if err != nil {
 			return err
 		}
 	case *protobuf.Pong:
+		ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
+		close(ctx.Client().RecvRemotePubKey)
 		//p.net.ConnMgr.Lock()
 		//p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
 		//p.net.ConnMgr.Unlock()
