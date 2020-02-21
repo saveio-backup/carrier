@@ -700,27 +700,27 @@ func (n *Network) ConnectProxyServer(address, peerID string) error {
 	return nil
 }
 
-func (n *Network) ReconnectPeer(address, peerID string) error {
-	if client := n.GetPeerClient(peerID); client != nil {
+func (n *Network) ReconnectPeer(address string) error {
+	if client := n.GetPeerClient(address); client != nil {
 		client.DisableBackoff()
 		client.Close()
 	}
 
 	log.Infof("in carrier.Network,Reconnect Peer start, peer addr:%s", address)
-	return n.ConnectPeer(address, peerID)
+	return n.ConnectPeer(address)
 }
 
-func (n *Network) ConnectPeer(address, peerID string) error {
-	if n.ConnectionStateExists(peerID) {
+func (n *Network) ConnectPeer(address string) error {
+	if n.ConnectionStateExists(address) {
 		log.Info("in ConnectPeer, connection belong to addr:", address, "has exist, return directly.")
 		return nil
 	}
 
-	if n.ClientExist(peerID) {
+	if n.ClientExist(address) {
 		log.Info("in ConnectPeer, client belong to addr:", address, "has exist, return directly.")
 		return nil
 	}
-	client, err := n.Client(address, peerID)
+	client, err := n.Client(address, "")
 	if err != nil {
 		log.Error("create client in ConnectPeer err:", err, ";address:", address)
 		return err
@@ -730,6 +730,8 @@ func (n *Network) ConnectPeer(address, peerID string) error {
 	if err != nil {
 		log.Error("new client send ping message in ConnectPeer err:", err, ";address:", address)
 		return err
+	} else {
+		<-client.RecvRemotePubKey
 	}
 	return nil
 }
