@@ -697,3 +697,7 @@ func (c *PeerClient) StreamCanWrite() bool {
 		return false
 	}
 }
+
+func (c *PeerClient) ClientID() string {
+	return c.PubKey
+}
