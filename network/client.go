@@ -143,7 +143,14 @@ func (c *PeerClient) loopStreamSend() {
 			go func() {
 				item.Mutex.Lock()
 				defer item.Mutex.Unlock()
-				c.Network.streamSendMessage(item.TcpConn, item.Write, item.Message, item.Address, item.StreamID)
+				err, cnt := c.Network.streamSendMessage(item.TcpConn, item.Write, item.Message, item.Address, item.StreamID)
+				if err != nil {
+					log.Errorf("in loopStreamSend, stream send err:%s, msg.msgID:%s,send to addr:%s, stream id:%s, message.opcode:%d, message.nonce:%d, send count:%d",
+						err.Error(), item.Message.MessageID, item.Address, item.StreamID, item.Message.Opcode, item.Message.MessageNonce, cnt)
+				} else {
+					log.Debugf("in loopStreamSend, stream send successed, msg.msgID:%s,send to addr:%s, stream id:%s, message.opcode:%d, message.nonce:%d, send count:%d",
+						item.Message.MessageID, item.Address, item.StreamID, item.Message.Opcode, item.Message.MessageNonce, cnt)
+				}
 			}()
 		case <-c.CloseSignal:
 			return

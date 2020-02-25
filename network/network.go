@@ -890,7 +890,7 @@ func (n *Network) Accept(incoming net.Conn, cli *PeerClient) {
 			if err != nil {
 				log.Errorf("reply ack to %s err:%s, messageID:%s", client.Address, err.Error(), msg.MessageID)
 			} else {
-				log.Warnf("reply ack to %s success, messageID:%s", client.Address, msg.MessageID)
+				log.Debugf("reply ack to %s success, messageID:%s", client.Address, msg.MessageID)
 			}
 		}
 		n.dispatchMessage(client, msg)
