@@ -741,7 +741,7 @@ func (n *Network) Bootstrap(addresses []string) []string {
 	n.BlockUntilListening()
 
 	addresses = FilterPeers(n.Address, addresses)
-	clientID := make([]string, len(addresses))
+	clientID := make([]string, 0, len(addresses))
 	for _, address := range addresses {
 		client, err := n.Client(address, "")
 		if err != nil {
