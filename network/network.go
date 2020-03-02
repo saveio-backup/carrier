@@ -508,6 +508,7 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 		return client, nil
 	}
 
+	clientNew.PubKey = peerID
 	client := clientNew
 	defer func() {
 		client.setOutgoingReady()
