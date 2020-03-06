@@ -727,7 +727,7 @@ func (n *Network) ConnectPeer(address string) (error, string) {
 		return err, ""
 	}
 
-	err = client.Tell(context.Background(), &protobuf.Ping{})
+	err = client.TellByAddr(context.Background(), &protobuf.Ping{})
 	if err != nil {
 		log.Error("new client send ping message in ConnectPeer err:", err, ";address:", address)
 		return err, ""
