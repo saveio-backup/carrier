@@ -79,7 +79,7 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 					client.SyncWaitAck.Delete(message.MessageID)
 				}
 				//s.(*Stream).SendCnt += uint64(bytesWritten)
-				return WriteInterruptMsg, int32(totalBytesWritten)
+				//return WriteInterruptMsg, int32(totalBytesWritten)
 			}
 		} else {
 			log.Errorf("(kcp/tcp)in Network.streamSendMessage,connection maybe has been closed, has sent:%d, "+
