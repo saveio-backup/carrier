@@ -227,12 +227,38 @@ func (c *PeerClient) RemoveEntries() error {
 		if addrInfo.Protocol == "quic" {
 			state.conn.(quic.Stream).Close()
 		}
-		log.Debugf("remove entries of address: %s", clientAddr)
+		log.Debugf("remove entries of address: %s, peer id:%s", clientAddr, c.PeerID())
 		c.Network.ConnMgr.Mutex.Lock()
 		c.Network.ConnMgr.peers.Delete(c.PeerID())
 		c.Network.ConnMgr.connections.Delete(c.PeerID())
 		c.Network.ConnMgr.streams.Delete(c.PeerID())
 		c.Network.UpdateConnState(c.PeerID(), PEER_UNREACHABLE)
+		c.Network.ConnMgr.Mutex.Unlock()
+		state.conn = nil
+		debug.FreeOSMemory()
+	}
+	// connection may be closed when waiting for PONG message,
+	// at that time, peerID have not been store in Map but for clientAddr.
+	if state, ok := c.Network.ConnectionState(clientAddr); ok {
+		addrInfo, err := ParseAddress(c.Network.Address)
+		if err != nil {
+			return err
+		}
+		if addrInfo.Protocol == "tcp" || addrInfo.Protocol == "kcp" {
+			state.conn.(net.Conn).Close()
+		}
+		if addrInfo.Protocol == "udp" {
+			state.conn.(*net.UDPConn).Close()
+		}
+		if addrInfo.Protocol == "quic" {
+			state.conn.(quic.Stream).Close()
+		}
+		log.Debugf("remove entries of address: %s", clientAddr)
+		c.Network.ConnMgr.Mutex.Lock()
+		c.Network.ConnMgr.peers.Delete(clientAddr)
+		c.Network.ConnMgr.connections.Delete(clientAddr)
+		c.Network.ConnMgr.streams.Delete(clientAddr)
+		c.Network.UpdateConnState(clientAddr, PEER_UNREACHABLE)
 		c.Network.ConnMgr.Mutex.Unlock()
 		state.conn = nil
 		debug.FreeOSMemory()
