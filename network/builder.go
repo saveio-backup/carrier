@@ -258,6 +258,7 @@ func (builder *Builder) Build() (*Network, error) {
 		DisableDispatchMsgGoroutine: false,
 		Reporter:                    metrics.NewBandwidthCounter(),
 		streamQueueLen:              defaultStreamQueueLen,
+		bootstrapWaitSecond:         defaultBootstrapWaitSecond,
 	}
 
 	net.ConnMgr.peers = new(sync.Map)

@@ -43,16 +43,17 @@ const (
 )
 
 const (
-	defaultConnectionTimeout = 60 * time.Second
-	defaultReceiveWindowSize = 4096
-	defaultSendWindowSize    = 4096
-	defaultWriteBufferSize   = 1024 * 1024 * 8
-	defaultRecvBufferSize    = 1024 * 1024 * 8
-	defaultWriteFlushLatency = 10 * time.Millisecond
-	defaultWriteTimeout      = 3
-	defaultProxyNotifySize   = 256
-	defaultCompressFileSize  = 4 * 1024 * 1024
-	defaultStreamQueueLen    = 256
+	defaultConnectionTimeout   = 60 * time.Second
+	defaultReceiveWindowSize   = 4096
+	defaultSendWindowSize      = 4096
+	defaultWriteBufferSize     = 1024 * 1024 * 8
+	defaultRecvBufferSize      = 1024 * 1024 * 8
+	defaultWriteFlushLatency   = 10 * time.Millisecond
+	defaultWriteTimeout        = 3
+	defaultProxyNotifySize     = 256
+	defaultCompressFileSize    = 4 * 1024 * 1024
+	defaultStreamQueueLen      = 256
+	defaultBootstrapWaitSecond = 5 * time.Second
 )
 
 const (
@@ -128,6 +129,8 @@ type Network struct {
 	Reporter                    *metrics.BandwidthCounter
 
 	streamQueueLen uint16
+
+	bootstrapWaitSecond time.Duration
 }
 
 type NetDistanceMetric struct {
@@ -731,10 +734,24 @@ func (n *Network) ConnectPeer(address string) (error, string) {
 	if err != nil {
 		log.Error("new client send ping message in ConnectPeer err:", err, ";address:", address)
 		return err, ""
-	} else {
-		<-client.RecvRemotePubKey
 	}
+
+	if false == n.waitBootstrapSuccess(client) {
+		return errors.New("wait pubkey err in connect"), ""
+	}
+
 	return nil, client.ClientID()
+}
+
+func (n *Network) waitBootstrapSuccess(client *PeerClient) bool {
+	t := time.NewTicker(n.bootstrapWaitSecond)
+	select {
+	case <-t.C:
+		client.Close()
+		return false
+	case <-client.RecvRemotePubKey:
+		return true
+	}
 }
 
 // Bootstrap with a number of peers and commence a handshake.
@@ -754,8 +771,9 @@ func (n *Network) Bootstrap(addresses []string) []string {
 		if err != nil {
 			log.Error("new client send ping message err:", err, ";address:", address)
 			continue
-		} else {
-			<-client.RecvRemotePubKey
+		}
+
+		if true == n.waitBootstrapSuccess(client) {
 			clientID = append(clientID, client.ClientID())
 		}
 	}
@@ -1440,6 +1458,10 @@ func (n *Network) GetRealConnState(peerID string) (PeerState, error) {
 		return PEER_REACHABLE, nil
 	}
 	return PEER_UNREACHABLE, errors.Errorf("in Network.GetRealConnState, conn&peer exist but state is UNREACHABLE ,client addr:%s", n.GetAddrByPeerID(peerID))
+}
+
+func (n *Network) SetBootstrapWaitSecond(timeout time.Duration) {
+	n.bootstrapWaitSecond = timeout
 }
 
 func (n *Network) SetDialTimeout(timeout time.Duration) {
