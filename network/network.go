@@ -745,6 +745,7 @@ func (n *Network) ConnectPeer(address string) (error, string) {
 
 func (n *Network) waitBootstrapSuccess(client *PeerClient) bool {
 	t := time.NewTicker(n.bootstrapWaitSecond)
+	defer t.Stop()
 	select {
 	case <-t.C:
 		client.Close()
