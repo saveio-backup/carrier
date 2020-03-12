@@ -71,7 +71,7 @@ func (n *Network) streamSendMessage(tcpConn net.Conn, w io.Writer, message *prot
 	var isOK bool
 	for totalBytesWritten < len(buffer) && err == nil {
 		if value, ok := n.ConnMgr.streams.Load(peerID); ok {
-			s, isOK = value.(MultiStream).stream.Load(streamID)
+			s, isOK = value.(*MultiStream).stream.Load(streamID)
 			if !isOK {
 				if client := n.GetPeerClient(peerID); client != nil && message.NeedAck == true {
 					log.Debugf("(kcp/tcp)in Network.streamSendMessage,stream was closed by appliction, has sent:%d, "+

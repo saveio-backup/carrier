@@ -28,8 +28,8 @@ func (s *Stream) GetSendDataCnt() uint64 {
 	return s.SendCnt
 }
 
-func NewMultiStream() MultiStream {
-	return MultiStream{
+func NewMultiStream() *MultiStream {
+	return &MultiStream{
 		idIncCounter: 0,
 		stream:       new(sync.Map),
 	}
@@ -40,9 +40,9 @@ func (c *PeerClient) OpenStream() *Stream {
 	c.Network.ConnMgr.Lock()
 	defer c.Network.ConnMgr.Unlock()
 
-	var stream MultiStream
+	var stream *MultiStream
 	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
-		stream = value.(MultiStream)
+		stream = value.(*MultiStream)
 	}
 
 	stream.idIncCounter++
@@ -54,7 +54,7 @@ func (c *PeerClient) OpenStream() *Stream {
 		Client:  c,
 	}
 	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
-		value.(MultiStream).stream.Store(s.ID, &s)
+		value.(*MultiStream).stream.Store(s.ID, &s)
 	} else {
 		log.Errorf("New MultiStream maybe does not called. PLEASE CHECK YOUR CODE.")
 	}
@@ -63,7 +63,7 @@ func (c *PeerClient) OpenStream() *Stream {
 
 func (c *PeerClient) CloseStream(streamID string) {
 	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
-		if v, isOK := value.(MultiStream).stream.Load(streamID); isOK {
+		if v, isOK := value.(*MultiStream).stream.Load(streamID); isOK {
 			v.(*Stream).mutex.Lock()
 			value.(MultiStream).stream.Delete(streamID)
 			log.Debugf("stream ID:%s has been closed, belong to peer addr:%s", streamID, peer.Address)
@@ -74,7 +74,7 @@ func (c *PeerClient) CloseStream(streamID string) {
 
 func (c *PeerClient) StreamExist(streamID string) bool {
 	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
-		if _, isOK := value.(MultiStream).stream.Load(streamID); isOK {
+		if _, isOK := value.(*MultiStream).stream.Load(streamID); isOK {
 			return true
 		} else {
 			return false

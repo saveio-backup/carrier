@@ -320,7 +320,7 @@ func (c *PeerClient) TellByAddr(ctx context.Context, message proto.Message) erro
 
 func (c *PeerClient) StreamSendDataCnt(streamID string) uint64 {
 	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
-		if s, isOK := value.(MultiStream).stream.Load(streamID); isOK {
+		if s, isOK := value.(*MultiStream).stream.Load(streamID); isOK {
 			return s.(*Stream).SendCnt
 		}
 	}
