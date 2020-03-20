@@ -3,7 +3,6 @@ package network
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"math/rand"
 	"net"
 	"sync"
@@ -199,7 +198,7 @@ func (n *Network) waitExit() {
 }
 
 func (n *Network) PeerID() string {
-	return fmt.Sprintf("%s", n.ID.Id)
+	return hex.EncodeToString(n.ID.Id)
 }
 
 // GetKeys returns the keypair for this network
@@ -1296,6 +1295,17 @@ func (n *Network) BroadcastToPeers(ctx context.Context, message proto.Message) {
 	})
 }
 
+func (n *Network) BroadcastByClientIDs(ctx context.Context, message proto.Message, clientIDs ...string) {
+	signed, err := n.PrepareMessage(ctx, message)
+	if err != nil {
+		return
+	}
+
+	for _, clientID := range clientIDs {
+		n.Write(clientID, signed)
+	}
+}
+
 // BroadcastByAddresses broadcasts a message to a set of peer clients denoted by their addresses.
 func (n *Network) BroadcastByAddresses(ctx context.Context, message proto.Message, addresses ...string) {
 	signed, err := n.PrepareMessage(ctx, message)
@@ -1323,25 +1333,25 @@ func (n *Network) BroadcastByIDs(ctx context.Context, message proto.Message, ids
 // BroadcastRandomly asynchronously broadcasts a message to random selected K peers.
 // Does not guarantee broadcasting to exactly K peers.
 func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, K int) {
-	var addresses []string
+	var cids []string
 
 	n.EachPeer(func(client *PeerClient) bool {
-		addresses = append(addresses, client.Address)
+		cids = append(cids, client.ClientID())
 
 		// Limit total amount of addresses in case we have a lot of peers.
-		return len(addresses) <= K*3
+		return len(cids) <= K*3
 	})
 
 	// Flip a coin and shuffle :).
-	rand.Shuffle(len(addresses), func(i, j int) {
-		addresses[i], addresses[j] = addresses[j], addresses[i]
+	rand.Shuffle(len(cids), func(i, j int) {
+		cids[i], cids[j] = cids[j], cids[i]
 	})
 
-	if len(addresses) < K {
-		K = len(addresses)
+	if len(cids) < K {
+		K = len(cids)
 	}
 
-	n.BroadcastByAddresses(ctx, message, addresses[:K]...)
+	n.BroadcastByClientIDs(ctx, message, cids[:K]...)
 }
 
 // Close shuts down the entire network.
@@ -1507,4 +1517,19 @@ func (n *Network) EnableMsgGoroutine() {
 
 func (n *Network) SetStreamQueueLen(size uint16) {
 	n.streamQueueLen = size
+}
+
+// Tell will asynchronously emit a message to a given peer.
+func (n *Network) Send(ctx context.Context, clientID string, message proto.Message) error {
+	signed, err := n.PrepareMessage(ctx, message)
+	if err != nil {
+		return errors.Wrap(err, "failed to sign message in stream send")
+	}
+
+	err = n.Write(clientID, signed)
+	if err != nil {
+		return errors.Wrapf(err, "StreamSend failed to send message to %s", n.Address)
+	}
+
+	return nil
 }

@@ -18,7 +18,7 @@ type MultiStream struct {
 }
 
 type Stream struct {
-	mutex   *sync.Mutex
+	Mutex   *sync.Mutex
 	ID      string
 	SendCnt uint64
 	Client  *PeerClient
@@ -49,7 +49,7 @@ func (c *PeerClient) OpenStream() *Stream {
 
 	s := Stream{
 		ID:      fmt.Sprintf("%s:%d", c.Address, stream.idIncCounter),
-		mutex:   new(sync.Mutex),
+		Mutex:   new(sync.Mutex),
 		SendCnt: 0,
 		Client:  c,
 	}
@@ -82,4 +82,13 @@ func (c *PeerClient) StreamExist(streamID string) bool {
 	} else {
 		return false
 	}
+}
+
+func (c *PeerClient) Stream(streamID string) *Stream {
+	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
+		if v, isOK := value.(*MultiStream).stream.Load(streamID); isOK {
+			return v.(*Stream)
+		}
+	}
+	return nil
 }
