@@ -100,6 +100,8 @@ type Network struct {
 
 		connStates *sync.Map
 		streams    *sync.Map
+		acceptConn chan string
+		nodeQuit   chan string
 	}
 
 	Conn *net.UDPConn
@@ -1532,4 +1534,12 @@ func (n *Network) Send(ctx context.Context, clientID string, message proto.Messa
 	}
 
 	return nil
+}
+
+func (n *Network) AcceptConn() chan string {
+	return n.ConnMgr.acceptConn
+}
+
+func (n *Network) QuitNode() chan string {
+	return n.ConnMgr.nodeQuit
 }

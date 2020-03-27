@@ -134,6 +134,7 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		SyncWaitAck:      new(sync.Map),
 		StreamSendQueue:  make(chan StreamSendItem, network.streamQueueLen),
 		RecvRemotePubKey: make(chan struct{}),
+		PubKey:           "",
 	}
 
 	return client, nil
@@ -233,6 +234,7 @@ func (c *PeerClient) RemoveEntries() error {
 		c.Network.ConnMgr.streams.Delete(c.PeerID())
 		c.Network.UpdateConnState(c.PeerID(), PEER_UNREACHABLE)
 		c.Network.ConnMgr.Mutex.Unlock()
+		c.Network.ConnMgr.nodeQuit <- c.ClientID()
 		state.conn = nil
 		debug.FreeOSMemory()
 	}
