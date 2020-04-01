@@ -1334,7 +1334,7 @@ func (n *Network) BroadcastByIDs(ctx context.Context, message proto.Message, ids
 
 // BroadcastRandomly asynchronously broadcasts a message to random selected K peers.
 // Does not guarantee broadcasting to exactly K peers.
-func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, K int) {
+func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, K int) []string {
 	var cids []string
 
 	n.EachPeer(func(client *PeerClient) bool {
@@ -1354,6 +1354,7 @@ func (n *Network) BroadcastRandomly(ctx context.Context, message proto.Message, 
 	}
 
 	n.BroadcastByClientIDs(ctx, message, cids[:K]...)
+	return cids
 }
 
 // Close shuts down the entire network.

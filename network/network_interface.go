@@ -63,7 +63,7 @@ type NetworkInterface interface {
 
 	// BroadcastRandomly asynchronously broadcasts a message to random selected K peers.
 	// Does not guarantee broadcasting to exactly K peers.
-	BroadcastRandomly(ctx context.Context, message proto.Message, K int)
+	BroadcastRandomly(ctx context.Context, message proto.Message, K int) []string
 
 	// Close shuts down the entire network.
 	Close()
