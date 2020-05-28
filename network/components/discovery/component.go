@@ -2,7 +2,9 @@ package discovery
 
 import (
 	"context"
+	"encoding/hex"
 	"strings"
+	"sync/atomic"
 
 	"github.com/saveio/carrier/dht"
 	"github.com/saveio/carrier/internal/protobuf"
@@ -14,9 +16,10 @@ import (
 type Component struct {
 	*network.Component
 
-	DisablePing   bool
-	DisablePong   bool
-	DisableLookup bool
+	DisablePing     bool
+	DisablePong     bool
+	DisableLookup   bool
+	DisableAutoFind bool
 
 	Routes *dht.RoutingTable
 }
@@ -25,6 +28,24 @@ var (
 	ComponentID                            = (*Component)(nil)
 	_           network.ComponentInterface = (*Component)(nil)
 )
+
+// ComponentOption are configurable options for the discovery Component
+type ComponentOption func(*Component)
+
+func DisablePong() ComponentOption {
+	return func(o *Component) {
+		o.DisablePong = true
+	}
+}
+
+func New(opts ...ComponentOption) *Component {
+	p := new(Component)
+	for _, opt := range opts {
+		opt(p)
+	}
+
+	return p
+}
 
 func (state *Component) Startup(net *network.Network) {
 	// Create routing table.
@@ -44,12 +65,26 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 		}
 
 		// Send pong to peer.
-		err := ctx.Reply(gCtx, &protobuf.Pong{})
-
+		err := ctx.Client().Tell(context.Background(), &protobuf.Pong{})
 		if err != nil {
 			return err
 		}
+
+		/*
+			err := ctx.Reply(gCtx, &protobuf.Pong{})
+
+			if err != nil {
+				return err
+			}
+		*/
+
 	case *protobuf.Pong:
+		//[PoC] ensure bootstrap success with discovery component alone
+		ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
+		if atomic.SwapUint32(&ctx.Client().RecvChannelClosed, 1) == 0 {
+			close(ctx.Client().RecvRemotePubKey)
+		}
+
 		if state.DisablePong {
 			break
 		}

@@ -75,8 +75,9 @@ type PeerClient struct {
 	AckStatusNotify chan AckStatus
 	StreamSendQueue chan StreamSendItem
 
-	RecvRemotePubKey chan struct{}
-	PubKey           string
+	RecvChannelClosed uint32
+	RecvRemotePubKey  chan struct{}
+	PubKey            string
 }
 
 type StreamSendItem struct {

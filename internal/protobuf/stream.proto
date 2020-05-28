@@ -27,6 +27,8 @@ message ID {
     bytes id = 3;
     //used in communication with proxy server
     bytes connection_id=4;
+    //tcp address returned allocated by proxy server
+    string address2=5;
 }
 
 message Message {

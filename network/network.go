@@ -520,6 +520,12 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 
 	n.ConnMgr.Mutex.Lock()
 	defer n.ConnMgr.Mutex.Unlock()
+
+	//check if is new incoming UDP conn!
+	if _, ok := conn.(*net.UDPConn); ok {
+		conn = nil
+	}
+
 	if conn == nil {
 		conn, err = n.Dial(address, client)
 

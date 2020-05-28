@@ -49,8 +49,11 @@ func (n *Network) sendUDPMessage(w io.Writer, message *protobuf.Message, writerM
 		log.Error("build raw conent from protobuf err in send udp message")
 		return nil
 	}
-	writerMutex.Lock()
-	defer writerMutex.Unlock()
+
+	//caller will take lock
+	//writerMutex.Lock()
+	//defer writerMutex.Unlock()
+
 	udpConn, _ := state.conn.(*net.UDPConn)
 	_, err := udpConn.Write(buffer)
 	if err != nil {

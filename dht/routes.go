@@ -2,8 +2,10 @@ package dht
 
 import (
 	"container/list"
+	"math/rand"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/saveio/carrier/peer"
 )
@@ -228,4 +230,44 @@ func (t *RoutingTable) Bucket(id int) *Bucket {
 		return t.buckets[id]
 	}
 	return nil
+}
+
+// GetPeerAddresses returns a unique list of all peer addresses within the routing network.
+func (t *RoutingTable) GetRandomPeers(count int) (peers []peer.ID) {
+	var buckets []*Bucket
+
+	for _, bucket := range t.buckets {
+		bucket.mutex.RLock()
+		if bucket.Len() > 0 {
+			buckets = append(buckets, bucket)
+		}
+		bucket.mutex.RUnlock()
+	}
+
+	if len(buckets) == 0 {
+		return
+	}
+
+	// Shuffle the buckets.
+	for i := uint32(len(buckets)) - 1; i > 0; i-- {
+		rand.Seed(time.Now().Unix())
+		j := rand.Intn(int(i))
+		buckets[i], buckets[j] = buckets[j], buckets[i]
+	}
+
+	for _, bucket := range buckets {
+		bucket.mutex.RLock()
+		if bucket.Len() > 0 {
+			e := bucket.Front()
+			id := e.Value.(peer.ID)
+			peers = append(peers, id)
+		}
+		bucket.mutex.RUnlock()
+
+		if len(peers) >= count {
+			return
+		}
+	}
+
+	return
 }
