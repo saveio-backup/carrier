@@ -492,11 +492,6 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 		return nil, errors.New("network: peer should not dial itself")
 	}
 
-	clientNew, err := createPeerClient(n, address)
-	if err != nil {
-		return nil, err
-	}
-
 	if address != peerID { //address!=peerID stand for
 		n.resetConnMgrItemByPeerID(address, peerID)
 	}
@@ -510,6 +505,11 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 		}
 
 		return client, nil
+	}
+
+	clientNew, err := createPeerClient(n, address)
+	if err != nil {
+		return nil, err
 	}
 
 	clientNew.PubKey = peerID

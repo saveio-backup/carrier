@@ -230,6 +230,11 @@ func FindNode(net *network.Network, targetID peer.ID, alpha int, disjointPaths i
 	for i, peerID := range component.(*Component).Routes.FindClosestPeers(targetID, alpha) {
 		visited.Store(peerID.PublicKeyHex(), struct{}{})
 
+		//don't call self
+		if peerID.Address == net.ID.Address {
+			continue
+		}
+
 		if len(lookups) < disjointPaths {
 			lookups = append(lookups, new(lookupBucket))
 		}
