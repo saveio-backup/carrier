@@ -250,6 +250,7 @@ func FindNode(net *network.Network, targetID peer.ID, alpha int, disjointPaths i
 	wait, mutex := &sync.WaitGroup{}, &sync.Mutex{}
 
 	for _, lookup := range lookups {
+		wait.Add(1)
 		go func(lookup *lookupBucket) {
 			mutex.Lock()
 			results = append(results, lookup.performLookupClosest(net, targetID, alpha, visited)...)
@@ -257,8 +258,6 @@ func FindNode(net *network.Network, targetID peer.ID, alpha int, disjointPaths i
 
 			wait.Done()
 		}(lookup)
-
-		wait.Add(1)
 	}
 
 	// Wait until all #D parallel lookups have been completed.
