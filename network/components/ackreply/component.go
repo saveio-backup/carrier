@@ -20,6 +20,12 @@ const (
 	DefaultDelayResentTime    = 1 * time.Second
 )
 
+type stopNotify struct {
+	sync.Mutex
+	isStop bool
+	stopCh chan struct{}
+}
+
 // Component is the keepalive Component
 type Component struct {
 	*network.Component
@@ -29,7 +35,7 @@ type Component struct {
 	delayResentTimeDistance time.Duration
 	// Channel for peer network state change notification
 	peerStateChan chan *PeerStateEvent
-	stopCh        chan struct{}
+	notify        stopNotify
 	// map to save last state for a peer
 	//lastStates map[string]PeerState
 	lastStates *sync.Map
@@ -86,7 +92,8 @@ func New(opts ...ComponentOption) *Component {
 	p := new(Component)
 	defaultOptions()(p)
 
-	p.stopCh = make(chan struct{})
+	p.notify.stopCh = make(chan struct{})
+	p.notify.isStop = false
 	p.lastStates = new(sync.Map)
 	for _, opt := range opts {
 		opt(p)
@@ -102,7 +109,13 @@ func (p *Component) Startup(net *network.Network) {
 }
 
 func (p *Component) Cleanup(net *network.Network) {
-	close(p.stopCh)
+	p.notify.Lock()
+	defer p.notify.Unlock()
+	if p.notify.isStop == true {
+		return
+	}
+	close(p.notify.stopCh)
+	p.notify.isStop = true
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
@@ -111,7 +124,13 @@ func (p *Component) PeerConnect(client *network.PeerClient) {
 }
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
-	close(p.stopCh)
+	p.notify.Lock()
+	defer p.notify.Unlock()
+	if p.notify.isStop == true {
+		return
+	}
+	close(p.notify.stopCh)
+	p.notify.isStop = true
 }
 
 func (p *Component) Receive(ctx *network.ComponentContext) error {
@@ -166,7 +185,7 @@ func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 				}
 				return true
 			})
-		case <-p.stopCh:
+		case <-p.notify.stopCh:
 			t.Stop()
 			return
 		case <-p.net.Kill:
