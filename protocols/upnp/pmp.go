@@ -1,10 +1,11 @@
 package nat
 
 import (
-	"github.com/jackpal/go-nat-pmp"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/jackpal/go-nat-pmp"
 )
 
 type pmp struct {

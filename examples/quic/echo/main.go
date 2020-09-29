@@ -1,22 +1,22 @@
 /**
  * Description:
  * Author: Yihen.Liu
- * Create: 2019-05-30 
-*/
+ * Create: 2019-05-30
+ */
 package main
 
 import (
-"crypto/rand"
-"crypto/rsa"
-"crypto/tls"
-"crypto/x509"
-"encoding/pem"
-"fmt"
-"io"
-"log"
-"math/big"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
+	"io"
+	"log"
+	"math/big"
 
-quic "github.com/lucas-clemente/quic-go"
+	quic "github.com/lucas-clemente/quic-go"
 )
 
 const addr = "127.0.0.1:4242"

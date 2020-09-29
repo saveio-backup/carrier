@@ -85,6 +85,7 @@ type StreamSendItem struct {
 	Write    io.Writer
 	Message  *protobuf.Message
 	PeerID   string
+	Address  string
 	StreamID string
 	Mutex    *sync.Mutex
 }

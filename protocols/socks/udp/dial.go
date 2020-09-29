@@ -15,4 +15,3 @@ Example http client over SOCKS5:
 	resp, err := client.Get("https://example.com")
 */
 package udp
-

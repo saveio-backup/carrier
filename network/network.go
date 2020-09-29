@@ -1186,10 +1186,11 @@ func (n *Network) StreamWrite(streamID, peerID string, message *protobuf.Message
 				Message:  message,
 				PeerID:   peerID,
 				StreamID: streamID,
+				Address:  n.GetAddrByPeerID(peerID),
 				Mutex:    state.writerMutex,
 			}
 			log.Debugf("Network.StreamWrite msg(id:%s) write to addr:%s(streamID:%s) has been put into queue",
-				message.MessageID, address, streamID)
+				message.MessageID, n.GetAddrByPeerID(peerID), streamID)
 		} else {
 			log.Error("(tcp/kcp) Network.StreamWrite to addr:", n.GetAddrByPeerID(peerID), "err: client does not exist")
 		}

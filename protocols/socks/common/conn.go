@@ -2,7 +2,7 @@
  * Description:
  * Author: Yihen.Liu
  * Create: 2019-07-10
-*/
+ */
 package common
 
 import (
@@ -11,9 +11,9 @@ import (
 )
 
 type ProxiedConn struct {
-	Conn       		net.Conn
-	RemoteAddress 	*ProxiedAddr
-	BoundAddr  		*ProxiedAddr
+	Conn          net.Conn
+	RemoteAddress *ProxiedAddr
+	BoundAddr     *ProxiedAddr
 }
 
 func (c *ProxiedConn) Read(b []byte) (int, error) {
