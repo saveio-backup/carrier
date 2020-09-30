@@ -27,7 +27,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/lucas-clemente/quic-go"
 	"github.com/pkg/errors"
-	"github.com/saveio/carrier/metric/carrier-metrics"
+	metrics "github.com/saveio/carrier/metric/carrier-metrics"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -492,6 +492,11 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 		return nil, errors.New("network: peer should not dial itself")
 	}
 
+	clientNew, err := createPeerClient(n, address)
+	if err != nil {
+		return nil, err
+	}
+
 	if address != peerID { //address!=peerID stand for
 		n.resetConnMgrItemByPeerID(address, peerID)
 	}
@@ -505,11 +510,6 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 		}
 
 		return client, nil
-	}
-
-	clientNew, err := createPeerClient(n, address)
-	if err != nil {
-		return nil, err
 	}
 
 	clientNew.PubKey = peerID

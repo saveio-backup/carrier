@@ -152,7 +152,10 @@ func (c *PeerClient) loopStreamSend() {
 			go func() {
 				item.Mutex.Lock()
 				defer item.Mutex.Unlock()
-				err, cnt := c.Network.streamSendMessage(item.TcpConn, item.Write, item.Message, item.Address, item.StreamID)
+				c.Stream(item.StreamID).Mutex.Lock()
+				defer c.Stream(item.StreamID).Mutex.Unlock()
+
+				err, cnt := c.Network.streamSendMessage(item.TcpConn, item.Write, item.Message, item.PeerID, item.StreamID)
 				if err != nil {
 					log.Errorf("in loopStreamSend, stream send err:%s, msg.msgID:%s,send to addr:%s, stream id:%s, message.opcode:%d, message.nonce:%d, send count:%d",
 						err.Error(), item.Message.MessageID, item.Address, item.StreamID, item.Message.Opcode, item.Message.MessageNonce, cnt)

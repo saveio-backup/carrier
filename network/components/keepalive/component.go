@@ -128,7 +128,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		if err != nil {
 			return err
 		}
-		p.net.AcceptConn() <- ctx.Client().ClientID()
+		// p.net.AcceptConn() <- ctx.Client().ClientID()
 	case *protobuf.Pong:
 		ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
 		close(ctx.Client().RecvRemotePubKey)

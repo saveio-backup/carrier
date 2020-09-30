@@ -65,7 +65,7 @@ func (c *PeerClient) CloseStream(streamID string) {
 	if value, ok := c.Network.ConnMgr.streams.Load(c.PeerID()); ok {
 		if v, isOK := value.(*MultiStream).stream.Load(streamID); isOK {
 			v.(*Stream).Mutex.Lock()
-			value.(MultiStream).stream.Delete(streamID)
+			value.(*MultiStream).stream.Delete(streamID)
 			log.Debugf("stream ID:%s has been closed, belong to peer addr:%s", streamID, c.Address)
 			v.(*Stream).Mutex.Unlock()
 		}

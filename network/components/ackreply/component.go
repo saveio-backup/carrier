@@ -124,13 +124,7 @@ func (p *Component) PeerConnect(client *network.PeerClient) {
 }
 
 func (p *Component) PeerDisconnect(client *network.PeerClient) {
-	p.notify.Lock()
-	defer p.notify.Unlock()
-	if p.notify.isStop == true {
-		return
-	}
-	close(p.notify.stopCh)
-	p.notify.isStop = true
+
 }
 
 func (p *Component) Receive(ctx *network.ComponentContext) error {
@@ -189,7 +183,6 @@ func (p *Component) checkAckReceivedService(client *network.PeerClient) {
 			t.Stop()
 			return
 		case <-p.net.Kill:
-			t.Stop()
 			return
 		}
 	}
