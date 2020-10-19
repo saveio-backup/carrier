@@ -59,8 +59,10 @@ func (n *stopNotify) Close() {
 	if n.isStop {
 		return
 	}
-	close(n.stopCh)
+	log.Infof("close channel %v", n.isStop)
 	n.isStop = true
+	close(n.stopCh)
+
 }
 
 // PeerClient represents a single incoming peers client.
@@ -142,17 +144,19 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 			buffered: make(chan struct{}),
 		},
 
-		jobs:             make(chan func(), 128),
-		CloseSignal:      make(chan struct{}),
-		Time:             time.Now(),
-		RecvWindow:       NewRecvWindow(network.opts.recvWindowSize),
-		enableBackoff:    true,
-		EnableAckReply:   false,
-		AckStatusNotify:  make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
-		SyncWaitAck:      new(sync.Map),
-		StreamSendQueue:  make(chan StreamSendItem, network.streamQueueLen),
-		RecvRemotePubKey: new(stopNotify),
-		PubKey:           "",
+		jobs:            make(chan func(), 128),
+		CloseSignal:     make(chan struct{}),
+		Time:            time.Now(),
+		RecvWindow:      NewRecvWindow(network.opts.recvWindowSize),
+		enableBackoff:   true,
+		EnableAckReply:  false,
+		AckStatusNotify: make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
+		SyncWaitAck:     new(sync.Map),
+		StreamSendQueue: make(chan StreamSendItem, network.streamQueueLen),
+		RecvRemotePubKey: &stopNotify{
+			stopCh: make(chan struct{}),
+		},
+		PubKey: "",
 	}
 
 	return client, nil
