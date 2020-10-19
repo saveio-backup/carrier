@@ -2,7 +2,9 @@ package discovery
 
 import (
 	"context"
+	"encoding/hex"
 	"strings"
+	"sync/atomic"
 
 	"github.com/saveio/carrier/dht"
 	"github.com/saveio/carrier/internal/protobuf"
@@ -78,10 +80,10 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 
 	case *protobuf.Pong:
 		//[PoC] ensure bootstrap success with discovery component alone
-		// ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
-		// if atomic.SwapUint32(&ctx.Client().RecvChannelClosed, 1) == 0 {
-		// 	close(ctx.Client().RecvRemotePubKey)
-		// }
+		ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
+		if atomic.SwapUint32(&ctx.Client().RecvChannelClosed, 1) == 0 {
+			close(ctx.Client().RecvRemotePubKey)
+		}
 
 		if state.DisablePong {
 			break
