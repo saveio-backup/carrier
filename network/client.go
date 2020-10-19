@@ -47,6 +47,22 @@ type AckStatus struct {
 	Status    AckState
 }
 
+type stopNotify struct {
+	sync.Mutex
+	isStop bool
+	stopCh chan struct{}
+}
+
+func (n *stopNotify) Close() {
+	n.Lock()
+	defer n.Unlock()
+	if n.isStop {
+		return
+	}
+	close(n.stopCh)
+	n.isStop = true
+}
+
 // PeerClient represents a single incoming peers client.
 type PeerClient struct {
 	Network *Network
@@ -76,7 +92,7 @@ type PeerClient struct {
 	StreamSendQueue chan StreamSendItem
 
 	RecvChannelClosed uint32
-	RecvRemotePubKey  chan struct{}
+	RecvRemotePubKey  *stopNotify
 	PubKey            string
 }
 
@@ -135,7 +151,7 @@ func createPeerClient(network *Network, address string) (*PeerClient, error) {
 		AckStatusNotify:  make(chan AckStatus, DEFAULT_ACK_REPLY_CAPACITY),
 		SyncWaitAck:      new(sync.Map),
 		StreamSendQueue:  make(chan StreamSendItem, network.streamQueueLen),
-		RecvRemotePubKey: make(chan struct{}),
+		RecvRemotePubKey: new(stopNotify),
 		PubKey:           "",
 	}
 

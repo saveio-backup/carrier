@@ -757,7 +757,7 @@ func (n *Network) waitBootstrapSuccess(client *PeerClient) bool {
 	case <-t.C:
 		client.Close()
 		return false
-	case <-client.RecvRemotePubKey:
+	case <-client.RecvRemotePubKey.stopCh:
 		return true
 	}
 }

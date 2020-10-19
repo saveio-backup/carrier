@@ -82,7 +82,7 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 		//[PoC] ensure bootstrap success with discovery component alone
 		ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
 		if atomic.SwapUint32(&ctx.Client().RecvChannelClosed, 1) == 0 {
-			close(ctx.Client().RecvRemotePubKey)
+			ctx.Client().RecvRemotePubKey.Close()
 		}
 
 		if state.DisablePong {

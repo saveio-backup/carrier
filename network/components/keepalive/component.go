@@ -131,7 +131,7 @@ func (p *Component) Receive(ctx *network.ComponentContext) error {
 		// p.net.AcceptConn() <- ctx.Client().ClientID()
 	case *protobuf.Pong:
 		ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
-		close(ctx.Client().RecvRemotePubKey)
+		ctx.Client().RecvRemotePubKey.Close()
 		//p.net.ConnMgr.Lock()
 		//p.net.UpdateConnState(ctx.Client().Address, network.PEER_REACHABLE)
 		//p.net.ConnMgr.Unlock()
