@@ -29,8 +29,9 @@ type Component struct {
 	keepaliveTimeout time.Duration
 
 	// Channel for peer network state change notification
-	peerStateChan chan *PeerStateEvent
-	stopCh        chan struct{}
+	peerStateChan  chan *PeerStateEvent
+	channelHasStop bool
+	stopCh         chan struct{}
 	// map to save last state for a peer
 	//lastStates map[string]PeerState
 	lastStates *sync.Map
@@ -83,6 +84,7 @@ func New(opts ...ComponentOption) *Component {
 
 	p.stopCh = make(chan struct{})
 	p.lastStates = new(sync.Map)
+	p.channelHasStop = false
 	for _, opt := range opts {
 		opt(p)
 	}
@@ -98,7 +100,10 @@ func (p *Component) Startup(net *network.Network) {
 }
 
 func (p *Component) Cleanup(net *network.Network) {
-	close(p.stopCh)
+	if p.channelHasStop == false {
+		close(p.stopCh)
+		p.channelHasStop = true
+	}
 }
 
 func (p *Component) PeerConnect(client *network.PeerClient) {
