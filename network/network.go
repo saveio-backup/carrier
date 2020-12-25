@@ -329,8 +329,9 @@ func (n *Network) Listen() {
 	}
 
 	var listener interface{}
+	log.Infof("tls listen start,CAEnable:", n.IsCAEnable())
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
-		if n.IsCAEnable() {
+		if n.IsCAEnable() == true {
 			caPath, certPath, keyPath := n.GetCAFileConfig()
 			if caPath == "" || certPath == "" || keyPath == "" {
 				log.Fatal("CA config is error,caPath:", caPath, ",certPath:", certPath, ",keyPath:", keyPath)
@@ -340,6 +341,7 @@ func (n *Network) Listen() {
 			log.Infof("tls listen start, cerPath:", certPath, ",keyPath:", keyPath, "caPath:", caPath)
 		} else {
 			listener, err = t.(transport.Layer).Listen(addrInfo.HostPort())
+			log.Infof("NO tls listen start")
 		}
 		if udpconn, ok := listener.(*net.UDPConn); ok {
 			n.Conn = udpconn
@@ -829,7 +831,8 @@ func (n *Network) Dial(address string, client *PeerClient) (interface{}, error) 
 	}
 
 	var conn interface{}
-	if n.IsCAEnable() {
+	log.Infof("dose tls dial start? CAEnable:", n.IsCAEnable())
+	if n.IsCAEnable() == true {
 		caPath, certPath, keyPath := n.GetCAFileConfig()
 		if caPath == "" || certPath == "" || keyPath == "" {
 			log.Fatal("CA config is error,caPath:", caPath, ",certPath:", certPath, ",keyPath:", keyPath)
@@ -838,6 +841,7 @@ func (n *Network) Dial(address string, client *PeerClient) (interface{}, error) 
 		log.Infof("tls dial start, cerPath:", certPath, ",keyPath:", keyPath, "caPath:", caPath)
 	} else {
 		conn, err = t.(transport.Layer).Dial(addrInfo.HostPort(), n.dialTimeout)
+		log.Infof("NO tls dial start")
 	}
 	if err != nil {
 		return nil, err
