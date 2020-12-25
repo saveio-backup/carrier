@@ -53,18 +53,18 @@ func main() {
 	proxyFlag := flag.String("proxy", "localhost", "proxy server ip")
 	proxyIDFlag := flag.String("proxy_id", "", "proxy id")
 	enableProxy := flag.Bool("enableProxy", false, "enable proxy")
-	caFlag := flag.String("caPath", "./ca/CA_of_FISCP.cer", "ca path")
-	keyFlag := flag.String("keyPath", "./ca/adminKeyV2.pem", "key path")
-	certFlag := flag.String("certPath", "./ca/NRT_Permit_To_Client.cer", "cert path")
+	//caFlag := flag.String("caPath", "./ca/CA_of_FISCP.cer", "ca path")
+	//keyFlag := flag.String("keyPath", "./ca/adminKeyV2.pem", "key path")
+	//certFlag := flag.String("certPath", "./ca/NRT_Permit_To_Client.cer", "cert path")
 	flag.Parse()
 
 	port := uint16(*portFlag)
 	host := *hostFlag
 	protocol := *protocolFlag
-	ca := *caFlag
-	key := *keyFlag
-	cert := *certFlag
-	listen := *listenFlag
+	/*	ca := *caFlag
+		key := *keyFlag
+		cert := *certFlag
+	*/listen := *listenFlag
 	listenPort := uint16(*listenPortFlag)
 	listenProtocol := *listenProtocolFlag
 	peers := strings.Split(*peersFlag, ",")
@@ -143,8 +143,8 @@ func main() {
 	networkBuilder.SetNetworkID(1564141146)
 
 	networkBuilder.EnableProxyMode(*enableProxy)
-	networkBuilder.EnableCAAbility()
-	networkBuilder.SetCAFileConfig(ca, cert, key)
+	//networkBuilder.EnableCAAbility()
+	//networkBuilder.SetCAFileConfig(ca, cert, key)
 	if *enableProxy {
 		pServer := strings.Split(proxyServer, ",")
 		pID := strings.Split(proxyID, ",")

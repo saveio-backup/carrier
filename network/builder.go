@@ -17,6 +17,9 @@ import (
 
 const (
 	defaultAddress = "tcp://localhost:8588"
+	CAPATH         = "./ca/CA_of_FISCP.cer"
+	CERTPATH       = "./ca/NRT_Permit_To_Client.cer"
+	KEYPATH        = "./ca/adminKeyV2.pem"
 )
 
 var (
@@ -260,14 +263,16 @@ func (builder *Builder) Build() (*Network, error) {
 		streamQueueLen:              defaultStreamQueueLen,
 		bootstrapWaitSecond:         defaultBootstrapWaitSecond,
 	}
-
 	net.ConnMgr.peers = new(sync.Map)
 	net.ConnMgr.connections = new(sync.Map)
 	net.ConnMgr.connStates = new(sync.Map)
 	net.ConnMgr.streams = new(sync.Map)
 	net.ConnMgr.acceptConn = make(chan string, 128)
 	net.ConnMgr.nodeQuit = make(chan string, 128)
-
+	net.CAConfig.enable = true
+	net.CAConfig.keyPath = KEYPATH
+	net.CAConfig.certPath = CERTPATH
+	net.CAConfig.caPath = CAPATH
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
 		return true
