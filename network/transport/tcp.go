@@ -1,14 +1,15 @@
 package transport
 
 import (
-	"context"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"net"
 	"strings"
-	"syscall"
 	"time"
 
-	"github.com/saveio/carrier/network/transport/sockopt"
-	"github.com/saveio/themis/common/log"
+	"github.com/tjfoc/gmsm/sm2"
+	"github.com/tjfoc/gmtls"
 )
 
 // TCP represents the TCP transport protocol alongside its respective configurable options.
@@ -43,23 +44,30 @@ func (t *TCP) Listen(address string) (interface{}, error) {
 }
 
 // Listen listens for incoming TCP connections on a specified port.
-func (t *TCP) _Listen(address string) (interface{}, error) {
-	var lc net.ListenConfig
-	lc.Control = func(network, address string, c syscall.RawConn) error {
-		return c.Control(func(fd uintptr) {
-			if err := sockopt.SetNonblock(fd, true); err != nil {
-				log.Errorf("in tcp listen err when set non-block,err:%s", err.Error())
-			} else {
-				log.Info("set non-block success when listen, value is true")
-			}
-			if err := sockopt.SetSocksAddrReusedImmediately(fd, 1); err != nil {
-				log.Errorf("in tcp listen err when set addr/port reuse immediately, err:%s", err.Error())
-			} else {
-				log.Info("set addr/port reuse immediately success when listen, value is true")
-			}
-		})
+func (t *TCP) TLSListen(address string, certPath string, keyPath string, caPath string) (interface{}, error) {
+	cert, err := gmtls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		return nil, err
 	}
-	listener, err := lc.Listen(context.Background(), "tcp", address)
+
+	caData, err := ioutil.ReadFile(caPath)
+	if err != nil {
+		return nil, err
+	}
+	pool := sm2.NewCertPool()
+	ret := pool.AppendCertsFromPEM(caData)
+	if !ret {
+		return nil, errors.New("in tls listen, append certs from pem error")
+	}
+
+	tlsConfig := &gmtls.Config{
+		Certificates: []gmtls.Certificate{cert},
+		RootCAs:      pool,
+		ClientAuth:   gmtls.RequireAndVerifyClientCert,
+		ClientCAs:    pool,
+	}
+
+	listener, err := gmtls.Listen("tcp", address, tlsConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -75,28 +83,33 @@ func (t *TCP) Dial(address string, timeout time.Duration) (interface{}, error) {
 }
 
 // Dial dials an address via. the TCP protocol.
-func (t *TCP) _Dial(address string, timeout time.Duration) (interface{}, error) {
-	dialer := &net.Dialer{
-		Timeout:   timeout,
-		DualStack: true,
-		LocalAddr: nil,
-	}
-	dialer.Control = func(network, address string, c syscall.RawConn) error {
-		return c.Control(func(fd uintptr) {
-			if err := sockopt.SetNonblock(fd, true); err != nil {
-				log.Errorf("in tcp dial err when set non-block,err:%s", err.Error())
-			} else {
-				log.Info("set non-block success when dial, value is true")
-			}
+func (t *TCP) TLSDial(address string, timeout time.Duration, caPath string, certPath string, keyPath string) (interface{}, error) {
 
-			if err := sockopt.SetSocksAddrReusedImmediately(fd, 1); err != nil {
-				log.Errorf("in tcp dial err when set addr/port reuse immediately, err:%s", err.Error())
-			} else {
-				log.Info("set addr/port reuse immediately success when dial, value is true")
-			}
-		})
+	clientCertPool := sm2.NewCertPool()
+
+	cacert, err := ioutil.ReadFile(caPath)
+	if err != nil {
+		fmt.Println("[p2p]load CA file fail", err)
 	}
-	conn, err := dialer.DialContext(context.Background(), "tcp", resolveTcpAddr(address))
+	cert, err := gmtls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		fmt.Println("load x509 err:", err.Error())
+	}
+
+	ret := clientCertPool.AppendCertsFromPEM(cacert)
+	if !ret {
+		fmt.Println("[p2p]failed to parse root certificate")
+	}
+
+	conf := &gmtls.Config{
+		RootCAs:            clientCertPool,
+		Certificates:       []gmtls.Certificate{cert},
+		InsecureSkipVerify: true,
+	}
+
+	var dialer net.Dialer
+	dialer.Timeout = time.Second * timeout
+	conn, err := gmtls.DialWithDialer(&dialer, "tcp", address, conf)
 	if err != nil {
 		return nil, err
 	}

@@ -132,6 +132,12 @@ type Network struct {
 	streamQueueLen uint16
 
 	bootstrapWaitSecond time.Duration
+	CAConfig            struct {
+		enable   bool
+		certPath string
+		keyPath  string
+		caPath   string
+	}
 }
 
 type NetDistanceMetric struct {
@@ -324,7 +330,16 @@ func (n *Network) Listen() {
 
 	var listener interface{}
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
-		listener, err = t.(transport.Layer).Listen(addrInfo.HostPort())
+		if n.IsCAEnable() {
+			caPath, certPath, keyPath := n.GetCAFileConfig()
+			if caPath == "" || certPath == "" || keyPath == "" {
+				log.Fatal("CA config is error,caPath:", caPath, ",certPath:", certPath, ",keyPath:", keyPath)
+				return
+			}
+			listener, err = t.(transport.Layer).TLSListen(addrInfo.HostPort(), certPath, keyPath, caPath)
+		} else {
+			listener, err = t.(transport.Layer).Listen(addrInfo.HostPort())
+		}
 		if udpconn, ok := listener.(*net.UDPConn); ok {
 			n.Conn = udpconn
 		}
@@ -813,7 +828,15 @@ func (n *Network) Dial(address string, client *PeerClient) (interface{}, error) 
 	}
 
 	var conn interface{}
-	conn, err = t.(transport.Layer).Dial(addrInfo.HostPort(), n.dialTimeout)
+	if n.IsCAEnable() {
+		caPath, certPath, keyPath := n.GetCAFileConfig()
+		if caPath == "" || certPath == "" || keyPath == "" {
+			log.Fatal("CA config is error,caPath:", caPath, ",certPath:", certPath, ",keyPath:", keyPath)
+		}
+		conn, err = t.(transport.Layer).TLSDial(addrInfo.HostPort(), n.dialTimeout, caPath, certPath, keyPath)
+	} else {
+		conn, err = t.(transport.Layer).Dial(addrInfo.HostPort(), n.dialTimeout)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -1550,4 +1573,27 @@ func (n *Network) AcceptConn() chan string {
 
 func (n *Network) QuitNode() chan string {
 	return n.ConnMgr.nodeQuit
+}
+
+func (n *Network) IsCAEnable() bool {
+	return n.CAConfig.enable
+}
+func (n *Network) EnableCAAbility() {
+	n.CAConfig.enable = true
+}
+
+func (n *Network) DisableCAAbility() {
+	n.CAConfig.enable = true
+}
+
+func (n *Network) SetCAFileConfig(caPath, certPath, keyPath string) bool {
+	if caPath == "" || certPath == "" || keyPath == "" {
+		return false
+	}
+	n.CAConfig.caPath, n.CAConfig.certPath, n.CAConfig.keyPath = caPath, certPath, keyPath
+	return true
+}
+
+func (n *Network) GetCAFileConfig() (string, string, string) {
+	return n.CAConfig.caPath, n.CAConfig.certPath, n.CAConfig.keyPath
 }

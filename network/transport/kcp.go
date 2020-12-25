@@ -47,3 +47,11 @@ func (t *KCP) Dial(address string, timeout time.Duration) (interface{}, error) {
 
 	return interface{}(conn), nil
 }
+
+func (t *KCP) TLSDial(string, time.Duration, string, string, string) (interface{}, error) {
+	return nil, nil
+}
+
+func (t *KCP) TLSListen(string, string, string, string) (interface{}, error) {
+	return nil, nil
+}

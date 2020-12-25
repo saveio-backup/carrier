@@ -84,3 +84,11 @@ func generateTLSConfig() *tls.Config {
 	}
 	return &tls.Config{Certificates: []tls.Certificate{tlsCert}, NextProtos: []string{"quic-proxy"}}
 }
+
+func (t *Quic) TLSDial(string, time.Duration, string, string, string) (interface{}, error) {
+	return nil, nil
+}
+
+func (t *Quic) TLSListen(string, string, string, string) (interface{}, error) {
+	return nil, nil
+}

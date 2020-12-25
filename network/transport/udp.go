@@ -54,3 +54,11 @@ func (t *UDP) Dial(address string, timeout time.Duration) (interface{}, error) {
 
 	return interface{}(conn), nil
 }
+
+func (t *UDP) TLSDial(string, time.Duration, string, string, string) (interface{}, error) {
+	return nil, nil
+}
+
+func (t *UDP) TLSListen(string, string, string, string) (interface{}, error) {
+	return nil, nil
+}
