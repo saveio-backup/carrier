@@ -337,6 +337,7 @@ func (n *Network) Listen() {
 				return
 			}
 			listener, err = t.(transport.Layer).TLSListen(addrInfo.HostPort(), certPath, keyPath, caPath)
+			log.Infof("tls listen start, cerPath:", certPath, ",keyPath:", keyPath, "caPath:", caPath)
 		} else {
 			listener, err = t.(transport.Layer).Listen(addrInfo.HostPort())
 		}
@@ -834,6 +835,7 @@ func (n *Network) Dial(address string, client *PeerClient) (interface{}, error) 
 			log.Fatal("CA config is error,caPath:", caPath, ",certPath:", certPath, ",keyPath:", keyPath)
 		}
 		conn, err = t.(transport.Layer).TLSDial(addrInfo.HostPort(), n.dialTimeout, caPath, certPath, keyPath)
+		log.Infof("tls dial start, cerPath:", certPath, ",keyPath:", keyPath, "caPath:", caPath)
 	} else {
 		conn, err = t.(transport.Layer).Dial(addrInfo.HostPort(), n.dialTimeout)
 	}
