@@ -90,15 +90,17 @@ func (t *TCP) TLSDial(address string, timeout time.Duration, caPath string, cert
 	cacert, err := ioutil.ReadFile(caPath)
 	if err != nil {
 		fmt.Println("[p2p]load CA file fail", err)
+		return nil, err
 	}
 	cert, err := gmtls.LoadX509KeyPair(certPath, keyPath)
 	if err != nil {
 		fmt.Println("load x509 err:", err.Error())
+		return nil, err
 	}
 
 	ret := clientCertPool.AppendCertsFromPEM(cacert)
 	if !ret {
-		fmt.Println("[p2p]failed to parse root certificate")
+		return nil, errors.New("[p2p]failed to parse root certificate")
 	}
 
 	conf := &gmtls.Config{
