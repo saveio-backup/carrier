@@ -52,7 +52,7 @@ const (
 	defaultProxyNotifySize     = 256
 	defaultCompressFileSize    = 4 * 1024 * 1024
 	defaultStreamQueueLen      = 256
-	defaultBootstrapWaitSecond = 5 * time.Second
+	defaultBootstrapWaitSecond = 30 * time.Second
 )
 
 const (
