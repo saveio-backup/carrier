@@ -110,7 +110,7 @@ func (t *TCP) TLSDial(address string, timeout time.Duration, caPath string, cert
 	}
 
 	var dialer net.Dialer
-	dialer.Timeout = time.Second * timeout
+	dialer.Timeout = timeout
 	conn, err := gmtls.DialWithDialer(&dialer, "tcp", address, conf)
 	if err != nil {
 		return nil, err
