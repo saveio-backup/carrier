@@ -1,6 +1,7 @@
 package network
 
 import (
+	"os"
 	"reflect"
 	"sync"
 	"time"
@@ -9,7 +10,7 @@ import (
 	"github.com/saveio/carrier/crypto"
 	"github.com/saveio/carrier/crypto/blake2b"
 	"github.com/saveio/carrier/crypto/ed25519"
-	"github.com/saveio/carrier/metric/carrier-metrics"
+	metrics "github.com/saveio/carrier/metric/carrier-metrics"
 	"github.com/saveio/carrier/network/transport"
 	"github.com/saveio/carrier/peer"
 	"github.com/saveio/themis/common/log"
@@ -273,6 +274,11 @@ func (builder *Builder) Build() (*Network, error) {
 	net.CAConfig.keyPath = KEYPATH
 	net.CAConfig.certPath = CERTPATH
 	net.CAConfig.caPath = CAPATH
+	_, err = os.Stat(KEYPATH)
+	if err != nil {
+		net.CAConfig.enable = false
+	}
+
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
 		return true

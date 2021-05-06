@@ -338,6 +338,9 @@ func (n *Network) Listen() {
 				return
 			}
 			listener, err = t.(transport.Layer).TLSListen(addrInfo.HostPort(), certPath, keyPath, caPath)
+			if err != nil {
+				log.Errorf("tls listen err %s", err)
+			}
 			log.Infof("tls listen start, cerPath:", certPath, ",keyPath:", keyPath, "caPath:", caPath)
 		} else {
 			listener, err = t.(transport.Layer).Listen(addrInfo.HostPort())
