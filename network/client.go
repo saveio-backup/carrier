@@ -172,6 +172,12 @@ func (c *PeerClient) loopStreamSend() {
 			go func() {
 				item.Mutex.Lock()
 				defer item.Mutex.Unlock()
+				if c == nil {
+					return
+				}
+				if c.Stream(item.StreamID) == nil {
+					return
+				}
 				c.Stream(item.StreamID).Mutex.Lock()
 				defer c.Stream(item.StreamID).Mutex.Unlock()
 
