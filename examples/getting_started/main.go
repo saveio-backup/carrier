@@ -8,7 +8,6 @@ import (
 	"github.com/saveio/carrier/network"
 	"github.com/saveio/carrier/network/components/backoff"
 	"github.com/saveio/carrier/network/components/discovery"
-	"github.com/saveio/carrier/network/components/nat"
 	"github.com/saveio/themis/common/log"
 )
 
@@ -43,7 +42,6 @@ func main() {
 
 	// Register NAT traversal Component.
 	if natEnabled {
-		nat.RegisterComponent(builder)
 	}
 
 	// Register the reconnection Component
