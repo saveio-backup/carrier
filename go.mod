@@ -10,7 +10,7 @@ require (
 	github.com/huin/goupnp v1.0.1-0.20210310174557-0ca763054c88
 	github.com/jackpal/go-nat-pmp v1.0.2
 	github.com/klauspost/reedsolomon v1.9.12 // indirect
-	github.com/lucas-clemente/quic-go v0.12.1
+	github.com/lucas-clemente/quic-go v0.12.0
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
