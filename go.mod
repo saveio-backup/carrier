@@ -2,12 +2,6 @@ module github.com/saveio/carrier
 
 go 1.14
 
-replace (
-	github.com/saveio/carrier => ../carrier
-	github.com/saveio/themis => ../themis
-	github.com/saveio/themis-go-sdk => ../themis-go-sdk
-)
-
 require (
 	github.com/astaxie/beego v1.12.3
 	github.com/gogo/protobuf v1.3.2
@@ -20,7 +14,7 @@ require (
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/saveio/themis v0.0.0-00010101000000-000000000000
+	github.com/saveio/themis v1.0.114
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.7.0
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
