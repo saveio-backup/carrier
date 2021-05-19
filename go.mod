@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/astaxie/beego v1.12.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/mock v1.4.4
+	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2
 	github.com/huin/goupnp v1.0.1-0.20210310174557-0ca763054c88
 	github.com/jackpal/go-nat-pmp v1.0.2

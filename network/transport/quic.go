@@ -14,10 +14,6 @@ import (
 	"math/big"
 	"strings"
 	"time"
-
-	"context"
-
-	"github.com/lucas-clemente/quic-go"
 )
 
 const (
@@ -42,26 +38,28 @@ func resolveQuicAddr(address string) string {
 
 // Listen listens for incoming Quic connections on a specified port.
 func (t *Quic) Listen(address string) (interface{}, error) {
-	listener, err := quic.ListenAddr(address, generateTLSConfig(), &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
-	if err != nil {
-		return nil, err
-	}
+	// listener, err := quic.ListenAddr(address, generateTLSConfig(), &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return interface{}(listener), nil
+	// return interface{}(listener), nil
+	return nil, nil
 }
 
 func (t *Quic) Dial(address string, timeout time.Duration) (interface{}, error) {
-	session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
-	if err != nil {
-		return nil, err
-	}
+	// session, err := quic.DialAddr(resolveQuicAddr(address), &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"quic-proxy"}}, &quic.Config{KeepAlive: true, IdleTimeout: defaultIdleTimeout, HandshakeTimeout: defaultHandshakeTimeout})
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	stream, err := session.OpenStreamSync(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	// stream, err := session.OpenStreamSync(context.Background())
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return interface{}(stream), nil
+	// return interface{}(stream), nil
+	return nil, nil
 }
 
 // Setup a bare-bones TLS config for the server
