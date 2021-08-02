@@ -1,6 +1,6 @@
 module github.com/saveio/carrier
 
-go 1.14
+go 1.16
 
 require (
 	github.com/astaxie/beego v1.10.1
@@ -12,10 +12,9 @@ require (
 	github.com/klauspost/reedsolomon v1.9.12 // indirect
 	github.com/lucas-clemente/quic-go v0.12.0
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
-	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/saveio/themis v1.0.115-0.20210519082201-29f8330c44d9
+	github.com/saveio/themis v1.0.135-0.20210802052006-7b1a7f1fef1c
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.7.0
 	github.com/templexxx/cpufeat v0.0.0-20180724012125-cef66df7f161 // indirect
@@ -25,5 +24,4 @@ require (
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	github.com/xtaci/lossyconn v0.0.0-20200209145036-adba10fffc37 // indirect
 	github.com/xtaci/smux v1.5.15
-	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
