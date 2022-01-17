@@ -270,14 +270,15 @@ func (builder *Builder) Build() (*Network, error) {
 	net.ConnMgr.streams = new(sync.Map)
 	net.ConnMgr.acceptConn = make(chan string, 128)
 	net.ConnMgr.nodeQuit = make(chan string, 128)
-	net.CAConfig.enable = true
+	net.CAConfig.enable = false
 	net.CAConfig.keyPath = KEYPATH
 	net.CAConfig.certPath = CERTPATH
 	net.CAConfig.caPath = CAPATH
-	_, err = os.Stat(KEYPATH)
-	if err != nil {
-		net.CAConfig.enable = false
+	if FileExisted(net.CAConfig.keyPath) && FileExisted(net.CAConfig.certPath) && FileExisted(net.CAConfig.caPath) {
+		net.CAConfig.enable = true
 	}
+	log.Infof("keyPath %s, certPath %s, caPath %s, enable %t",
+		net.CAConfig.keyPath, net.CAConfig.certPath, net.CAConfig.caPath, net.CAConfig.enable)
 
 	net.transports.Range(func(protocol, _ interface{}) bool {
 		net.ProxyService.Finish.Store(protocol, make(chan struct{}))
@@ -287,4 +288,10 @@ func (builder *Builder) Build() (*Network, error) {
 	net.Init()
 
 	return net, nil
+}
+
+// FileExisted checks whether filename exists in filesystem
+func FileExisted(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil || os.IsExist(err)
 }
