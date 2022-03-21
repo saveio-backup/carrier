@@ -7,6 +7,7 @@ package main
 
 import (
 	"flag"
+	"os"
 
 	"github.com/saveio/carrier/examples/local_benchmark/receiver"
 	"github.com/saveio/carrier/examples/local_benchmark/sender"
@@ -15,7 +16,14 @@ import (
 func main() {
 	protocol := flag.String("protocol", "kcp", "protocol to use (kcp/tcp/udp)")
 	flag.Parse()
-	go receiver.Run(*protocol)
-	go sender.Run(*protocol)
+	arg := os.Args[1]
+	if arg == "1" {
+		go receiver.Run(*protocol)
+	} else if arg=="2" {
+		go sender.Run(*protocol)
+	} else {
+		go receiver.Run(*protocol)
+		go sender.Run(*protocol)
+	}
 	select {}
 }

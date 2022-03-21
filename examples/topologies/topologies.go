@@ -224,7 +224,7 @@ func bootstrapNodes(nodes []*network.Network, peers map[string]map[string]struct
 		}
 
 		// get nodes to start talking with each other
-		node.Bootstrap(peerList...)
+		node.Bootstrap(peerList)
 
 	}
 

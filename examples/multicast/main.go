@@ -80,7 +80,6 @@ func RecvMsg(socketMC int) {
 			break
 		}
 		fmt.Printf("Recv:%s\n", string(buf[:n]))
-		//raddr, ok := p.(syscall.SockaddrInet4)
 		raddr, ok := p.(syscall.SockaddrInet4)
 		if ok {
 			fmt.Printf("Remote addr:%d.%d.%d.%d:%d\n", raddr.Addr[0], raddr.Addr[1], raddr.Addr[2], raddr.Addr[3], raddr.Port)

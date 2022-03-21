@@ -62,7 +62,6 @@ func (n *stopNotify) Close() {
 	log.Infof("close channel %v", n.isStop)
 	n.isStop = true
 	close(n.stopCh)
-
 }
 
 // PeerClient represents a single incoming peers client.

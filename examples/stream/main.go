@@ -162,6 +162,7 @@ func main() {
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
 	builder.SetAddress(network.FormatAddress(protocol, host, port))
+	builder.SetListenAddr(network.FormatAddress(protocol, host, port))
 
 	// Register peer discovery Component.
 	builder.AddComponent(new(discovery.Component))
@@ -182,7 +183,7 @@ func main() {
 	go net.Listen()
 
 	if len(peers) > 0 {
-		net.Bootstrap(peers...)
+		net.Bootstrap(peers)
 	}
 
 	select {}

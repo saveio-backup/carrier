@@ -84,6 +84,7 @@ func setupNetworks(host string, startPort int, numNodes int) []*network.Network 
 		builder := network.NewBuilder()
 		builder.SetKeys(ed25519.RandomKeyPair())
 		builder.SetAddress(network.FormatAddress("tcp", host, uint16(startPort+i)))
+		builder.SetListenAddr(network.FormatAddress("tcp", host, uint16(startPort+i)))
 
 		builder.AddComponent(new(discovery.Component))
 		builder.AddComponent(new(loadTestComponent))
@@ -106,7 +107,7 @@ func setupNetworks(host string, startPort int, numNodes int) []*network.Network 
 	// Bootstrap to Node 0.
 	for i, node := range nodes {
 		if i != 0 {
-			node.Bootstrap([]string{nodes[0].Address}, []string{"client-id"})
+			node.Bootstrap([]string{nodes[0].Address})
 		}
 	}
 

@@ -329,7 +329,7 @@ func (n *Network) Listen() {
 	}
 
 	var listener interface{}
-	log.Infof("tls listen start,CAEnable:", n.IsCAEnable())
+	log.Info("tls listen start,CAEnable:", n.IsCAEnable())
 	if t, exists := n.transports.Load(addrInfo.Protocol); exists {
 		if n.IsCAEnable() == true {
 			caPath, certPath, keyPath := n.GetCAFileConfig()
@@ -549,12 +549,12 @@ func (n *Network) getOrSetPeerClient(address, peerID string, conn interface{}) (
 
 	if conn == nil {
 		conn, err = n.Dial(address, client)
-
 		if err != nil {
 			n.ConnMgr.peers.Delete(peerID)
 			return nil, err
 		}
 	}
+	log.Debugf("get client for address: %s, peerId: %s", address, peerID)
 	n.initConnection(address, peerID, conn)
 	n.ConnMgr.peers.Store(peerID, client)
 	n.ConnMgr.streams.Store(peerID, NewMultiStream())

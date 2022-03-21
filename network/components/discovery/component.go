@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"strings"
 	"sync/atomic"
+	"reflect"
 
 	"github.com/saveio/carrier/dht"
 	"github.com/saveio/carrier/internal/protobuf"
@@ -57,9 +58,12 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 	state.Routes.Update(ctx.Sender())
 	gCtx := network.WithSignMessage(context.Background(), true)
 
+	log.Infof("receive message type %s", reflect.TypeOf(ctx.Message()))
 	// Handle RPC.
 	switch msg := ctx.Message().(type) {
 	case *protobuf.Ping:
+		log.Debugf("receive ping message, sender: %s, pubkey: %s", ctx.Sender(), ctx.Sender().PublicKeyHex())
+
 		if state.DisablePing {
 			break
 		}
@@ -80,6 +84,8 @@ func (state *Component) Receive(ctx *network.ComponentContext) error {
 
 	case *protobuf.Pong:
 		//[PoC] ensure bootstrap success with discovery component alone
+		log.Debugf("receive pong message, sender: %s, pubkey: %s", ctx.Sender(), ctx.Sender().PublicKeyHex())
+
 		ctx.Client().PubKey = hex.EncodeToString(ctx.Sender().NetKey)
 		if atomic.SwapUint32(&ctx.Client().RecvChannelClosed, 1) == 0 {
 			ctx.Client().RecvRemotePubKey.Close()
