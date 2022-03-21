@@ -38,7 +38,7 @@ func main() {
 
 	builder := network.NewBuilder()
 	builder.SetKeys(keys)
-	builder.SetListenAddr(network.FormatAddress(protocol, host, port))
+	builder.SetAddress(network.FormatAddress(protocol, host, port))
 
 	// Register NAT traversal Component.
 	if natEnabled {
@@ -61,7 +61,7 @@ func main() {
 	go net.Listen()
 
 	if len(peers) > 0 {
-		net.Bootstrap(peers)
+		net.Bootstrap(peers...)
 	}
 
 	select {}

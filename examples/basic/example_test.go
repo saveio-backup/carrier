@@ -49,7 +49,6 @@ func ExampleBasicComponent() {
 		builder := network.NewBuilder()
 		builder.SetKeys(ed25519.RandomKeyPair())
 		builder.SetAddress(network.FormatAddress("tcp", host, uint16(startPort+i)))
-		builder.SetListenAddr(network.FormatAddress("tcp", host, uint16(startPort+i)))
 
 		builder.AddComponent(new(discovery.Component)) //dht
 
@@ -74,7 +73,7 @@ func ExampleBasicComponent() {
 	// Bootstrap to Node 0.
 	for i, node := range nodes {
 		if i != 0 {
-			node.Bootstrap([]string{nodes[0].Address})
+			node.Bootstrap(nodes[0].Address)
 		}
 	}
 

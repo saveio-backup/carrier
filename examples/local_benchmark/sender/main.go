@@ -60,37 +60,27 @@ func Run(protocol string) {
 
 	builder := network.NewBuilder()
 	builder.SetAddress(protocol + "://127.0.0.1:" + strconv.Itoa(int(*port)))
-	builder.SetListenAddr(protocol + "://127.0.0.1:" + strconv.Itoa(int(*port)))
 	builder.SetKeys(ed25519.RandomKeyPair())
 
 	net, err := builder.Build()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("------ 1.6 -")
+
 	go net.Listen()
-
-	fmt.Println("------ 1.6.4 -")
-
-	net.Bootstrap([]string{receiver[protocol]})
-	fmt.Println("------ 1.6.2 -")
-
+	net.Bootstrap([]string{receiver[protocol]}, []string{"peer-id"})
 
 	time.Sleep(500 * time.Millisecond)
 
-	fmt.Println("Spamming messages to %s...\n", receiver[protocol])
-	fmt.Println("------ 1.7 -")
+	fmt.Printf("Spamming messages to %s...\n", receiver[protocol])
 
 	client, err := net.Client(receiver[protocol], "client-id")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("------ 1.5 -")
 
 	ctx := network.WithSignMessage(context.Background(), true)
 	count := 0
-	fmt.Println("------ 1 -")
-
 	go func() {
 		for range time.Tick(1 * time.Second) {
 			fmt.Printf("Send %d messages.\n", count)
@@ -99,10 +89,7 @@ func Run(protocol string) {
 		}
 
 	}()
-	fmt.Println("------ 2 -")
-
 	for {
-		fmt.Println("-------")
 		err = client.Tell(ctx, &messages.BasicMessage{})
 		count += 1
 		if err != nil {

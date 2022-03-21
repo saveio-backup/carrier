@@ -3,7 +3,7 @@
  * Author: Yihen.Liu
  * Create: 2019-08-13
  */
-package basic
+package main
 
 import (
 	"fmt"

@@ -70,7 +70,6 @@ func Run(protocol string) {
 
 	builder := network.NewBuilder()
 	builder.SetAddress(Address[protocol])
-	builder.SetListenAddr(Address[protocol])
 	builder.SetKeys(ed25519.RandomKeyPair())
 
 	state := new(BenchmarkComponent)
